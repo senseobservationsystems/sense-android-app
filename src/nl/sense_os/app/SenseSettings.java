@@ -1,16 +1,11 @@
 /*
- ***************************************************************************************************
- * Copyright (C)  2010 Sense Observation Systems, Rotterdam, the Netherlands.  All rights reserved.     *
- ***************************************************************************************************
+ * **************************************************************************************************
+ * Copyright (C) 2010 Sense Observation Systems, Rotterdam, the Netherlands. All rights reserved. *
+ * **
+ * ************************************************************************************************
  */
 package nl.sense_os.app;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-
-import nl.sense_os.service.Constants;
-import nl.sense_os.service.DataTransmitter;
-import nl.sense_os.service.ISenseService;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -23,6 +18,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -41,6 +37,11 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import nl.sense_os.service.Constants;
+import nl.sense_os.service.DataTransmitter;
+import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.SenseApi;
+
 public class SenseSettings extends PreferenceActivity {
     /**
      * AsyncTask to check the login data with CommonSense. Takes no arguments to execute. Clears any
@@ -53,14 +54,19 @@ public class SenseSettings extends PreferenceActivity {
         @Override
         protected Boolean doInBackground(Void... params) {
             boolean success = false;
-            if (SenseSettings.this.service != null) {
+            if (service != null) {
                 try {
-                    success = SenseSettings.this.service.changeLogin();
+                    success = service.changeLogin();
+
+                    // start service
+                    if (success) {
+                        startSenseService();
+                    }
                 } catch (final RemoteException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "RemoteException changing login.", e);
                 }
             } else {
-                Log.d(TAG, "Service not bound. Skipping login task.");
+                Log.d(TAG, "Skipping login task: service=null. Is the service bound?");
             }
             return success;
         }
@@ -80,12 +86,25 @@ public class SenseSettings extends PreferenceActivity {
                 Toast.makeText(SenseSettings.this, R.string.toast_login_ok, Toast.LENGTH_LONG)
                         .show();
 
-                setupLoginPref();
+                // the user logged in at least once
+                final SharedPreferences appPrefs = PreferenceManager
+                        .getDefaultSharedPreferences(SenseSettings.this);
+                Editor editor = appPrefs.edit();
+                editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
+                editor.commit();
 
-                final Intent serviceIntent = new Intent(ISenseService.class.getName());
-                if (null == startService(serviceIntent)) {
-                    Log.w(TAG, "Could not start Sense service after login!");
+                // make sure at least the phone state is sensing
+                bindToSenseService(true);
+                if (service != null) {
+                    try {
+                        service.togglePhoneState(true, null);
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "RemoteException starting phone state sensor after login.", e);
+                    }
                 }
+
+                // update login preference summary
+                setupLoginPref();
             }
         }
 
@@ -114,14 +133,19 @@ public class SenseSettings extends PreferenceActivity {
         @Override
         protected Boolean doInBackground(Void... params) {
             boolean success = false;
-            if (SenseSettings.this.service != null) {
+            if (service != null) {
                 try {
-                    success = SenseSettings.this.service.serviceRegister();
+                    success = service.serviceRegister();
+
+                    // start service
+                    if (success) {
+                        startSenseService();
+                    }
                 } catch (final RemoteException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "RemoteException starting sensing after login.", e);
                 }
             } else {
-                Log.d(TAG, "Service not bound. Skipping registration task.");
+                Log.d(TAG, "Skipping registration task: service=null. Is the service bound?");
             }
             return success;
         }
@@ -142,6 +166,24 @@ public class SenseSettings extends PreferenceActivity {
                 Toast.makeText(SenseSettings.this, getString(R.string.toast_reg_ok),
                         Toast.LENGTH_LONG).show();
 
+                // the user logged in at least once
+                final SharedPreferences appPrefs = PreferenceManager
+                        .getDefaultSharedPreferences(SenseSettings.this);
+                final Editor editor = appPrefs.edit();
+                editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
+                editor.commit();
+
+                // make sure at least the phone state is sensing
+                bindToSenseService(true);
+                if (service != null) {
+                    try {
+                        service.togglePhoneState(true, null);
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "RemoteException starting phone state sensor after login.", e);
+                    }
+                }
+
+                // update login preference summary
                 setupLoginPref();
             }
         }
@@ -159,38 +201,109 @@ public class SenseSettings extends PreferenceActivity {
         }
     }
 
+    private static final String TAG = "Sense Settings";
     private static final int DIALOG_LOGIN = 1;
     private static final int DIALOG_PROGRESS = 2;
     private static final int DIALOG_REGISTER = 3;
-    private static final String TAG = "Sense Settings";
+    public static final String PREF_FIRST_LOGIN = "first_login_complete";
+    private OnSharedPreferenceChangeListener changeListener = new OnSharedPreferenceChangeListener() {
+
+        @Override
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+
+            final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                    MODE_WORLD_WRITEABLE);
+            final Editor editor = mainPrefs.edit();
+
+            // put the new preference in the MAIN_PREFS, so the Sense service can access it
+            try {
+                String value = sharedPreferences.getString(key, "");
+                editor.putString(key, value);
+                editor.commit();
+                return;
+            } catch (ClassCastException e) {
+                // do nothing, try another preference type
+            }
+            try {
+                boolean value = sharedPreferences.getBoolean(key, false);
+                editor.putBoolean(key, value);
+                editor.commit();
+                return;
+            } catch (ClassCastException e) {
+                // do nothing, try another preference type
+            }
+            try {
+                float value = sharedPreferences.getFloat(key, 0f);
+                editor.putFloat(key, value);
+                editor.commit();
+                return;
+            } catch (ClassCastException e) {
+                // do nothing, try another preference type
+            }
+            try {
+                int value = sharedPreferences.getInt(key, 0);
+                editor.putInt(key, value);
+                editor.commit();
+                return;
+            } catch (ClassCastException e) {
+                // do nothing, try another preference type
+            }
+            try {
+                long value = sharedPreferences.getLong(key, 0l);
+                editor.putLong(key, value);
+                editor.commit();
+                return;
+            } catch (ClassCastException el) {
+                Log.e(TAG, "Can't read new preference setting!");
+            }
+        }
+    };
     private boolean isServiceBound;
-    private ISenseService service = null;
+    private ISenseService service;
     private final ServiceConnection serviceConn = new ServiceConnection() {
 
         @Override
         public void onServiceConnected(ComponentName className, IBinder binder) {
-            SenseSettings.this.service = ISenseService.Stub.asInterface(binder);
+            service = ISenseService.Stub.asInterface(binder);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName className) {
             /* this is not called when the service is stopped, only when it is suddenly killed! */
-            SenseSettings.this.service = null;
+            service = null;
+            isServiceBound = false;
         }
     };
+
+    /**
+     * Binds to the Sense Service.
+     * 
+     * @param autoCreate
+     *            <code>true</code> if the service should be created when it is not running yet
+     */
+    private void bindToSenseService(boolean autoCreate) {
+        // start the service if it was not running already
+        if (this.service == null) {
+            final Intent serviceIntent = new Intent(ISenseService.class.getName());
+            final int flag = autoCreate ? BIND_AUTO_CREATE : 0;
+            this.isServiceBound = bindService(serviceIntent, this.serviceConn, flag);
+        }
+    }
 
     private Dialog createDialogLogin() {
 
         // create View with input fields for dialog content
         final LinearLayout login = new LinearLayout(this);
         login.setOrientation(LinearLayout.VERTICAL);
-        final EditText emailField = new EditText(this);
-        emailField.setLayoutParams(new LayoutParams(-1, -2));
-        emailField.setHint(R.string.dialog_login_hint_mail);
-        emailField.setInputType(InputType.TYPE_CLASS_TEXT
+
+        final EditText usernameField = new EditText(this);
+        usernameField.setLayoutParams(new LayoutParams(-1, -2));
+        usernameField.setHint(R.string.dialog_login_hint_mail);
+        usernameField.setInputType(InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-        emailField.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        login.addView(emailField);
+        usernameField.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        login.addView(usernameField);
+
         final EditText passField = new EditText(this);
         passField.setLayoutParams(new LayoutParams(-1, -2));
         passField.setHint(R.string.dialog_login_hint_pass);
@@ -200,8 +313,8 @@ public class SenseSettings extends PreferenceActivity {
         login.addView(passField);
 
         // get current login email from preferences
-        final SharedPreferences prefs = getSharedPreferences(Constants.PRIVATE_PREFS, MODE_PRIVATE);
-        emailField.setText(prefs.getString(Constants.PREF_LOGIN_MAIL, ""));
+        final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+        usernameField.setText(authPrefs.getString(Constants.PREF_LOGIN_USERNAME, ""));
 
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.dialog_login_title);
@@ -210,33 +323,14 @@ public class SenseSettings extends PreferenceActivity {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                final String name = emailField.getText().toString();
+                final String name = usernameField.getText().toString();
                 final String pass = passField.getText().toString();
 
-                final Editor editor = prefs.edit();
-                editor.putString(Constants.PREF_LOGIN_MAIL, name);
-                // put md5 string
-                String MD5Pass = "";
-                // Register to the Database
-                final byte[] defaultBytes = pass.getBytes();
-                try {
-                    final MessageDigest algorithm = MessageDigest.getInstance("MD5");
-                    algorithm.reset();
-                    algorithm.update(defaultBytes);
-                    final byte messageDigest[] = algorithm.digest();
+                final Editor editor = authPrefs.edit();
+                editor.putString(Constants.PREF_LOGIN_USERNAME, name);
 
-                    final StringBuffer hexString = new StringBuffer();
-                    for (final byte element : messageDigest) {
-                        final String hex = Integer.toHexString(0xFF & element);
-                        if (hex.length() == 1) {
-                            hexString.append(0);
-                        }
-                        hexString.append(hex);
-                    }
-                    MD5Pass = hexString.toString();
-                } catch (final NoSuchAlgorithmException e) {
-                    e.printStackTrace();
-                }
+                // put hashed password in the preferences
+                String MD5Pass = SenseApi.hashPassword(pass);
                 editor.putString(Constants.PREF_LOGIN_PASS, MD5Pass);
                 editor.commit();
 
@@ -259,12 +353,12 @@ public class SenseSettings extends PreferenceActivity {
     private Dialog createDialogRegister() {
 
         // create individual input fields
-        final EditText emailField = new EditText(this);
-        emailField.setLayoutParams(new LayoutParams(-1, -2));
-        emailField.setHint(R.string.dialog_reg_hint_mail);
-        emailField.setInputType(InputType.TYPE_CLASS_TEXT
+        final EditText usernameField = new EditText(this);
+        usernameField.setLayoutParams(new LayoutParams(-1, -2));
+        usernameField.setHint(R.string.dialog_reg_hint_mail);
+        usernameField.setInputType(InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-        emailField.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        usernameField.setImeOptions(EditorInfo.IME_ACTION_NEXT);
 
         final EditText passField1 = new EditText(this);
         passField1.setLayoutParams(new LayoutParams(-1, -2));
@@ -283,7 +377,7 @@ public class SenseSettings extends PreferenceActivity {
         // create main dialog content View
         final LinearLayout register = new LinearLayout(this);
         register.setOrientation(LinearLayout.VERTICAL);
-        register.addView(emailField);
+        register.addView(usernameField);
         register.addView(passField1);
         register.addView(passField2);
 
@@ -294,42 +388,25 @@ public class SenseSettings extends PreferenceActivity {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                final String email = emailField.getText().toString();
+                final String username = usernameField.getText().toString();
                 final String pass1 = passField1.getText().toString();
                 final String pass2 = passField2.getText().toString();
 
                 if (pass1.equals(pass2)) {
-                    String MD5Pass = "";
-                    // Register to the Database
-                    final byte[] defaultBytes = pass1.getBytes();
-                    try {
-                        final MessageDigest algorithm = MessageDigest.getInstance("MD5");
-                        algorithm.reset();
-                        algorithm.update(defaultBytes);
-                        final byte messageDigest[] = algorithm.digest();
 
-                        final StringBuffer hexString = new StringBuffer();
-                        for (final byte element : messageDigest) {
-                            final String hex = Integer.toHexString(0xFF & element);
-                            if (hex.length() == 1) {
-                                hexString.append(0);
-                            }
-                            hexString.append(hex);
-                        }
-                        MD5Pass = hexString.toString();
+                    // MD5 hash of password
+                    String MD5Pass = SenseApi.hashPassword(pass1);
 
-                        // store the login value
-                        final SharedPreferences prefs = getSharedPreferences(
-                                Constants.PRIVATE_PREFS, MODE_PRIVATE);
-                        final Editor editor = prefs.edit();
-                        editor.putString(Constants.PREF_LOGIN_MAIL, email);
-                        editor.putString(Constants.PREF_LOGIN_PASS, MD5Pass);
-                        editor.commit();
-                        // start registration
-                        new CheckRegisterTask().execute();
-                    } catch (final NoSuchAlgorithmException e) {
-                        e.printStackTrace();
-                    }
+                    // store the login value
+                    final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS,
+                            MODE_PRIVATE);
+                    final Editor editor = authPrefs.edit();
+                    editor.putString(Constants.PREF_LOGIN_USERNAME, username);
+                    editor.putString(Constants.PREF_LOGIN_PASS, MD5Pass);
+                    editor.commit();
+
+                    // start registration
+                    new CheckRegisterTask().execute();
                 } else {
                     Toast.makeText(SenseSettings.this, R.string.toast_reg_pass, Toast.LENGTH_SHORT)
                             .show();
@@ -358,141 +435,120 @@ public class SenseSettings extends PreferenceActivity {
         setupLoginPref();
         setupRegisterPref();
         setupQuizPref();
+
+        final SharedPreferences appPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        appPrefs.registerOnSharedPreferenceChangeListener(this.changeListener);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        SharedPreferences appPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        appPrefs.unregisterOnSharedPreferenceChangeListener(this.changeListener);
+
+        unbindFromSenseService();
     }
 
     @Override
     protected Dialog onCreateDialog(int id) {
         Dialog dialog = null;
-
         switch (id) {
-            case DIALOG_LOGIN :
-                dialog = createDialogLogin();
-                break;
-            case DIALOG_REGISTER :
-                dialog = createDialogRegister();
-                break;
-            case DIALOG_PROGRESS :
-                dialog = createDialogLoginProgress();
-                break;
-            default :
-                dialog = super.onCreateDialog(id);
-                break;
+        case DIALOG_LOGIN:
+            dialog = createDialogLogin();
+            break;
+        case DIALOG_REGISTER:
+            dialog = createDialogRegister();
+            break;
+        case DIALOG_PROGRESS:
+            dialog = createDialogLoginProgress();
+            break;
+        default:
+            dialog = super.onCreateDialog(id);
+            break;
         }
         return dialog;
     }
 
     @Override
     protected void onPrepareDialog(int id, Dialog dialog) {
+        // make sure the service is started when we try to register or log in
         switch (id) {
-            case DIALOG_LOGIN :
-                bindToService(true);
-                break;
-            case DIALOG_REGISTER :
-                bindToService(true);
-                break;
-            case DIALOG_PROGRESS :
-                break;
-            default :
-                break;
-        }
-    }
-
-    /**
-     * Binds to the Sense Service
-     * 
-     * @param autoCreate
-     *            true is the service should be created if it is not running yet
-     */
-    private void bindToService(boolean autoCreate) {
-        // start the service if it was not running already
-        if (this.service == null) {
-            final Intent serviceIntent = new Intent(ISenseService.class.getName());
-            int flag = autoCreate ? BIND_AUTO_CREATE : 0;
-            this.isServiceBound = bindService(serviceIntent, this.serviceConn, flag);
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-
-        if (true == this.isServiceBound) {
-            unbindService(this.serviceConn);
-            this.service = null;
-            this.isServiceBound = false;
+        case DIALOG_LOGIN:
+            bindToSenseService(true);
+            break;
+        case DIALOG_REGISTER:
+            bindToSenseService(true);
+            break;
+        default:
+            break;
         }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
-        bindToService(false);
+        bindToSenseService(false);
     }
 
     private void onSampleRateChange(Preference pref, String newValue) {
         switch (Integer.parseInt(newValue)) {
-            case -2 : // real time
-                pref.setSummary("Current setting: Real-time");
-                break;
-            case -1 : // often
-                pref.setSummary("Current setting: Often");
-                break;
-            case 0 : // normal
-                pref.setSummary("Current setting: Normal");
-                break;
-            case 1 : // rarely
-                pref.setSummary("Current setting: Rarely");
-                break;
-            default :
-                pref.setSummary("ERROR");
+        case -2: // real time
+            pref.setSummary("Current setting: Real-time");
+            break;
+        case -1: // often
+            pref.setSummary("Current setting: Often");
+            break;
+        case 0: // normal
+            pref.setSummary("Current setting: Normal");
+            break;
+        case 1: // rarely
+            pref.setSummary("Current setting: Rarely");
+            break;
+        default:
+            pref.setSummary("ERROR");
         }
 
         // restart service if it was running
-        if (isServiceBound) {
+        if (this.isServiceBound) {
             // stop service
             final boolean stopped = stopService(new Intent(ISenseService.class.getName()));
             if (stopped) {
-                unbindService(SenseSettings.this.serviceConn);
-                SenseSettings.this.service = null;
-                SenseSettings.this.isServiceBound = false;
+                unbindFromSenseService();
             } else {
                 Log.w(TAG, "Service was not stopped.");
             }
 
-            // restart service
-            final Intent serviceIntent = new Intent(ISenseService.class.getName());
-            if (null == startService(serviceIntent)) {
-                Log.w(TAG, "Could not start Sense service!");
-            }
-
-            SenseSettings.this.isServiceBound = bindService(serviceIntent,
-                    SenseSettings.this.serviceConn, 0);
         }
+
+        // restart service
+        startSenseService();
+        bindToSenseService(true);
     }
 
     private void onSyncRateChange(Preference pref, String newValue) {
         switch (Integer.parseInt(newValue)) {
-            case -2 : // real time
-                pref.setSummary("Real-time connection with CommonSense");
-                break;
-            case -1 : // often
-                pref.setSummary("Sync with CommonSense every 5 secs");
-                break;
-            case 0 : // normal
-                pref.setSummary("Sync with CommonSense every minute");
-                break;
-            case 1 : // rarely
-                pref.setSummary("Sync with CommonSense every hour (Eco-mode)");
-                break;
-            default :
-                pref.setSummary("ERROR");
+        case -2: // real time
+            pref.setSummary("Real-time connection with CommonSense");
+            break;
+        case -1: // often
+            pref.setSummary("Sync with CommonSense every 5 secs");
+            break;
+        case 0: // normal
+            pref.setSummary("Sync with CommonSense every minute");
+            break;
+        case 1: // rarely
+            pref.setSummary("Sync with CommonSense every hour (Eco-mode)");
+            break;
+        default:
+            pref.setSummary("ERROR");
         }
 
         // re-set sync alarm
-        Intent alarm = new Intent(this, DataTransmitter.class);
-        PendingIntent operation = PendingIntent.getBroadcast(this, DataTransmitter.REQID, alarm, 0);
-        AlarmManager mgr = (AlarmManager) getSystemService(ALARM_SERVICE);
+        final Intent alarm = new Intent(this, DataTransmitter.class);
+        final PendingIntent operation = PendingIntent.getBroadcast(this, DataTransmitter.REQID,
+                alarm, 0);
+        final AlarmManager mgr = (AlarmManager) getSystemService(ALARM_SERVICE);
         mgr.cancel(operation);
         mgr.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), operation);
     }
@@ -507,10 +563,9 @@ public class SenseSettings extends PreferenceActivity {
                 return true;
             }
         });
-        final SharedPreferences loginPrefs = getSharedPreferences(Constants.PRIVATE_PREFS,
-                MODE_PRIVATE);
-        final String email = loginPrefs.getString(Constants.PREF_LOGIN_MAIL, "");
-        final String summary = email.length() > 0 ? email : "Enter your login details";
+        final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+        final String username = authPrefs.getString(Constants.PREF_LOGIN_USERNAME, "");
+        final String summary = username.length() > 0 ? username : "Enter your login details";
         loginPref.setSummary(summary);
     }
 
@@ -553,10 +608,13 @@ public class SenseSettings extends PreferenceActivity {
      * Shows the summaries of the two sync/sense rate list preferences.
      */
     private void showSummaries() {
-        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
+        final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                MODE_WORLD_WRITEABLE);
+
+        // get sample rate preference setting
         final Preference samplePref = findPreference(Constants.PREF_SAMPLE_RATE);
-        onSampleRateChange(samplePref, prefs.getString(Constants.PREF_SAMPLE_RATE, "0"));
+        onSampleRateChange(samplePref, mainPrefs.getString(Constants.PREF_SAMPLE_RATE, "0"));
         samplePref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
 
             @Override
@@ -566,8 +624,9 @@ public class SenseSettings extends PreferenceActivity {
             }
         });
 
+        // get sync rate preference setting
         final Preference syncPref = findPreference(Constants.PREF_SYNC_RATE);
-        onSyncRateChange(syncPref, prefs.getString(Constants.PREF_SYNC_RATE, "0"));
+        onSyncRateChange(syncPref, mainPrefs.getString(Constants.PREF_SYNC_RATE, "0"));
         syncPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
 
             @Override
@@ -576,5 +635,32 @@ public class SenseSettings extends PreferenceActivity {
                 return true;
             }
         });
+    }
+
+    private void startSenseService() {
+
+        final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
+                MODE_WORLD_WRITEABLE);
+        final Editor editor = statusPrefs.edit();
+        editor.putBoolean(Constants.PREF_STATUS_MAIN, true);
+        editor.commit();
+
+        final Intent serviceIntent = new Intent(ISenseService.class.getName());
+        ComponentName name = startService(serviceIntent);
+        if (null == name) {
+            Log.w(TAG, "Failed to start Sense service");
+        }
+    }
+
+    /**
+     * Unbinds from the Sense service, resets {@link #service} and {@link #isServiceBound}.
+     */
+    private void unbindFromSenseService() {
+
+        if (true == this.isServiceBound && null != this.serviceConn) {
+            unbindService(this.serviceConn);
+        }
+        this.service = null;
+        this.isServiceBound = false;
     }
 }

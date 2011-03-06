@@ -1,18 +1,11 @@
 /*
- **************************************************************************************************
- * Copyright (C)  2010 Sense Observation Systems, Rotterdam, the Netherlands.  All rights reserved.
- **************************************************************************************************
+ * *************************************************************************************************
+ * Copyright (C) 2010 Sense Observation Systems, Rotterdam, the Netherlands. All rights reserved.
+ * *************************************************************************************************
  */
 
 package nl.sense_os.app;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-
-import nl.sense_os.service.Constants;
-import nl.sense_os.service.ISenseService;
-import nl.sense_os.service.ISenseServiceCallback;
-import nl.sense_os.service.SenseService;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -46,6 +39,12 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import nl.sense_os.service.Constants;
+import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.ISenseServiceCallback;
+import nl.sense_os.service.SenseApi;
+import nl.sense_os.service.SenseService;
+
 public class SenseApp extends Activity {
     /**
      * AsyncTask to check the login data with CommonSense. Takes no arguments to execute. Clears any
@@ -57,15 +56,21 @@ public class SenseApp extends Activity {
 
         @Override
         protected Boolean doInBackground(Void... params) {
+
             boolean success = false;
             if (SenseApp.this.service != null) {
                 try {
                     success = SenseApp.this.service.changeLogin();
+
+                    // start sensing after the login
+                    if (success) {
+                        toggleService(true);
+                    }
                 } catch (final RemoteException e) {
                     Log.e(TAG, "RemoteException checking login", e);
                 }
             } else {
-                Log.e(TAG, "Service not bound. Skipping login task.");
+                Log.e(TAG, "Skipping login task: service=null. Is the service bound?");
             }
             return success;
         }
@@ -77,17 +82,24 @@ public class SenseApp extends Activity {
             } catch (final IllegalArgumentException e) {
                 // do nothing, perhaps the progress dialog was already dismissed
             }
+
             if (result != true) {
                 Toast.makeText(SenseApp.this, R.string.toast_login_fail, Toast.LENGTH_LONG).show();
                 showDialog(DIALOG_LOGIN);
             } else {
                 Toast.makeText(SenseApp.this, R.string.toast_login_ok, Toast.LENGTH_LONG).show();
 
-                // at least turn on phone state sensor after the very first login
-                toggleService(true);
+                // the user logged in at least once
+                final SharedPreferences appPrefs = PreferenceManager
+                        .getDefaultSharedPreferences(SenseApp.this);
+                final Editor editor = appPrefs.edit();
+                editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
+                editor.commit();
+
                 togglePhoneState(true);
-                updateUi();
             }
+
+            updateUi();
         }
 
         @Override
@@ -114,14 +126,19 @@ public class SenseApp extends Activity {
         @Override
         protected Boolean doInBackground(Void... params) {
             boolean success = false;
-            if (SenseApp.this.service != null) {
+            if (service != null) {
                 try {
-                    success = SenseApp.this.service.serviceRegister();
+                    success = service.serviceRegister();
+
+                    // start sensing after the very first login
+                    if (success) {
+                        toggleService(true);
+                    }
                 } catch (final RemoteException e) {
                     e.printStackTrace();
                 }
             } else {
-                Log.d(TAG, "Service not bound. Skipping registration task.");
+                Log.e(TAG, "Skipping registration task: service=null. Is the service bound?");
             }
             return success;
         }
@@ -139,7 +156,18 @@ public class SenseApp extends Activity {
                 showDialog(DIALOG_REGISTER);
             } else {
                 Toast.makeText(SenseApp.this, R.string.toast_reg_ok, Toast.LENGTH_LONG).show();
+
+                // the user logged in at least once
+                final SharedPreferences appPrefs = PreferenceManager
+                        .getDefaultSharedPreferences(SenseApp.this);
+                final Editor editor = appPrefs.edit();
+                editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
+                editor.commit();
+
+                togglePhoneState(true);
             }
+
+            updateUi();
         }
 
         @Override
@@ -151,6 +179,51 @@ public class SenseApp extends Activity {
                 e.printStackTrace();
             }
             showDialog(DIALOG_PROGRESS);
+        }
+    }
+
+    private class StartServiceTask extends AsyncTask<Boolean, Void, Boolean> {
+
+        @Override
+        protected Boolean doInBackground(Boolean... params) {
+
+            final Intent serviceIntent = new Intent(ISenseService.class.getName());
+
+            if (params[0] == true) {
+
+                // start service
+                ComponentName name = startService(serviceIntent);
+                if (null == name) {
+                    Log.w(TAG, "Failed to start Sense service");
+                    return false;
+                }
+                return true;
+
+            } else {
+
+                // stop service
+                final boolean stopped = stopService(serviceIntent);
+                if (false == stopped) {
+                    Log.w(TAG, "Failed to stop Sense service");
+                    return false;
+                }
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(Boolean started) {
+            if (started) {
+                bindToSenseService(false);
+            } else {
+                unbindFromSenseService();
+            }
+            updateUi();
+        }
+
+        @Override
+        protected void onPreExecute() {
+
         }
     }
 
@@ -327,6 +400,25 @@ public class SenseApp extends Activity {
     private ISenseService service;
     private final ServiceConnection serviceConn = new SenseServiceConn();
     private final SenseServiceListener serviceListener = new SenseServiceListener();
+    /**
+     * Key for preference for the version of CommonSense
+     */
+    public static final String PREF_COMMONSENSE_VERSION = "cs_version";
+
+    /**
+     * Binds to the Sense Service.
+     * 
+     * @param autoCreate
+     *            <code>true</code> if the service should be created when it is not running yet
+     */
+    private void bindToSenseService(boolean autoCreate) {
+        // start the service if it was not running already
+        if (this.service == null) {
+            final Intent serviceIntent = new Intent(ISenseService.class.getName());
+            final int flag = autoCreate ? BIND_AUTO_CREATE : 0;
+            this.isServiceBound = bindService(serviceIntent, this.serviceConn, flag);
+        }
+    }
 
     private Dialog createDialogFaq() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -374,22 +466,17 @@ public class SenseApp extends Activity {
      * @return a login dialog.
      */
     private Dialog createDialogLogin() {
-        // start the service if it was not running already
-        if (this.service == null) {
-            final Intent serviceIntent = new Intent(ISenseService.class.getName());
-            bindService(serviceIntent, this.serviceConn, BIND_AUTO_CREATE);
-        }
 
         // create View with input fields for dialog content
         final LinearLayout login = new LinearLayout(this);
         login.setOrientation(LinearLayout.VERTICAL);
-        final EditText emailField = new EditText(this);
-        emailField.setLayoutParams(new LayoutParams(-1, -2));
-        emailField.setHint(R.string.dialog_login_hint_mail);
-        emailField.setInputType(InputType.TYPE_CLASS_TEXT
+        final EditText usernameField = new EditText(this);
+        usernameField.setLayoutParams(new LayoutParams(-1, -2));
+        usernameField.setHint(R.string.dialog_login_hint_mail);
+        usernameField.setInputType(InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-        emailField.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        login.addView(emailField);
+        usernameField.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        login.addView(usernameField);
 
         final EditText passField = new EditText(this);
         passField.setLayoutParams(new LayoutParams(-1, -2));
@@ -399,10 +486,9 @@ public class SenseApp extends Activity {
         passField.setImeOptions(EditorInfo.IME_ACTION_DONE);
         login.addView(passField);
 
-        // get current login email from preferences
-        final SharedPreferences privatePrefs = getSharedPreferences(Constants.PRIVATE_PREFS,
-                MODE_PRIVATE);
-        emailField.setText(privatePrefs.getString(Constants.PREF_LOGIN_MAIL, ""));
+        // get current login username from preferences
+        final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+        usernameField.setText(authPrefs.getString(Constants.PREF_LOGIN_USERNAME, ""));
 
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.dialog_login_title);
@@ -411,33 +497,14 @@ public class SenseApp extends Activity {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                final String name = emailField.getText().toString();
+                final String name = usernameField.getText().toString();
                 final String pass = passField.getText().toString();
 
-                final Editor editor = privatePrefs.edit();
-                editor.putString(Constants.PREF_LOGIN_MAIL, name);
-                // put md5 string
-                String MD5Pass = "";
-                // Register to the Database
-                final byte[] defaultBytes = pass.getBytes();
-                try {
-                    final MessageDigest algorithm = MessageDigest.getInstance("MD5");
-                    algorithm.reset();
-                    algorithm.update(defaultBytes);
-                    final byte messageDigest[] = algorithm.digest();
+                final Editor editor = authPrefs.edit();
+                editor.putString(Constants.PREF_LOGIN_USERNAME, name);
 
-                    final StringBuffer hexString = new StringBuffer();
-                    for (final byte element : messageDigest) {
-                        final String hex = Integer.toHexString(0xFF & element);
-                        if (hex.length() == 1) {
-                            hexString.append(0);
-                        }
-                        hexString.append(hex);
-                    }
-                    MD5Pass = hexString.toString();
-                } catch (final NoSuchAlgorithmException e) {
-                    e.printStackTrace();
-                }
+                // put md5 string
+                String MD5Pass = SenseApi.hashPassword(pass);
                 editor.putString(Constants.PREF_LOGIN_PASS, MD5Pass);
                 editor.commit();
 
@@ -453,19 +520,14 @@ public class SenseApp extends Activity {
      * @return a registration dialog, with fields for email address, login name and password (2x).
      */
     private Dialog createDialogRegister() {
-        // start the service if it was not running already
-        if (this.service == null) {
-            final Intent serviceIntent = new Intent(ISenseService.class.getName());
-            bindService(serviceIntent, this.serviceConn, BIND_AUTO_CREATE);
-        }
 
         // create individual input fields
-        final EditText emailField = new EditText(this);
-        emailField.setLayoutParams(new LayoutParams(-1, -2));
-        emailField.setHint(R.string.dialog_reg_hint_mail);
-        emailField.setInputType(InputType.TYPE_CLASS_TEXT
+        final EditText usernameField = new EditText(this);
+        usernameField.setLayoutParams(new LayoutParams(-1, -2));
+        usernameField.setHint(R.string.dialog_reg_hint_mail);
+        usernameField.setInputType(InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-        emailField.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        usernameField.setImeOptions(EditorInfo.IME_ACTION_NEXT);
 
         final EditText passField1 = new EditText(this);
         passField1.setLayoutParams(new LayoutParams(-1, -2));
@@ -484,7 +546,7 @@ public class SenseApp extends Activity {
         // create main dialog content View
         final LinearLayout register = new LinearLayout(this);
         register.setOrientation(LinearLayout.VERTICAL);
-        register.addView(emailField);
+        register.addView(usernameField);
         register.addView(passField1);
         register.addView(passField2);
 
@@ -495,42 +557,24 @@ public class SenseApp extends Activity {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                final String email = emailField.getText().toString();
+                final String username = usernameField.getText().toString();
                 final String pass1 = passField1.getText().toString();
                 final String pass2 = passField2.getText().toString();
 
                 if (pass1.equals(pass2)) {
-                    String MD5Pass = "";
-                    // Register to the Database
-                    final byte[] defaultBytes = pass1.getBytes();
-                    try {
-                        final MessageDigest algorithm = MessageDigest.getInstance("MD5");
-                        algorithm.reset();
-                        algorithm.update(defaultBytes);
-                        final byte messageDigest[] = algorithm.digest();
 
-                        final StringBuffer hexString = new StringBuffer();
-                        for (final byte element : messageDigest) {
-                            final String hex = Integer.toHexString(0xFF & element);
-                            if (hex.length() == 1) {
-                                hexString.append(0);
-                            }
-                            hexString.append(hex);
-                        }
-                        MD5Pass = hexString.toString();
+                    String MD5Pass = SenseApi.hashPassword(pass1);
 
-                        // store the login value
-                        final SharedPreferences privatePrefs = getSharedPreferences(
-                                Constants.PRIVATE_PREFS, MODE_PRIVATE);
-                        final Editor editor = privatePrefs.edit();
-                        editor.putString(Constants.PREF_LOGIN_MAIL, email);
-                        editor.putString(Constants.PREF_LOGIN_PASS, MD5Pass);
-                        editor.commit();
-                        // start registration
-                        new CheckRegisterTask().execute();
-                    } catch (final NoSuchAlgorithmException e) {
-                        e.printStackTrace();
-                    }
+                    // store the login value
+                    final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS,
+                            MODE_PRIVATE);
+                    final Editor editor = authPrefs.edit();
+                    editor.putString(Constants.PREF_LOGIN_USERNAME, username);
+                    editor.putString(Constants.PREF_LOGIN_PASS, MD5Pass);
+                    editor.commit();
+
+                    // start registration
+                    new CheckRegisterTask().execute();
                 } else {
                     Toast.makeText(SenseApp.this, R.string.toast_reg_pass, Toast.LENGTH_SHORT)
                             .show();
@@ -570,73 +614,73 @@ public class SenseApp extends Activity {
 
         boolean oldState = false;
         switch (v.getId()) {
-            case R.id.main_field :
-                final CheckBox cb = (CheckBox) findViewById(R.id.main_cb);
-                oldState = cb.isChecked();
-                cb.setChecked(!oldState);
-                toggleService(!oldState);
-                break;
-            case R.id.device_prox_field :
-                final CheckBox devProx = (CheckBox) findViewById(R.id.device_prox_cb);
-                if (devProx.isEnabled()) {
-                    oldState = devProx.isChecked();
-                    devProx.setChecked(!oldState);
-                    toggleDeviceProx(!oldState);
-                }
-                break;
-            case R.id.location_field :
-                final CheckBox location = (CheckBox) findViewById(R.id.location_cb);
-                if (location.isEnabled()) {
-                    oldState = location.isChecked();
-                    location.setChecked(!oldState);
-                    toggleLocation(!oldState);
-                }
-                break;
-            case R.id.motion_field :
-                final CheckBox motion = (CheckBox) findViewById(R.id.motion_cb);
-                if (motion.isEnabled()) {
-                    oldState = motion.isChecked();
-                    motion.setChecked(!oldState);
-                    toggleMotion(!oldState);
-                }
-                break;
-            case R.id.external_sensor_field :
-                final CheckBox external = (CheckBox) findViewById(R.id.external_sensor_cb);
-                if (external.isEnabled()) {
-                    oldState = external.isChecked();
-                    external.setChecked(!oldState);
-                    toggleExternalSensors(!oldState);
-                }
-                break;
-            case R.id.ambience_field :
-                final CheckBox ambience = (CheckBox) findViewById(R.id.ambience_cb);
-                if (ambience.isEnabled()) {
-                    oldState = ambience.isChecked();
-                    ambience.setChecked(!oldState);
-                    toggleAmbience(!oldState);
-                }
-                break;
-            case R.id.phonestate_field :
-                final CheckBox phoneState = (CheckBox) findViewById(R.id.phonestate_cb);
-                if (phoneState.isEnabled()) {
-                    oldState = phoneState.isChecked();
-                    phoneState.setChecked(!oldState);
-                    togglePhoneState(!oldState);
-                }
-                break;
-            case R.id.popquiz_field :
-                final CheckBox quiz = (CheckBox) findViewById(R.id.popquiz_cb);
-                if (quiz.isEnabled()) {
-                    oldState = quiz.isChecked();
-                    quiz.setChecked(!oldState);
-                    togglePopQuiz(!oldState);
-                }
-                break;
-            case R.id.prefs_field :
-                startActivity(new Intent("nl.sense_os.app.Settings"));
-                break;
-            default :
-                Log.e(TAG, "Unknown button pressed!");
+        case R.id.main_field:
+            final CheckBox cb = (CheckBox) findViewById(R.id.main_cb);
+            oldState = cb.isChecked();
+            cb.setChecked(!oldState);
+            toggleService(!oldState);
+            break;
+        case R.id.device_prox_field:
+            final CheckBox devProx = (CheckBox) findViewById(R.id.device_prox_cb);
+            if (devProx.isEnabled()) {
+                oldState = devProx.isChecked();
+                devProx.setChecked(!oldState);
+                toggleDeviceProx(!oldState);
+            }
+            break;
+        case R.id.location_field:
+            final CheckBox location = (CheckBox) findViewById(R.id.location_cb);
+            if (location.isEnabled()) {
+                oldState = location.isChecked();
+                location.setChecked(!oldState);
+                toggleLocation(!oldState);
+            }
+            break;
+        case R.id.motion_field:
+            final CheckBox motion = (CheckBox) findViewById(R.id.motion_cb);
+            if (motion.isEnabled()) {
+                oldState = motion.isChecked();
+                motion.setChecked(!oldState);
+                toggleMotion(!oldState);
+            }
+            break;
+        case R.id.external_sensor_field:
+            final CheckBox external = (CheckBox) findViewById(R.id.external_sensor_cb);
+            if (external.isEnabled()) {
+                oldState = external.isChecked();
+                external.setChecked(!oldState);
+                toggleExternalSensors(!oldState);
+            }
+            break;
+        case R.id.ambience_field:
+            final CheckBox ambience = (CheckBox) findViewById(R.id.ambience_cb);
+            if (ambience.isEnabled()) {
+                oldState = ambience.isChecked();
+                ambience.setChecked(!oldState);
+                toggleAmbience(!oldState);
+            }
+            break;
+        case R.id.phonestate_field:
+            final CheckBox phoneState = (CheckBox) findViewById(R.id.phonestate_cb);
+            if (phoneState.isEnabled()) {
+                oldState = phoneState.isChecked();
+                phoneState.setChecked(!oldState);
+                togglePhoneState(!oldState);
+            }
+            break;
+        case R.id.popquiz_field:
+            final CheckBox quiz = (CheckBox) findViewById(R.id.popquiz_cb);
+            if (quiz.isEnabled()) {
+                oldState = quiz.isChecked();
+                quiz.setChecked(!oldState);
+                togglePopQuiz(!oldState);
+            }
+            break;
+        case R.id.prefs_field:
+            startActivity(new Intent("nl.sense_os.app.Settings"));
+            break;
+        default:
+            Log.e(TAG, "Unknown button pressed!");
         }
     }
 
@@ -650,30 +694,30 @@ public class SenseApp extends Activity {
     protected Dialog onCreateDialog(int id) {
         Dialog dialog = null;
         switch (id) {
-            case DIALOG_FAQ :
-                dialog = createDialogFaq();
-                break;
-            case DIALOG_LOGIN :
-                dialog = createDialogLogin();
-                break;
-            case DIALOG_PROGRESS :
-                dialog = new ProgressDialog(this);
-                dialog.setTitle("One moment please");
-                ((ProgressDialog) dialog).setMessage("Checking login credentials...");
-                dialog.setCancelable(false);
-                break;
-            case DIALOG_REGISTER :
-                dialog = createDialogRegister();
-                break;
-            case DIALOG_UPDATE_ALERT :
-                dialog = createDialogUpdateAlert();
-                break;
-            case DIALOG_HELP :
-                dialog = createDialogHelp();
-                break;
-            default :
-                Log.w(TAG, "Trying to create unexpected dialog, ignoring input...");
-                break;
+        case DIALOG_FAQ:
+            dialog = createDialogFaq();
+            break;
+        case DIALOG_LOGIN:
+            dialog = createDialogLogin();
+            break;
+        case DIALOG_PROGRESS:
+            dialog = new ProgressDialog(this);
+            dialog.setTitle("One moment please");
+            ((ProgressDialog) dialog).setMessage("Checking login credentials...");
+            dialog.setCancelable(false);
+            break;
+        case DIALOG_REGISTER:
+            dialog = createDialogRegister();
+            break;
+        case DIALOG_UPDATE_ALERT:
+            dialog = createDialogUpdateAlert();
+            break;
+        case DIALOG_HELP:
+            dialog = createDialogHelp();
+            break;
+        default:
+            Log.w(TAG, "Trying to create unexpected dialog, ignoring input...");
+            break;
         }
         return dialog;
     }
@@ -692,23 +736,38 @@ public class SenseApp extends Activity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case MENU_FAQ :
-                showDialog(DIALOG_FAQ);
-                break;
-            case MENU_SETTINGS :
-                startActivity(new Intent("nl.sense_os.app.Settings"));
-                break;
-            case MENU_LOGIN :
-                showDialog(DIALOG_LOGIN);
-                break;
-            case MENU_REGISTER :
-                showDialog(DIALOG_REGISTER);
-                break;
-            default :
-                Log.w(TAG, "Unexpected menu button pressed, ignoring input...");
-                return false;
+        case MENU_FAQ:
+            showDialog(DIALOG_FAQ);
+            break;
+        case MENU_SETTINGS:
+            startActivity(new Intent("nl.sense_os.app.Settings"));
+            break;
+        case MENU_LOGIN:
+            showDialog(DIALOG_LOGIN);
+            break;
+        case MENU_REGISTER:
+            showDialog(DIALOG_REGISTER);
+            break;
+        default:
+            Log.w(TAG, "Unexpected menu button pressed, ignoring input...");
+            return false;
         }
         return true;
+    }
+
+    @Override
+    protected void onPrepareDialog(int id, Dialog dialog) {
+        // make sure the service is started when we try to register or log in
+        switch (id) {
+        case DIALOG_LOGIN:
+            bindToSenseService(true);
+            break;
+        case DIALOG_REGISTER:
+            bindToSenseService(true);
+            break;
+        default:
+            break;
+        }
     }
 
     @Override
@@ -716,11 +775,7 @@ public class SenseApp extends Activity {
         super.onPause();
 
         // unbind from service
-        if (true == this.isServiceBound) {
-            unbindService(this.serviceConn);
-            this.service = null;
-            this.isServiceBound = false;
-        }
+        unbindFromSenseService();
 
         // unregister service state listener
         try {
@@ -734,28 +789,27 @@ public class SenseApp extends Activity {
     protected void onResume() {
         super.onResume();
 
-        // try to bind to service
-        // NB: do not use BIND_AUTO_CREATE so the service is only bound if it already exists
-        final Intent serviceIntent = new Intent(ISenseService.class.getName());
-        this.isServiceBound = bindService(serviceIntent, this.serviceConn, 0);
+        bindToSenseService(false);
 
         // register receiver for updates
         IntentFilter filter = new IntentFilter(SenseService.ACTION_SERVICE_BROADCAST);
         registerReceiver(this.serviceListener, filter);
 
         // show dialogs to handle special cases
-        SharedPreferences prefs = getSharedPreferences(Constants.STATUSPREFS, MODE_WORLD_WRITEABLE);
-        if (prefs.getBoolean(Constants.PREF_FIRSTLOGIN, true)) {
+        final SharedPreferences appPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                MODE_WORLD_WRITEABLE);
+        if (appPrefs.getBoolean(SenseSettings.PREF_FIRST_LOGIN, true)) {
             // show informational dialog on first run
-            Editor editor = prefs.edit();
-            editor.putInt(Constants.PREF_COMMONSENSE_VERSION, COMMONSENSE_VERSION);
+            final Editor editor = mainPrefs.edit();
+            editor.putInt(PREF_COMMONSENSE_VERSION, COMMONSENSE_VERSION);
             editor.commit();
 
             showDialog(DIALOG_HELP);
-        } else if (prefs.getInt(Constants.PREF_COMMONSENSE_VERSION, 0) < COMMONSENSE_VERSION) {
+        } else if (mainPrefs.getInt(PREF_COMMONSENSE_VERSION, 0) < COMMONSENSE_VERSION) {
             // show alert about new CommonSense version
-            Editor editor = prefs.edit();
-            editor.putInt(Constants.PREF_COMMONSENSE_VERSION, COMMONSENSE_VERSION);
+            final Editor editor = mainPrefs.edit();
+            editor.putInt(PREF_COMMONSENSE_VERSION, COMMONSENSE_VERSION);
             editor.commit();
 
             showDialog(DIALOG_UPDATE_ALERT);
@@ -766,7 +820,9 @@ public class SenseApp extends Activity {
 
     private void toggleDeviceProx(boolean active) {
 
-        Editor editor = getSharedPreferences(Constants.STATUSPREFS, MODE_WORLD_WRITEABLE).edit();
+        final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
+                MODE_WORLD_WRITEABLE);
+        Editor editor = statusPrefs.edit();
         editor.putBoolean(Constants.PREF_STATUS_DEV_PROX, active).commit();
 
         if (null != this.service) {
@@ -775,26 +831,27 @@ public class SenseApp extends Activity {
 
                 // show informational Toast
                 if (active) {
-                    final SharedPreferences prefs = PreferenceManager
-                            .getDefaultSharedPreferences(this);
-                    final int rate = Integer.parseInt(prefs.getString(Constants.PREF_SAMPLE_RATE,
-                            "0"));
+
+                    final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                            MODE_WORLD_WRITEABLE);
+                    final int rate = Integer.parseInt(mainPrefs.getString(
+                            Constants.PREF_SAMPLE_RATE, "0"));
                     String interval = "";
                     switch (rate) {
-                        case -2 : // real-time
-                            interval = "second";
-                            break;
-                        case -1 : // often
-                            interval = "15 seconds";
-                            break;
-                        case 0 : // normal
-                            interval = "minute";
-                            break;
-                        case 1 : // rarely (15 hour)
-                            interval = "15 minutes";
-                            break;
-                        default :
-                            Log.e(TAG, "Unexpected device prox preference.");
+                    case -2: // real-time
+                        interval = "second";
+                        break;
+                    case -1: // often
+                        interval = "15 seconds";
+                        break;
+                    case 0: // normal
+                        interval = "minute";
+                        break;
+                    case 1: // rarely (15 hour)
+                        interval = "15 minutes";
+                        break;
+                    default:
+                        Log.e(TAG, "Unexpected device prox preference.");
                     }
                     final String msg = getString(R.string.toast_toggle_dev_prox);
                     Toast.makeText(this, msg.replace("?", interval), Toast.LENGTH_LONG).show();
@@ -810,7 +867,9 @@ public class SenseApp extends Activity {
 
     private void toggleExternalSensors(boolean active) {
 
-        Editor editor = getSharedPreferences(Constants.STATUSPREFS, MODE_WORLD_WRITEABLE).edit();
+        final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
+                MODE_WORLD_WRITEABLE);
+        Editor editor = statusPrefs.edit();
         editor.putBoolean(Constants.PREF_STATUS_EXTERNAL, active).commit();
 
         if (null != this.service) {
@@ -819,27 +878,28 @@ public class SenseApp extends Activity {
 
                 // show informational toast
                 if (active) {
-                    final SharedPreferences prefs = PreferenceManager
-                            .getDefaultSharedPreferences(this);
-                    final int rate = Integer.parseInt(prefs.getString(Constants.PREF_SAMPLE_RATE,
-                            "0"));
+
+                    final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                            MODE_WORLD_WRITEABLE);
+                    final int rate = Integer.parseInt(mainPrefs.getString(
+                            Constants.PREF_SAMPLE_RATE, "0"));
                     String interval = "";
                     switch (rate) {
-                        case -2 : // often
-                            interval = "second";
-                            break;
-                        case -1 : // often
-                            interval = "5 seconds";
-                            break;
-                        case 0 : // normal
-                            interval = "minute";
-                            break;
-                        case 1 : // rarely
-                            interval = "15 minutes";
-                            break;
-                        default :
-                            Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                            break;
+                    case -2: // often
+                        interval = "second";
+                        break;
+                    case -1: // often
+                        interval = "5 seconds";
+                        break;
+                    case 0: // normal
+                        interval = "minute";
+                        break;
+                    case 1: // rarely
+                        interval = "15 minutes";
+                        break;
+                    default:
+                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                        break;
                     }
                     final String msg = getString(R.string.toast_toggle_external_sensors).replace(
                             "?", interval);
@@ -856,7 +916,9 @@ public class SenseApp extends Activity {
 
     private void toggleLocation(boolean active) {
 
-        Editor editor = getSharedPreferences(Constants.STATUSPREFS, MODE_WORLD_WRITEABLE).edit();
+        final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
+                MODE_WORLD_WRITEABLE);
+        final Editor editor = statusPrefs.edit();
         editor.putBoolean(Constants.PREF_STATUS_LOCATION, active).commit();
 
         if (null != this.service) {
@@ -865,27 +927,28 @@ public class SenseApp extends Activity {
 
                 // show informational toast
                 if (active) {
-                    final SharedPreferences prefs = PreferenceManager
-                            .getDefaultSharedPreferences(this);
-                    final int rate = Integer.parseInt(prefs.getString(Constants.PREF_SAMPLE_RATE,
-                            "0"));
+
+                    final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                            MODE_WORLD_WRITEABLE);
+                    final int rate = Integer.parseInt(mainPrefs.getString(
+                            Constants.PREF_SAMPLE_RATE, "0"));
                     String interval = "";
                     switch (rate) {
-                        case -2 : // often
-                            interval = "second";
-                            break;
-                        case -1 : // often
-                            interval = "15 seconds";
-                            break;
-                        case 0 : // normal
-                            interval = "minute";
-                            break;
-                        case 1 : // rarely
-                            interval = "15 minutes";
-                            break;
-                        default :
-                            Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                            break;
+                    case -2: // often
+                        interval = "second";
+                        break;
+                    case -1: // often
+                        interval = "15 seconds";
+                        break;
+                    case 0: // normal
+                        interval = "minute";
+                        break;
+                    case 1: // rarely
+                        interval = "15 minutes";
+                        break;
+                    default:
+                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                        break;
                     }
                     final String msg = getString(R.string.toast_toggle_location).replace("?",
                             interval);
@@ -902,7 +965,9 @@ public class SenseApp extends Activity {
 
     private void toggleMotion(boolean active) {
 
-        Editor editor = getSharedPreferences(Constants.STATUSPREFS, MODE_WORLD_WRITEABLE).edit();
+        final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
+                MODE_WORLD_WRITEABLE);
+        final Editor editor = statusPrefs.edit();
         editor.putBoolean(Constants.PREF_STATUS_MOTION, active).commit();
 
         if (null != this.service) {
@@ -911,27 +976,28 @@ public class SenseApp extends Activity {
 
                 // show informational toast
                 if (active) {
-                    final SharedPreferences prefs = PreferenceManager
-                            .getDefaultSharedPreferences(this);
-                    final int rate = Integer.parseInt(prefs.getString(Constants.PREF_SAMPLE_RATE,
-                            "0"));
+
+                    final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                            MODE_WORLD_WRITEABLE);
+                    final int rate = Integer.parseInt(mainPrefs.getString(
+                            Constants.PREF_SAMPLE_RATE, "0"));
                     String interval = "";
                     switch (rate) {
-                        case -2 : // often
-                            interval = "second";
-                            break;
-                        case -1 : // often
-                            interval = "5 seconds";
-                            break;
-                        case 0 : // normal
-                            interval = "minute";
-                            break;
-                        case 1 : // rarely
-                            interval = "15 minutes";
-                            break;
-                        default :
-                            Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                            break;
+                    case -2: // often
+                        interval = "second";
+                        break;
+                    case -1: // often
+                        interval = "5 seconds";
+                        break;
+                    case 0: // normal
+                        interval = "minute";
+                        break;
+                    case 1: // rarely
+                        interval = "15 minutes";
+                        break;
+                    default:
+                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                        break;
                     }
                     final String msg = getString(R.string.toast_toggle_motion).replace("?",
                             interval);
@@ -948,7 +1014,9 @@ public class SenseApp extends Activity {
 
     private void toggleAmbience(boolean active) {
 
-        Editor editor = getSharedPreferences(Constants.STATUSPREFS, MODE_WORLD_WRITEABLE).edit();
+        final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
+                MODE_WORLD_WRITEABLE);
+        final Editor editor = statusPrefs.edit();
         editor.putBoolean(Constants.PREF_STATUS_AMBIENCE, active).commit();
 
         if (null != this.service) {
@@ -957,31 +1025,32 @@ public class SenseApp extends Activity {
 
                 // show informational toast
                 if (active) {
-                    final SharedPreferences prefs = PreferenceManager
-                            .getDefaultSharedPreferences(this);
-                    final int rate = Integer.parseInt(prefs.getString(Constants.PREF_SAMPLE_RATE,
-                            "0"));
+
+                    final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                            MODE_WORLD_WRITEABLE);
+                    final int rate = Integer.parseInt(mainPrefs.getString(
+                            Constants.PREF_SAMPLE_RATE, "0"));
                     String intervalString = "";
                     String extraString = "";
                     switch (rate) {
-                        case -2 :
-                            intervalString = "the whole time";
-                            extraString = " A sound stream will be uploaded.";
-                            break;
-                        case -1 :
-                            // often
-                            intervalString = "every 5 seconds";
-                            break;
-                        case 0 :
-                            // normal
-                            intervalString = "every minute";
-                            break;
-                        case 1 :
-                            // rarely (1 hour)
-                            intervalString = "every 15 minutes";
-                            break;
-                        default :
-                            Log.e(TAG, "Unexpected commonsense rate preference.");
+                    case -2:
+                        intervalString = "the whole time";
+                        extraString = " A sound stream will be uploaded.";
+                        break;
+                    case -1:
+                        // often
+                        intervalString = "every 5 seconds";
+                        break;
+                    case 0:
+                        // normal
+                        intervalString = "every minute";
+                        break;
+                    case 1:
+                        // rarely (1 hour)
+                        intervalString = "every 15 minutes";
+                        break;
+                    default:
+                        Log.e(TAG, "Unexpected commonsense rate preference.");
                     }
                     String msg = getString(R.string.toast_toggle_ambience).replace("?",
                             intervalString)
@@ -1000,7 +1069,9 @@ public class SenseApp extends Activity {
     private void togglePhoneState(boolean active) {
 
         // put desired state in preferences
-        Editor editor = getSharedPreferences(Constants.STATUSPREFS, MODE_WORLD_WRITEABLE).edit();
+        final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
+                MODE_WORLD_WRITEABLE);
+        final Editor editor = statusPrefs.edit();
         editor.putBoolean(Constants.PREF_STATUS_PHONESTATE, active).commit();
 
         // toggle state in service
@@ -1024,7 +1095,9 @@ public class SenseApp extends Activity {
 
     private void togglePopQuiz(boolean active) {
 
-        Editor editor = getSharedPreferences(Constants.STATUSPREFS, MODE_WORLD_WRITEABLE).edit();
+        final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
+                MODE_WORLD_WRITEABLE);
+        final Editor editor = statusPrefs.edit();
         editor.putBoolean(Constants.PREF_STATUS_POPQUIZ, active).commit();
 
         if (null != this.service) {
@@ -1033,22 +1106,25 @@ public class SenseApp extends Activity {
 
                 // show informational toast
                 if (active) {
-                    final SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(this);
-                    final int r = Integer.parseInt(p.getString(Constants.PREF_QUIZ_RATE, "0"));
+
+                    final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                            MODE_WORLD_WRITEABLE);
+                    final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_QUIZ_RATE,
+                            "0"));
                     String interval = "ERROR";
-                    switch (r) {
-                        case -1 : // often (5 mins)
-                            interval = "5 minutes";
-                            break;
-                        case 0 : // normal (15 mins)
-                            interval = "15 minutes";
-                            break;
-                        case 1 : // rarely (1 hour)
-                            interval = "hour";
-                            break;
-                        default :
-                            Log.e(TAG, "Unexpected quiz rate preference: " + r);
-                            break;
+                    switch (rate) {
+                    case -1: // often (5 mins)
+                        interval = "5 minutes";
+                        break;
+                    case 0: // normal (15 mins)
+                        interval = "15 minutes";
+                        break;
+                    case 1: // rarely (1 hour)
+                        interval = "hour";
+                        break;
+                    default:
+                        Log.e(TAG, "Unexpected quiz rate preference: " + rate);
+                        break;
                     }
 
                     String msg = getString(R.string.toast_toggle_quiz).replace("?", interval);
@@ -1072,33 +1148,26 @@ public class SenseApp extends Activity {
      */
     private void toggleService(boolean active) {
 
-        Editor editor = getSharedPreferences(Constants.STATUSPREFS, MODE_WORLD_WRITEABLE).edit();
+        final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
+                MODE_WORLD_WRITEABLE);
+        final Editor editor = statusPrefs.edit();
         editor.putBoolean(Constants.PREF_STATUS_MAIN, active).commit();
 
-        if (true == active) {
-            // start service
-            final Intent serviceIntent = new Intent(ISenseService.class.getName());
-            if (null == startService(serviceIntent)) {
-                Log.w(TAG, "Could not start Sense service!");
-            }
-            TextView description = (TextView) findViewById(R.id.main_secondLine);
-            description.setText("Press to stop Sense service completely");
+        // start or stop Sense service on a background thread, because logging in can take a long
+        // time.
+        new StartServiceTask().execute(active);
+    }
 
-            this.isServiceBound = bindService(serviceIntent, this.serviceConn, 0);
+    /**
+     * Unbinds from the Sense service, resets {@link #service} and {@link #isServiceBound}.
+     */
+    private void unbindFromSenseService() {
 
-        } else {
-            // stop service
-            final boolean stopped = stopService(new Intent(ISenseService.class.getName()));
-            if (stopped) {
-                unbindService(this.serviceConn);
-                this.service = null;
-                this.isServiceBound = false;
-            } else {
-                Log.w(TAG, "Service was not stopped.");
-            }
-
-            updateUi();
+        if (true == this.isServiceBound && null != this.serviceConn) {
+            unbindService(this.serviceConn);
         }
+        this.service = null;
+        this.isServiceBound = false;
     }
 
     /**
