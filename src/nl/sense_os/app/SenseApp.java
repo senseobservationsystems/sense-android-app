@@ -182,7 +182,7 @@ public class SenseApp extends Activity {
         }
     }
 
-    private class StartServiceTask extends AsyncTask<Boolean, Void, Boolean> {
+    private class ToggleServiceTask extends AsyncTask<Boolean, Void, Boolean> {
 
         @Override
         protected Boolean doInBackground(Boolean... params) {
@@ -1155,7 +1155,7 @@ public class SenseApp extends Activity {
 
         // start or stop Sense service on a background thread, because logging in can take a long
         // time.
-        new StartServiceTask().execute(active);
+        new ToggleServiceTask().execute(active);
     }
 
     /**
