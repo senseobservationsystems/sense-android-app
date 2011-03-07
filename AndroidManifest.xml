@@ -2,39 +2,39 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="nl.sense_os.app"
-    android:versionCode="20110305"
-    android:versionName="2.0.2">
+    android:versionCode="20110307"
+    android:versionName="2.0.3">
 
-    <uses-permission
-        android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission
         android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission
         android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission
+        android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission
+        android:name="android.permission.CAMERA" />
+    <uses-permission
+        android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission
         android:name="android.permission.INTERNET" />
     <uses-permission
-        android:name="android.permission.VIBRATE" />
+        android:name="android.permission.PROCESS_OUTGOING_CALLS" />
+    <uses-permission
+        android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission
         android:name="android.permission.RECORD_AUDIO" />
     <uses-permission
-        android:name="android.permission.BLUETOOTH"></uses-permission>
+        android:name="android.permission.VIBRATE" />
     <uses-permission
-        android:name="android.permission.BLUETOOTH_ADMIN"></uses-permission>
+        android:name="android.permission.WAKE_LOCK" />
     <uses-permission
-        android:name="android.permission.ACCESS_WIFI_STATE"></uses-permission>
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission
-        android:name="android.permission.WRITE_SECURE_SETTINGS"></uses-permission>
-    <uses-permission
-        android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
-    <uses-permission
-        android:name="android.permission.CAMERA"></uses-permission>
-    <uses-permission
-        android:name="android.permission.WAKE_LOCK"></uses-permission>
-    <uses-permission
-        android:name="android.permission.PROCESS_OUTGOING_CALLS"></uses-permission>
-    <uses-permission
-        android:name="android.permission.CHANGE_WIFI_STATE"></uses-permission>
+        android:name="android.permission.WRITE_SECURE_SETTINGS" />
 
     <uses-sdk
         android:minSdkVersion="4" />
@@ -55,15 +55,15 @@
             android:theme="@android:style/Theme.Light">
             <intent-filter>
                 <action
-                    android:name="android.intent.action.MAIN"></action>
+                    android:name="android.intent.action.MAIN" />
                 <category
-                    android:name="android.intent.category.LAUNCHER"></category>
+                    android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter>
                 <action
-                    android:name="nl.sense_os.app.SenseApp"></action>
+                    android:name="nl.sense_os.app.SenseApp" />
                 <category
-                    android:name="android.intent.category.DEFAULT"></category>
+                    android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
@@ -72,9 +72,9 @@
             android:name="SenseSettings">
             <intent-filter>
                 <action
-                    android:name="nl.sense_os.app.Settings"></action>
+                    android:name="nl.sense_os.app.Settings" />
                 <category
-                    android:name="android.intent.category.DEFAULT"></category>
+                    android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
@@ -83,9 +83,9 @@
             android:configChanges="orientation">
             <intent-filter>
                 <action
-                    android:name="nl.sense_os.service.DoPeriodic"></action>
+                    android:name="nl.sense_os.service.DoPeriodic" />
                 <category
-                    android:name="android.intent.category.DEFAULT"></category>
+                    android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
@@ -130,9 +130,9 @@
             android:name="nl.sense_os.service.popquiz.PopQuizRx">
             <intent-filter>
                 <action
-                    android:name="nl.sense_os.service.AlarmPeriodic"></action>
+                    android:name="nl.sense_os.service.AlarmPeriodic" />
                 <category
-                    android:name="android.intent.category.DEFAULT"></category>
+                    android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
 
@@ -140,9 +140,9 @@
             android:name="nl.sense_os.service.popquiz.PopQuizSync">
             <intent-filter>
                 <action
-                    android:name="nl.sense_os.service.AlarmPopQuestionUpdate"></action>
+                    android:name="nl.sense_os.service.AlarmPopQuestionUpdate" />
                 <category
-                    android:name="android.intent.category.DEFAULT"></category>
+                    android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
 
@@ -150,9 +150,9 @@
             android:name="nl.sense_os.service.BootRx">
             <intent-filter>
                 <action
-                    android:name="android.intent.action.BOOT_COMPLETED"></action>
+                    android:name="android.intent.action.BOOT_COMPLETED" />
                 <category
-                    android:name="android.intent.category.HOME"></category>
+                    android:name="android.intent.category.HOME" />
             </intent-filter>
         </receiver>
 
@@ -160,9 +160,9 @@
             android:name="nl.sense_os.service.AliveChecker">
             <intent-filter>
                 <action
-                    android:name="nl.sense_os.service.CheckAlive"></action>
+                    android:name="nl.sense_os.service.CheckAlive" />
                 <category
-                    android:name="android.intent.category.DEFAULT"></category>
+                    android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
 
@@ -170,9 +170,9 @@
             android:name="nl.sense_os.service.feedback.FeedbackRx">
             <intent-filter>
                 <action
-                    android:name="nl.sense_os.service.CheckFeedback"></action>
+                    android:name="nl.sense_os.service.CheckFeedback" />
                 <category
-                    android:name="android.intent.category.DEFAULT"></category>
+                    android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
 
