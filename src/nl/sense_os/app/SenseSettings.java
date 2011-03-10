@@ -6,6 +6,10 @@
  */
 package nl.sense_os.app;
 
+import nl.sense_os.service.Constants;
+import nl.sense_os.service.DataTransmitter;
+import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.SenseApi;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -36,11 +40,6 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
-
-import nl.sense_os.service.Constants;
-import nl.sense_os.service.DataTransmitter;
-import nl.sense_os.service.ISenseService;
-import nl.sense_os.service.SenseApi;
 
 public class SenseSettings extends PreferenceActivity {
     /**
@@ -135,7 +134,7 @@ public class SenseSettings extends PreferenceActivity {
             boolean success = false;
             if (service != null) {
                 try {
-                    success = service.serviceRegister();
+                    success = service.register();
 
                     // start service
                     if (success) {
@@ -201,12 +200,13 @@ public class SenseSettings extends PreferenceActivity {
         }
     }
 
-    private static final String TAG = "Sense Settings";
-    private static final int DIALOG_LOGIN = 1;
-    private static final int DIALOG_PROGRESS = 2;
-    private static final int DIALOG_REGISTER = 3;
-    public static final String PREF_FIRST_LOGIN = "first_login_complete";
-    private OnSharedPreferenceChangeListener changeListener = new OnSharedPreferenceChangeListener() {
+    /**
+     * Listener for changes in the preferences. Any changes are immediately synchronized with the
+     * Sense service's "main" preferences.
+     * 
+     * @see {@link Constants#MAIN_PREFS}
+     */
+    private class PrefSyncListener implements OnSharedPreferenceChangeListener {
 
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
@@ -253,11 +253,18 @@ public class SenseSettings extends PreferenceActivity {
                 editor.putLong(key, value);
                 editor.commit();
                 return;
-            } catch (ClassCastException el) {
+            } catch (ClassCastException e) {
                 Log.e(TAG, "Can't read new preference setting!");
             }
         }
     };
+
+    private static final String TAG = "Sense Settings";
+    private static final int DIALOG_LOGIN = 1;
+    private static final int DIALOG_PROGRESS = 2;
+    private static final int DIALOG_REGISTER = 3;
+    public static final String PREF_FIRST_LOGIN = "first_login_complete";
+    private PrefSyncListener changeListener = new PrefSyncListener();
     private boolean isServiceBound;
     private ISenseService service;
     private final ServiceConnection serviceConn = new ServiceConnection() {
@@ -454,18 +461,18 @@ public class SenseSettings extends PreferenceActivity {
     protected Dialog onCreateDialog(int id) {
         Dialog dialog = null;
         switch (id) {
-        case DIALOG_LOGIN:
-            dialog = createDialogLogin();
-            break;
-        case DIALOG_REGISTER:
-            dialog = createDialogRegister();
-            break;
-        case DIALOG_PROGRESS:
-            dialog = createDialogLoginProgress();
-            break;
-        default:
-            dialog = super.onCreateDialog(id);
-            break;
+            case DIALOG_LOGIN :
+                dialog = createDialogLogin();
+                break;
+            case DIALOG_REGISTER :
+                dialog = createDialogRegister();
+                break;
+            case DIALOG_PROGRESS :
+                dialog = createDialogLoginProgress();
+                break;
+            default :
+                dialog = super.onCreateDialog(id);
+                break;
         }
         return dialog;
     }
@@ -474,14 +481,14 @@ public class SenseSettings extends PreferenceActivity {
     protected void onPrepareDialog(int id, Dialog dialog) {
         // make sure the service is started when we try to register or log in
         switch (id) {
-        case DIALOG_LOGIN:
-            bindToSenseService(true);
-            break;
-        case DIALOG_REGISTER:
-            bindToSenseService(true);
-            break;
-        default:
-            break;
+            case DIALOG_LOGIN :
+                bindToSenseService(true);
+                break;
+            case DIALOG_REGISTER :
+                bindToSenseService(true);
+                break;
+            default :
+                break;
         }
     }
 
@@ -493,20 +500,20 @@ public class SenseSettings extends PreferenceActivity {
 
     private void onSampleRateChange(Preference pref, String newValue) {
         switch (Integer.parseInt(newValue)) {
-        case -2: // real time
-            pref.setSummary("Current setting: Real-time");
-            break;
-        case -1: // often
-            pref.setSummary("Current setting: Often");
-            break;
-        case 0: // normal
-            pref.setSummary("Current setting: Normal");
-            break;
-        case 1: // rarely
-            pref.setSummary("Current setting: Rarely");
-            break;
-        default:
-            pref.setSummary("ERROR");
+            case -2 : // real time
+                pref.setSummary("Current setting: Real-time");
+                break;
+            case -1 : // often
+                pref.setSummary("Current setting: Often");
+                break;
+            case 0 : // normal
+                pref.setSummary("Current setting: Normal");
+                break;
+            case 1 : // rarely
+                pref.setSummary("Current setting: Rarely");
+                break;
+            default :
+                pref.setSummary("ERROR");
         }
 
         // restart service if it was running
@@ -528,20 +535,20 @@ public class SenseSettings extends PreferenceActivity {
 
     private void onSyncRateChange(Preference pref, String newValue) {
         switch (Integer.parseInt(newValue)) {
-        case -2: // real time
-            pref.setSummary("Real-time connection with CommonSense");
-            break;
-        case -1: // often
-            pref.setSummary("Sync with CommonSense every 5 secs");
-            break;
-        case 0: // normal
-            pref.setSummary("Sync with CommonSense every minute");
-            break;
-        case 1: // rarely
-            pref.setSummary("Sync with CommonSense every hour (Eco-mode)");
-            break;
-        default:
-            pref.setSummary("ERROR");
+            case -2 : // real time
+                pref.setSummary("Real-time connection with CommonSense");
+                break;
+            case -1 : // often
+                pref.setSummary("Sync with CommonSense every 5 secs");
+                break;
+            case 0 : // normal
+                pref.setSummary("Sync with CommonSense every minute");
+                break;
+            case 1 : // rarely
+                pref.setSummary("Sync with CommonSense every hour (Eco-mode)");
+                break;
+            default :
+                pref.setSummary("ERROR");
         }
 
         // re-set sync alarm
@@ -575,18 +582,21 @@ public class SenseSettings extends PreferenceActivity {
 
             @Override
             public boolean onPreferenceClick(Preference preference) {
-                // start quiz sync broadcast
-                final Intent refreshIntent = new Intent(
-                        "nl.sense_os.service.AlarmPopQuestionUpdate");
-                final PendingIntent refreshPI = PendingIntent.getBroadcast(SenseSettings.this, 0,
-                        refreshIntent, 0);
-                final AlarmManager mgr = (AlarmManager) getSystemService(ALARM_SERVICE);
-                mgr.set(AlarmManager.RTC_WAKEUP, 0, refreshPI);
 
-                // show confirmation Toast
-                Toast.makeText(SenseSettings.this, R.string.toast_quiz_refresh, Toast.LENGTH_LONG)
-                        .show();
-
+                Log.w(TAG, "Questionnaire not restarted");
+                // // start quiz sync broadcast
+                // final Intent refreshIntent = new Intent(
+                // "nl.sense_os.service.AlarmPopQuestionUpdate");
+                // final PendingIntent refreshPI = PendingIntent.getBroadcast(SenseSettings.this, 0,
+                // refreshIntent, 0);
+                // final AlarmManager mgr = (AlarmManager) getSystemService(ALARM_SERVICE);
+                // // mgr.set(AlarmManager.RTC_WAKEUP, 0, refreshPI);
+                //
+                // // show confirmation Toast
+                // Toast.makeText(SenseSettings.this, R.string.toast_quiz_refresh,
+                // Toast.LENGTH_LONG)
+                // .show();
+                //
                 return true;
             }
         });

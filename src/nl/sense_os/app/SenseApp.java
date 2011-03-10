@@ -127,7 +127,7 @@ public class SenseApp extends Activity {
             boolean success = false;
             if (service != null) {
                 try {
-                    success = service.serviceRegister();
+                    success = service.register();
 
                     // start sensing after the very first login
                     if (success) {
@@ -1115,48 +1115,50 @@ public class SenseApp extends Activity {
 
     private void togglePopQuiz(boolean active) {
 
-        final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
-                MODE_WORLD_WRITEABLE);
-        final Editor editor = statusPrefs.edit();
-        editor.putBoolean(Constants.PREF_STATUS_POPQUIZ, active).commit();
+        Log.w(TAG, "Toggle Questionnare not implemented");
 
-        if (null != this.service) {
-            try {
-                this.service.togglePopQuiz(active, callback);
-
-                // show informational toast
-                if (active) {
-
-                    final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
-                            MODE_WORLD_WRITEABLE);
-                    final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_QUIZ_RATE,
-                            "0"));
-                    String interval = "ERROR";
-                    switch (rate) {
-                        case -1 : // often (5 mins)
-                            interval = "5 minutes";
-                            break;
-                        case 0 : // normal (15 mins)
-                            interval = "15 minutes";
-                            break;
-                        case 1 : // rarely (1 hour)
-                            interval = "hour";
-                            break;
-                        default :
-                            Log.e(TAG, "Unexpected quiz rate preference: " + rate);
-                            break;
-                    }
-
-                    String msg = getString(R.string.toast_toggle_quiz).replace("?", interval);
-                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
-                }
-
-            } catch (RemoteException e) {
-                Log.e(TAG, "RemoteException toggling periodic popup service.");
-            }
-        } else {
-            Log.w(TAG, "Could not toggle periodic popup service: Sense service is not bound.");
-        }
+        // final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
+        // MODE_WORLD_WRITEABLE);
+        // final Editor editor = statusPrefs.edit();
+        // editor.putBoolean(Constants.PREF_STATUS_POPQUIZ, active).commit();
+        //
+        // if (null != this.service) {
+        // try {
+        // this.service.togglePopQuiz(active, callback);
+        //
+        // // show informational toast
+        // if (active) {
+        //
+        // final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+        // MODE_WORLD_WRITEABLE);
+        // final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_QUIZ_RATE,
+        // "0"));
+        // String interval = "ERROR";
+        // switch (rate) {
+        // case -1 : // often (5 mins)
+        // interval = "5 minutes";
+        // break;
+        // case 0 : // normal (15 mins)
+        // interval = "15 minutes";
+        // break;
+        // case 1 : // rarely (1 hour)
+        // interval = "hour";
+        // break;
+        // default :
+        // Log.e(TAG, "Unexpected quiz rate preference: " + rate);
+        // break;
+        // }
+        //
+        // String msg = getString(R.string.toast_toggle_quiz).replace("?", interval);
+        // Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+        // }
+        //
+        // } catch (RemoteException e) {
+        // Log.e(TAG, "RemoteException toggling periodic popup service.");
+        // }
+        // } else {
+        // Log.w(TAG, "Could not toggle periodic popup service: Sense service is not bound.");
+        // }
     }
 
     /**
