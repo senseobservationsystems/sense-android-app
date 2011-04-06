@@ -583,7 +583,7 @@ public class SenseSettings extends PreferenceActivity {
             @Override
             public boolean onPreferenceClick(Preference preference) {
 
-                Log.w(TAG, "Questionnaire not restarted");
+                Log.w(TAG, "Questionnaire not restarted: code is disabled!");
                 // // start quiz sync broadcast
                 // final Intent refreshIntent = new Intent(
                 // "nl.sense_os.service.AlarmPopQuestionUpdate");

@@ -96,6 +96,7 @@ public class SenseApp extends Activity {
                 editor.commit();
 
                 togglePhoneState(true);
+                // toggleAmbience(true);
             }
 
             updateUi();

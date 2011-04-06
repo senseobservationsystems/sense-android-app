@@ -2,8 +2,9 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="nl.sense_os.app"
-    android:versionCode="20110308"
-    android:versionName="2.0.4">
+    android:versionCode="20110406"
+    android:versionName="2.0.6">
+    <!-- android:sharedUserId="nl.sense_os.platform"> -->
 
     <uses-permission
         android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -33,8 +34,9 @@
         android:name="android.permission.WAKE_LOCK" />
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission
-        android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <!-- WRITE_SECURE_SETTINGS permission is silently denied on install: -->
+    <!-- <uses-permission -->
+    <!-- android:name="android.permission.WRITE_SECURE_SETTINGS" /> -->
 
     <uses-sdk
         android:minSdkVersion="4" />
@@ -90,8 +92,7 @@
         </activity>
 
         <service
-            android:name="nl.sense_os.service.SenseService"
-            android:process="nl.sense_os.service">
+            android:name="nl.sense_os.service.SenseService">
             <intent-filter>
                 <action
                     android:name="nl.sense_os.service.ISenseService" />
@@ -99,8 +100,7 @@
         </service>
 
         <service
-            android:name="nl.sense_os.service.MsgHandler"
-            android:process="nl.sense_os.service">
+            android:name="nl.sense_os.service.MsgHandler">
             <intent-filter>
                 <action
                     android:name="nl.sense_os.app.MsgHandler.NEW_MSG" />
@@ -116,8 +116,7 @@
         </service>
 
         <service
-            android:name="nl.sense_os.service.feedback.FeedbackChecker"
-            android:process="nl.sense_os.service">
+            android:name="nl.sense_os.service.feedback.FeedbackChecker">
             <intent-filter>
                 <action
                     android:name="nl.sense_os.service.DoCheckFeedback" />
