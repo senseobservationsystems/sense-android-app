@@ -14,17 +14,17 @@ public class FeedbackRx extends BroadcastReceiver {
     public static final String ACTION_CHECK_FEEDBACK = "nl.sense_os.service.CheckFeedback";
     public static final int REQ_CHECK_FEEDBACK = 2;
 
-    public int periodCheckSensor = 0;
-    public String sensorName = null;
-    public String actionAfterCheck = null;
+    //public int periodCheckSensor = 0;
+    //public String sensorName = null;
+    //public String actionAfterCheck = null;
     
     @Override
     public void onReceive(Context context, Intent intent) {
     	Log.e(TAG, "onReceive");
 
-    	periodCheckSensor 	= intent.getIntExtra("period", (1000 * 60 * 2));
-    	sensorName 			= intent.getStringExtra("sensor_name");
-    	actionAfterCheck 	= intent.getStringExtra("broadcast_after");
+    	int periodCheckSensor 	= intent.getIntExtra("period", (1000 * 60 * 2));
+    	String sensorName 		= intent.getStringExtra("sensor_name");
+    	String actionAfterCheck	= intent.getStringExtra("broadcast_after");
     	
         /* set the next check broadcast */
         final Intent alarmIntent = new Intent(ACTION_CHECK_FEEDBACK);
