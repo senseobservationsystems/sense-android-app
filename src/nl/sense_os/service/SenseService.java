@@ -399,7 +399,7 @@ public class SenseService extends Service {
         startTransmitAlarms();
 
         // start the periodic checks of the feedback sensor
-        startFeedbackChecks();
+        //startFeedbackChecks();
 
         // show notification
         showNotification(false);
@@ -427,7 +427,7 @@ public class SenseService extends Service {
 
         showNotification(true);
 
-        stopFeedbackChecks();
+        //stopFeedbackChecks();
         stopTransmitAlarms();
     }
 
