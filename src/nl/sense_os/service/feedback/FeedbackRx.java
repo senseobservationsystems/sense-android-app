@@ -30,7 +30,7 @@ public class FeedbackRx extends BroadcastReceiver {
         final Intent alarmIntent = new Intent(ACTION_CHECK_FEEDBACK);
         	alarmIntent.putExtra("period", periodCheckSensor);
         	alarmIntent.putExtra("sensor_name", sensorName);
-        	alarmIntent.putExtra("broadcast_after", "actionAfterCheck");
+        	alarmIntent.putExtra("broadcast_after", actionAfterCheck);
         final PendingIntent alarmOp = PendingIntent.getBroadcast(context, REQ_CHECK_FEEDBACK,
                 alarmIntent, 0);
         final long alarmTime = System.currentTimeMillis() + periodCheckSensor;
