@@ -9,7 +9,6 @@ package nl.sense_os.app;
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.DataTransmitter;
 import nl.sense_os.service.ISenseService;
-import nl.sense_os.service.SenseApi;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -47,15 +46,19 @@ public class SenseSettings extends PreferenceActivity {
      * open login dialogs before start, and displays a progress dialog during operation. If the
      * check fails, the login dialog is shown again.
      */
-    private class CheckLoginTask extends AsyncTask<Void, Void, Boolean> {
+    private class CheckLoginTask extends AsyncTask<String, Void, Boolean> {
         private static final String TAG = "CheckLoginTask";
 
         @Override
-        protected Boolean doInBackground(Void... params) {
+        protected Boolean doInBackground(String... params) {
             boolean success = false;
+
+            String username = params[0];
+            String password = params[1];
+
             if (service != null) {
                 try {
-                    success = service.changeLogin();
+                    success = service.changeLogin(username, password);
 
                     // start service
                     if (success) {
@@ -126,15 +129,19 @@ public class SenseSettings extends PreferenceActivity {
      * Clears any open login dialogs before start, and displays a progress dialog during operation.
      * If the check fails, the registration dialog is shown again.
      */
-    private class CheckRegisterTask extends AsyncTask<Void, Void, Boolean> {
+    private class CheckRegisterTask extends AsyncTask<String, Void, Boolean> {
         private static final String TAG = "CheckRegisterTask";
 
         @Override
-        protected Boolean doInBackground(Void... params) {
+        protected Boolean doInBackground(String... params) {
             boolean success = false;
+
+            String username = params[0];
+            String password = params[1];
+
             if (service != null) {
                 try {
-                    success = service.register();
+                    success = service.register(username, password);
 
                     // start service
                     if (success) {
@@ -333,16 +340,8 @@ public class SenseSettings extends PreferenceActivity {
                 final String name = usernameField.getText().toString();
                 final String pass = passField.getText().toString();
 
-                final Editor editor = authPrefs.edit();
-                editor.putString(Constants.PREF_LOGIN_USERNAME, name);
-
-                // put hashed password in the preferences
-                String MD5Pass = SenseApi.hashPassword(pass);
-                editor.putString(Constants.PREF_LOGIN_PASS, MD5Pass);
-                editor.commit();
-
                 // initiate Login
-                new CheckLoginTask().execute();
+                new CheckLoginTask().execute(name, pass);
             }
         });
         builder.setNeutralButton(R.string.button_cancel, null);
@@ -401,19 +400,9 @@ public class SenseSettings extends PreferenceActivity {
 
                 if (pass1.equals(pass2)) {
 
-                    // MD5 hash of password
-                    String MD5Pass = SenseApi.hashPassword(pass1);
-
-                    // store the login value
-                    final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS,
-                            MODE_PRIVATE);
-                    final Editor editor = authPrefs.edit();
-                    editor.putString(Constants.PREF_LOGIN_USERNAME, username);
-                    editor.putString(Constants.PREF_LOGIN_PASS, MD5Pass);
-                    editor.commit();
-
                     // start registration
-                    new CheckRegisterTask().execute();
+                    new CheckRegisterTask().execute(username, pass1);
+
                 } else {
                     Toast.makeText(SenseSettings.this, R.string.toast_reg_pass, Toast.LENGTH_SHORT)
                             .show();
@@ -461,18 +450,18 @@ public class SenseSettings extends PreferenceActivity {
     protected Dialog onCreateDialog(int id) {
         Dialog dialog = null;
         switch (id) {
-        case DIALOG_LOGIN:
-            dialog = createDialogLogin();
-            break;
-        case DIALOG_REGISTER:
-            dialog = createDialogRegister();
-            break;
-        case DIALOG_PROGRESS:
-            dialog = createDialogLoginProgress();
-            break;
-        default:
-            dialog = super.onCreateDialog(id);
-            break;
+            case DIALOG_LOGIN :
+                dialog = createDialogLogin();
+                break;
+            case DIALOG_REGISTER :
+                dialog = createDialogRegister();
+                break;
+            case DIALOG_PROGRESS :
+                dialog = createDialogLoginProgress();
+                break;
+            default :
+                dialog = super.onCreateDialog(id);
+                break;
         }
         return dialog;
     }
@@ -481,14 +470,14 @@ public class SenseSettings extends PreferenceActivity {
     protected void onPrepareDialog(int id, Dialog dialog) {
         // make sure the service is started when we try to register or log in
         switch (id) {
-        case DIALOG_LOGIN:
-            bindToSenseService(true);
-            break;
-        case DIALOG_REGISTER:
-            bindToSenseService(true);
-            break;
-        default:
-            break;
+            case DIALOG_LOGIN :
+                bindToSenseService(true);
+                break;
+            case DIALOG_REGISTER :
+                bindToSenseService(true);
+                break;
+            default :
+                break;
         }
     }
 
@@ -500,20 +489,20 @@ public class SenseSettings extends PreferenceActivity {
 
     private void onSampleRateChange(Preference pref, String newValue) {
         switch (Integer.parseInt(newValue)) {
-        case -2: // real time
-            pref.setSummary("Current setting: Real-time");
-            break;
-        case -1: // often
-            pref.setSummary("Current setting: Often");
-            break;
-        case 0: // normal
-            pref.setSummary("Current setting: Normal");
-            break;
-        case 1: // rarely
-            pref.setSummary("Current setting: Rarely");
-            break;
-        default:
-            pref.setSummary("ERROR");
+            case -2 : // real time
+                pref.setSummary("Current setting: Real-time");
+                break;
+            case -1 : // often
+                pref.setSummary("Current setting: Often");
+                break;
+            case 0 : // normal
+                pref.setSummary("Current setting: Normal");
+                break;
+            case 1 : // rarely
+                pref.setSummary("Current setting: Rarely");
+                break;
+            default :
+                pref.setSummary("ERROR");
         }
 
         // restart service if it was running
@@ -535,20 +524,20 @@ public class SenseSettings extends PreferenceActivity {
 
     private void onSyncRateChange(Preference pref, String newValue) {
         switch (Integer.parseInt(newValue)) {
-        case -2: // real time
-            pref.setSummary("Real-time connection with CommonSense");
-            break;
-        case -1: // often
-            pref.setSummary("Sync with CommonSense every 5 secs");
-            break;
-        case 0: // normal
-            pref.setSummary("Sync with CommonSense every minute");
-            break;
-        case 1: // rarely
-            pref.setSummary("Sync with CommonSense every hour (Eco-mode)");
-            break;
-        default:
-            pref.setSummary("ERROR");
+            case -2 : // real time
+                pref.setSummary("Real-time connection with CommonSense");
+                break;
+            case -1 : // often
+                pref.setSummary("Sync with CommonSense every 5 secs");
+                break;
+            case 0 : // normal
+                pref.setSummary("Sync with CommonSense every minute");
+                break;
+            case 1 : // rarely
+                pref.setSummary("Sync with CommonSense every hour (Eco-mode)");
+                break;
+            default :
+                pref.setSummary("ERROR");
         }
 
         // re-set sync alarm

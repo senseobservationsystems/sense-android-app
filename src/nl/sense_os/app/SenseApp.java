@@ -45,21 +45,25 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class SenseApp extends Activity {
+
     /**
      * AsyncTask to check the login data with CommonSense. Takes no arguments to execute. Clears any
      * open login dialogs before start, and displays a progress dialog during operation. If the
      * check fails, the login dialog is shown again.
      */
-    private class CheckLoginTask extends AsyncTask<Void, Void, Boolean> {
+    private class CheckLoginTask extends AsyncTask<String, Void, Boolean> {
         private static final String TAG = "CheckLoginTask";
 
         @Override
-        protected Boolean doInBackground(Void... params) {
-
+        protected Boolean doInBackground(String... params) {
             boolean success = false;
+
+            String username = params[0];
+            String password = params[1];
+
             if (SenseApp.this.service != null) {
                 try {
-                    success = SenseApp.this.service.changeLogin();
+                    success = SenseApp.this.service.changeLogin(username, password);
 
                     // start sensing after the login
                     if (success) {
@@ -99,7 +103,7 @@ public class SenseApp extends Activity {
                 // toggleAmbience(true);
             }
 
-            updateUi();
+            checkServiceStatus();
         }
 
         @Override
@@ -120,15 +124,18 @@ public class SenseApp extends Activity {
      * Clears any open login dialogs before start, and displays a progress dialog during operation.
      * If the check fails, the registration dialog is shown again.
      */
-    private class CheckRegisterTask extends AsyncTask<Void, Void, Boolean> {
+    private class CheckRegisterTask extends AsyncTask<String, Void, Boolean> {
         private static final String TAG = "CheckRegisterTask";
 
         @Override
-        protected Boolean doInBackground(Void... params) {
+        protected Boolean doInBackground(String... params) {
             boolean success = false;
+
+            String username = params[0];
+            String password = params[1];
             if (service != null) {
                 try {
-                    success = service.register();
+                    success = service.register(username, password);
 
                     // start sensing after the very first login
                     if (success) {
@@ -167,7 +174,7 @@ public class SenseApp extends Activity {
                 togglePhoneState(true);
             }
 
-            updateUi();
+            checkServiceStatus();
         }
 
         @Override
@@ -230,7 +237,7 @@ public class SenseApp extends Activity {
                 }
             });
 
-            updateUi();
+            checkServiceStatus();
         }
 
         @Override
@@ -381,7 +388,7 @@ public class SenseApp extends Activity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    updateUi();
+                    checkServiceStatus();
                 }
             });
         }
@@ -398,7 +405,7 @@ public class SenseApp extends Activity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    updateUi();
+                    checkServiceStatus();
                 }
             });
         }
@@ -521,16 +528,8 @@ public class SenseApp extends Activity {
                 final String name = usernameField.getText().toString();
                 final String pass = passField.getText().toString();
 
-                final Editor editor = authPrefs.edit();
-                editor.putString(Constants.PREF_LOGIN_USERNAME, name);
-
-                // put md5 string
-                String MD5Pass = SenseApi.hashPassword(pass);
-                editor.putString(Constants.PREF_LOGIN_PASS, MD5Pass);
-                editor.commit();
-
                 // initiate Login
-                new CheckLoginTask().execute();
+                new CheckLoginTask().execute(name, pass);
             }
         });
         builder.setNeutralButton(R.string.button_cancel, null);
@@ -836,7 +835,7 @@ public class SenseApp extends Activity {
             showDialog(DIALOG_UPDATE_ALERT);
         }
 
-        updateUi();
+        checkServiceStatus();
     }
 
     private void toggleDeviceProx(boolean active) {
@@ -1194,10 +1193,10 @@ public class SenseApp extends Activity {
     }
 
     /**
-     * Updates the ToggleButtons showing the service's state by calling <code>getStatus</code> on
-     * the service. This will generate a callback that updates the buttons.
+     * Calls <code>getStatus</code> on the service. This will generate a callback that updates the
+     * buttons ToggleButtons showing the service's state.
      */
-    private void updateUi() {
+    private void checkServiceStatus() {
         if (null != this.service) {
             try {
                 // request status report
@@ -1210,7 +1209,7 @@ public class SenseApp extends Activity {
             try {
                 this.callback.statusReport(0);
             } catch (RemoteException e) {
-                Log.e(TAG, "RemoteException calling callback directly. ", e);
+                Log.e(TAG, "RemoteException! Calling callback directly. ", e);
             }
         }
     }

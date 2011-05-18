@@ -17,7 +17,6 @@ import nl.sense_os.service.ambience.NoiseSensor;
 import nl.sense_os.service.deviceprox.DeviceProximity;
 import nl.sense_os.service.external_sensors.ZephyrBioHarness;
 import nl.sense_os.service.external_sensors.ZephyrHxM;
-import nl.sense_os.service.feedback.FeedbackRx;
 import nl.sense_os.service.location.LocationSensor;
 import nl.sense_os.service.motion.MotionSensor;
 import nl.sense_os.service.phonestate.BatterySensor;
@@ -124,8 +123,8 @@ public class SenseService extends Service {
     private class SenseServiceStub extends ISenseService.Stub {
 
         @Override
-        public boolean changeLogin() throws RemoteException {
-            return SenseService.this.changeLogin();
+        public boolean changeLogin(String username, String password) throws RemoteException {
+            return SenseService.this.changeLogin(username, password);
         }
 
         @Override
@@ -138,8 +137,8 @@ public class SenseService extends Service {
         }
 
         @Override
-        public boolean register() throws RemoteException {
-            return SenseService.this.register();
+        public boolean register(String username, String password) throws RemoteException {
+            return SenseService.this.register(username, password);
         }
 
         @Override
@@ -215,7 +214,7 @@ public class SenseService extends Service {
      * 
      * @return <code>true</code> if login was changed successfully
      */
-    private boolean changeLogin() {
+    private boolean changeLogin(String username, String password) {
 
         // log out before changing to a new user
         onLogOut();
@@ -223,6 +222,12 @@ public class SenseService extends Service {
         // clear cached settings of the previous user (i.e. device id)
         final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
         final Editor editor = authPrefs.edit();
+
+        // save new username and password in the preferences
+        editor.putString(Constants.PREF_LOGIN_USERNAME, username);
+        editor.putString(Constants.PREF_LOGIN_PASS, SenseApi.hashPassword(password));
+
+        // remove old session data
         editor.remove(Constants.PREF_DEVICE_ID);
         editor.remove(Constants.PREF_DEVICE_TYPE);
         editor.remove(Constants.PREF_LOGIN_COOKIE);
@@ -492,7 +497,7 @@ public class SenseService extends Service {
      * 
      * @return <code>true</code> if successful.
      */
-    private boolean register() {
+    private boolean register(String username, String password) {
 
         // log out before registering a new user
         onLogOut();
@@ -500,15 +505,17 @@ public class SenseService extends Service {
         // clear cached settings of the previous user (i.e. device id)
         final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
         final Editor authEditor = authPrefs.edit();
+
+        // save username and password in preferences
+        authEditor.putString(Constants.PREF_LOGIN_USERNAME, username);
+        authEditor.putString(Constants.PREF_LOGIN_PASS, SenseApi.hashPassword(password));
+
+        // remove old session data
         authEditor.remove(Constants.PREF_DEVICE_ID);
         authEditor.remove(Constants.PREF_DEVICE_TYPE);
         authEditor.remove(Constants.PREF_LOGIN_COOKIE);
         authEditor.remove(Constants.PREF_SENSOR_LIST);
         authEditor.commit();
-
-        // get login parameters for the new user from the preferences
-        final String username = authPrefs.getString(Constants.PREF_LOGIN_USERNAME, null);
-        final String password = authPrefs.getString(Constants.PREF_LOGIN_PASS, null);
 
         // try to register
         if ((null != username) && (null != password)) {
@@ -609,13 +616,14 @@ public class SenseService extends Service {
      * after successful login.
      */
     private void startFeedbackChecks() {
-        final Intent alarmIntent = new Intent(FeedbackRx.ACTION_CHECK_FEEDBACK);
-        final PendingIntent alarmOp = PendingIntent.getBroadcast(this,
-                FeedbackRx.REQ_CHECK_FEEDBACK, alarmIntent, 0);
-        final long alarmTime = System.currentTimeMillis() + 1000 * 10;
-        final AlarmManager mgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        mgr.cancel(alarmOp);
-        mgr.set(AlarmManager.RTC_WAKEUP, alarmTime, alarmOp);
+        // feedback checking does not have to be active by default
+        /*
+         * final Intent alarmIntent = new Intent(FeedbackRx.ACTION_CHECK_FEEDBACK); final
+         * PendingIntent alarmOp = PendingIntent.getBroadcast(this, FeedbackRx.REQ_CHECK_FEEDBACK,
+         * alarmIntent, 0); final long alarmTime = System.currentTimeMillis() + 1000 * 10; final
+         * AlarmManager mgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+         * mgr.cancel(alarmOp); mgr.set(AlarmManager.RTC_WAKEUP, alarmTime, alarmOp);
+         */
     }
 
     /**
@@ -627,7 +635,7 @@ public class SenseService extends Service {
         startAliveChecks();
 
         @SuppressWarnings("rawtypes")
-        final Class[] startForegroundSignature = new Class[] { int.class, Notification.class };
+        final Class[] startForegroundSignature = new Class[]{int.class, Notification.class};
         Method startForeground = null;
         try {
             startForeground = getClass().getMethod("startForeground", startForegroundSignature);
@@ -649,7 +657,7 @@ public class SenseService extends Service {
             final PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notifIntent, 0);
             n.setLatestEventInfo(this, "Sense service", "", contentIntent);
 
-            Object[] startArgs = { Integer.valueOf(NOTIF_ID), n };
+            Object[] startArgs = {Integer.valueOf(NOTIF_ID), n};
             try {
                 startForeground.invoke(this, startArgs);
             } catch (InvocationTargetException e) {
@@ -738,11 +746,13 @@ public class SenseService extends Service {
      * Stops the periodic checks for feedback from CommonSense.
      */
     private void stopFeedbackChecks() {
-        final Intent alarmIntent = new Intent(FeedbackRx.ACTION_CHECK_FEEDBACK);
-        final PendingIntent alarmOp = PendingIntent.getBroadcast(this,
-                FeedbackRx.REQ_CHECK_FEEDBACK, alarmIntent, 0);
-        final AlarmManager mgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        mgr.cancel(alarmOp);
+        // feedback checking does not have to be active by default
+        /*
+         * final Intent alarmIntent = new Intent(FeedbackRx.ACTION_CHECK_FEEDBACK); final
+         * PendingIntent alarmOp = PendingIntent.getBroadcast(this, FeedbackRx.REQ_CHECK_FEEDBACK,
+         * alarmIntent, 0); final AlarmManager mgr = (AlarmManager)
+         * getSystemService(Context.ALARM_SERVICE); mgr.cancel(alarmOp);
+         */
     }
 
     /**
@@ -754,7 +764,7 @@ public class SenseService extends Service {
         stopAliveChecks();
 
         @SuppressWarnings("rawtypes")
-        final Class[] stopForegroundSignature = new Class[] { boolean.class };
+        final Class[] stopForegroundSignature = new Class[]{boolean.class};
         Method stopForeground = null;
         try {
             stopForeground = getClass().getMethod("stopForeground", stopForegroundSignature);
@@ -771,7 +781,7 @@ public class SenseService extends Service {
         if (stopForeground == null) {
             setForeground(false);
         } else {
-            Object[] stopArgs = { Boolean.TRUE };
+            Object[] stopArgs = {Boolean.TRUE};
             try {
                 stopForeground.invoke(this, stopArgs);
             } catch (InvocationTargetException e) {
@@ -849,20 +859,20 @@ public class SenseService extends Service {
                         "0"));
                 int interval = -1;
                 switch (rate) {
-                case -2: // real time
-                    interval = -1;
-                    break;
-                case -1: // often
-                    interval = 10 * 1000;
-                    break;
-                case 0: // normal
-                    interval = 60 * 1000;
-                    break;
-                case 1: // rarely (15 minutes)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected sample rate preference.");
+                    case -2 : // real time
+                        interval = -1;
+                        break;
+                    case -1 : // often
+                        interval = 10 * 1000;
+                        break;
+                    case 0 : // normal
+                        interval = 60 * 1000;
+                        break;
+                    case 1 : // rarely (15 minutes)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected sample rate preference.");
                 }
                 final int finalInterval = interval;
 
@@ -922,23 +932,23 @@ public class SenseService extends Service {
                         "0"));
                 int interval = 1;
                 switch (rate) {
-                case -2:
-                    interval = 1 * 1000;
-                    break;
-                case -1:
-                    // often
-                    interval = 15 * 1000;
-                    break;
-                case 0:
-                    // normal
-                    interval = 60 * 1000;
-                    break;
-                case 1:
-                    // rarely (15 hour)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected device proximity rate preference.");
+                    case -2 :
+                        interval = 1 * 1000;
+                        break;
+                    case -1 :
+                        // often
+                        interval = 15 * 1000;
+                        break;
+                    case 0 :
+                        // normal
+                        interval = 60 * 1000;
+                        break;
+                    case 1 :
+                        // rarely (15 hour)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected device proximity rate preference.");
                 }
                 final int finalInterval = interval;
 
@@ -995,24 +1005,24 @@ public class SenseService extends Service {
                         "0"));
                 int interval = 1;
                 switch (rate) {
-                case -2:
-                    interval = 1 * 1000;
-                    break;
-                case -1:
-                    // often
-                    interval = 5 * 1000;
-                    break;
-                case 0:
-                    // normal
-                    interval = 60 * 1000;
-                    break;
-                case 1:
-                    // rarely (15 minutes)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected external sensor rate preference.");
-                    return;
+                    case -2 :
+                        interval = 1 * 1000;
+                        break;
+                    case -1 :
+                        // often
+                        interval = 5 * 1000;
+                        break;
+                    case 0 :
+                        // normal
+                        interval = 60 * 1000;
+                        break;
+                    case 1 :
+                        // rarely (15 minutes)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected external sensor rate preference.");
+                        return;
                 }
                 final int finalInterval = interval;
 
@@ -1075,25 +1085,25 @@ public class SenseService extends Service {
                 long minTime = -1;
                 float minDistance = -1;
                 switch (rate) {
-                case -2: // real-time
-                    minTime = 1000;
-                    minDistance = 0;
-                    break;
-                case -1: // often
-                    minTime = 15 * 1000;
-                    minDistance = 10;
-                    break;
-                case 0: // normal
-                    minTime = 60 * 1000;
-                    minDistance = 25;
-                    break;
-                case 1: // rarely
-                    minTime = 15 * 60 * 1000;
-                    minDistance = 25;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                    break;
+                    case -2 : // real-time
+                        minTime = 1000;
+                        minDistance = 0;
+                        break;
+                    case -1 : // often
+                        minTime = 15 * 1000;
+                        minDistance = 10;
+                        break;
+                    case 0 : // normal
+                        minTime = 60 * 1000;
+                        minDistance = 25;
+                        break;
+                    case 1 : // rarely
+                        minTime = 15 * 60 * 1000;
+                        minDistance = 25;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                        break;
                 }
 
                 // check if any providers are selected in the preferences
@@ -1154,21 +1164,21 @@ public class SenseService extends Service {
                         "0"));
                 int interval = -1;
                 switch (rate) {
-                case -2: // real time
-                    interval = 0;
-                    break;
-                case -1: // often
-                    interval = 5 * 1000;
-                    break;
-                case 0: // normal
-                    interval = 60 * 1000;
-                    break;
-                case 1: // rarely (15 minutes)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                    break;
+                    case -2 : // real time
+                        interval = 0;
+                        break;
+                    case -1 : // often
+                        interval = 5 * 1000;
+                        break;
+                    case 0 : // normal
+                        interval = 60 * 1000;
+                        break;
+                    case 1 : // rarely (15 minutes)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                        break;
                 }
                 final int finalInterval = interval;
 
@@ -1244,21 +1254,21 @@ public class SenseService extends Service {
                         "0"));
                 int interval = -1;
                 switch (rate) {
-                case -2: // real time
-                    interval = 0;
-                    break;
-                case -1: // often
-                    interval = 5 * 1000;
-                    break;
-                case 0: // normal
-                    interval = 60 * 1000;
-                    break;
-                case 1: // rarely (15 minutes)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                    break;
+                    case -2 : // real time
+                        interval = 0;
+                        break;
+                    case -1 : // often
+                        interval = 5 * 1000;
+                        break;
+                    case 0 : // normal
+                        interval = 60 * 1000;
+                        break;
+                    case 1 : // rarely (15 minutes)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                        break;
                 }
                 final int finalInterval = interval;
 
