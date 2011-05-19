@@ -29,7 +29,6 @@ public class FeedbackChecker extends IntentService {
 	}
 
 	private void checkFeedback(String sensorName, String actionAfterCheck) {
-		Log.e(TAG, "checkFeedback");
 
 		String url = getFeedbackUrl(sensorName);
 
@@ -63,8 +62,6 @@ public class FeedbackChecker extends IntentService {
 	 * @return URL of the feedback sensor for this user on CommonSense
 	 */
 	private String getFeedbackUrl(String sensor_name) {
-		//Log.e(TAG, sensor_name);
-		Log.e(TAG, "getFeedbackUrl");
 
 		// prepare dummy JSON object as value to create new feedback sensor
 		Map<String, Object> jsonValues = new HashMap<String, Object>();
@@ -122,14 +119,11 @@ public class FeedbackChecker extends IntentService {
 	 */
 	@Override
 	protected void onHandleIntent(Intent intent) {
-		Log.e(TAG, "onHandleIntent");
-
 		String action = intent.getAction();
 		if (action.equals(ACTION_CHECK_FEEDBACK)) {
 			String sensorName = intent.getStringExtra("sensor_name");
 			String actionAfterCheck = intent.getStringExtra("broadcast_after");
 			checkFeedback(sensorName, actionAfterCheck);
-			Log.e(TAG, "SensorName: " + sensorName);
 		} else {
 			Log.w(TAG, "Unexpected intent action: \'" + action + "\'");
 		}
@@ -245,7 +239,6 @@ public class FeedbackChecker extends IntentService {
 	 * 
 	 */
 	private void sendFeedback(JSONObject json, String actionAfterCheck) {
-		Log.e(TAG, "sendFeedback");
 		Intent sendIntent = new Intent(actionAfterCheck);
 		String jsonString = json.toString();
 		sendIntent.putExtra("json", jsonString);

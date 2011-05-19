@@ -16,7 +16,6 @@ public class FeedbackRx extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-    	Log.e(TAG, "onReceive");
 
     	int periodCheckSensor 	= intent.getIntExtra("period", (1000 * 60 * 2));
     	String sensorName 		= intent.getStringExtra("sensor_name");
@@ -41,7 +40,6 @@ public class FeedbackRx extends BroadcastReceiver {
         Intent checkFeedback = new Intent(FeedbackChecker.ACTION_CHECK_FEEDBACK);
         checkFeedback.putExtra("sensor_name", sensorName);
         checkFeedback.putExtra("broadcast_after", actionAfterCheck);
-        Log.e(TAG, "SensorName Rx: " + sensorName);
         
         ComponentName component = context.startService(checkFeedback);
         
