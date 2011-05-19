@@ -9,7 +9,6 @@ package nl.sense_os.app;
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.ISenseService;
 import nl.sense_os.service.ISenseServiceCallback;
-import nl.sense_os.service.SenseApi;
 import nl.sense_os.service.SenseService;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -583,18 +582,9 @@ public class SenseApp extends Activity {
 
                 if (pass1.equals(pass2)) {
 
-                    String MD5Pass = SenseApi.hashPassword(pass1);
-
-                    // store the login value
-                    final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS,
-                            MODE_PRIVATE);
-                    final Editor editor = authPrefs.edit();
-                    editor.putString(Constants.PREF_LOGIN_USERNAME, username);
-                    editor.putString(Constants.PREF_LOGIN_PASS, MD5Pass);
-                    editor.commit();
-
                     // start registration
-                    new CheckRegisterTask().execute();
+                    new CheckRegisterTask().execute(username, pass1);
+
                 } else {
                     Toast.makeText(SenseApp.this, R.string.toast_reg_pass, Toast.LENGTH_SHORT)
                             .show();
