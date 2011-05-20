@@ -404,7 +404,7 @@ public class SenseService extends Service {
         startTransmitAlarms();
 
         // start the periodic checks of the feedback sensor
-        //startFeedbackChecks();
+        // startFeedbackChecks();
 
         // show notification
         showNotification(false);
@@ -432,7 +432,7 @@ public class SenseService extends Service {
 
         showNotification(true);
 
-        //stopFeedbackChecks();
+        // stopFeedbackChecks();
         stopTransmitAlarms();
     }
 
@@ -502,13 +502,15 @@ public class SenseService extends Service {
         // log out before registering a new user
         onLogOut();
 
+        String hashPass = SenseApi.hashPassword(password);
+
         // clear cached settings of the previous user (i.e. device id)
         final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
         final Editor authEditor = authPrefs.edit();
 
         // save username and password in preferences
         authEditor.putString(Constants.PREF_LOGIN_USERNAME, username);
-        authEditor.putString(Constants.PREF_LOGIN_PASS, SenseApi.hashPassword(password));
+        authEditor.putString(Constants.PREF_LOGIN_PASS, hashPass);
 
         // remove old session data
         authEditor.remove(Constants.PREF_DEVICE_ID);
@@ -519,9 +521,9 @@ public class SenseService extends Service {
 
         // try to register
         if ((null != username) && (null != password)) {
-            Log.d(TAG, "Registering... Username: " + username + ", password: " + password);
+            Log.d(TAG, "Registering... Username: " + username + ", password hash: " + hashPass);
 
-            boolean registered = SenseApi.register(this, username, password);
+            boolean registered = SenseApi.register(this, username, hashPass);
             if (registered) {
                 login();
             } else {
@@ -529,7 +531,7 @@ public class SenseService extends Service {
             }
         } else {
             Log.w(TAG, "Cannot register: username or password unavailable... Username: " + username
-                    + ", password: " + password);
+                    + ", password hash: " + hashPass);
         }
         return isLoggedIn;
     }
