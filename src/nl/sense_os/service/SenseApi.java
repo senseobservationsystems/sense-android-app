@@ -227,10 +227,11 @@ public class SenseApi {
                     }
                 }
             } else {
-                sensors = new JSONArray();
+                // failed to check commonsense for the sensor ID, give up
+                return null;
             }
 
-            /* Sensor not found, create it at CommonSense */
+            /* Sensor not found in current list of sensors, create it at CommonSense */
 
             // prepare request to create new sensor
             URL url = new URL(Constants.URL_CREATE_SENSOR);
@@ -313,6 +314,7 @@ public class SenseApi {
             return null;
         }
     }
+
     /**
      * @param hashMe
      *            "clear" password String to be hashed before sending it to CommonSense
@@ -408,6 +410,7 @@ public class SenseApi {
             return false;
         }
     }
+
     /**
      * Tries to register a new user at CommonSense. Discards private data of any previous users.
      * 
@@ -467,6 +470,7 @@ public class SenseApi {
         }
         return true;
     }
+
     /**
      * This method sends a JSON object to update or create an item it returns the HTTP-response code
      */
