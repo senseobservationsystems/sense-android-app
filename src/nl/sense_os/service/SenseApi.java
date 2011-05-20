@@ -157,7 +157,7 @@ public class SenseApi {
             int deviceId = getDeviceId(context);
             if (deviceId == -1) {
                 Log.e(TAG, "Cannot get list of sensors: device ID is unknown.");
-                return null;
+                return new JSONArray("{\"sensors\":[]}");
             }
 
             // check cache retention time for the list of sensors
