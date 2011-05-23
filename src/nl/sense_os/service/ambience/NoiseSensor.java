@@ -47,26 +47,26 @@ public class NoiseSensor extends PhoneStateListener {
                 }
 
                 byte[] buffer = new byte[BUFFER_SIZE];
-                                
+
                 int readBytes = 0;
-                if (audioRecord != null) {                	
+                if (audioRecord != null) {
                     readBytes = audioRecord.read(buffer, 0, BUFFER_SIZE);
                 }
-                                
+
                 if (readBytes < 0) {
                     Log.e(TAG, "Error reading AudioRecord buffer: " + readBytes);
                     return -1;
-                }     
-                double ldb = 0;
-                for (int x = 0; x < readBytes-1; x = x+2) {
-                	// it looks like little endian                	
-                	double val = buffer[x+1] << 8 | buffer[x];
-                	ldb += val*val;                	
-                    //dB += Math.abs(buffer[x]);                                    
                 }
-               
-                ldb /= ((double)readBytes/2);                
-                dB = (20.0*Math.log10(Math.sqrt(ldb)));              
+                double ldb = 0;
+                for (int x = 0; x < readBytes - 1; x = x + 2) {
+                    // it looks like little endian
+                    double val = buffer[x + 1] << 8 | buffer[x];
+                    ldb += val * val;
+                    // dB += Math.abs(buffer[x]);
+                }
+
+                ldb /= ((double) readBytes / 2);
+                dB = (20.0 * Math.log10(Math.sqrt(ldb)));
 
             } catch (Exception e) {
                 Log.e(TAG, "Exception calculating noise Db!", e);
@@ -117,7 +117,16 @@ public class NoiseSensor extends PhoneStateListener {
         @Override
         protected void onCancelled() {
             // nothing to do
-            // Log.d(TAG, "Cancelled...");
+            if (null != audioRecord) {
+                try {
+                    audioRecord.stop();
+                } catch (IllegalStateException e) {
+                    // ignore exception: probably was not recording
+                } finally {
+                    audioRecord.release();
+                    audioRecord = null;
+                }
+            }
         }
 
         @Override
@@ -130,7 +139,7 @@ public class NoiseSensor extends PhoneStateListener {
                     @Override
                     public void run() {
 
-                        if (false == isEnabled) {
+                        if (false == isEnabled || isCalling) {
                             // Log.d(TAG, "Did not start noise record task: sensor is disabled...");
                             return;
                         }
@@ -214,7 +223,7 @@ public class NoiseSensor extends PhoneStateListener {
                     @Override
                     public void run() {
 
-                        if (false == isEnabled) {
+                        if (false == isEnabled || isCalling) {
                             // Log.d(TAG, "Did not start noise calc task: sensor is disabled...");
                             return;
                         }
@@ -310,9 +319,10 @@ public class NoiseSensor extends PhoneStateListener {
     private static final String NAME_NOISE = "noise_sensor";
     private static final String NAME_MIC = "microphone";
     private static final int MAX_FILES = 60;
-    private static final int DEFAULT_SAMPLE_RATE = 8000;               
+    private static final int DEFAULT_SAMPLE_RATE = 8000;
     private static final int RECORDING_TIME_NOISE = 2000;
-    private static final int BUFFER_SIZE = DEFAULT_SAMPLE_RATE * 2 * 2; //  samples per second * 2 seconds, 2 bytes
+    private static final int BUFFER_SIZE = DEFAULT_SAMPLE_RATE * 2 * 2; // samples per second * 2
+                                                                        // seconds, 2 bytes
     private static final int RECORDING_TIME_STREAM = 60000;
     private AudioRecord audioRecord;
     private boolean isEnabled = false;
@@ -380,8 +390,7 @@ public class NoiseSensor extends PhoneStateListener {
                     AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE);
         } else {
             audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, DEFAULT_SAMPLE_RATE,
-                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT,
-                    BUFFER_SIZE);
+                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE);
         }
 
         if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
