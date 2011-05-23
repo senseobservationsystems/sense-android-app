@@ -132,6 +132,7 @@ public class SenseApp extends Activity {
 
             String username = params[0];
             String password = params[1];
+
             if (service != null) {
                 try {
                     success = service.register(username, password);
