@@ -75,17 +75,16 @@ public class SenseApi {
             // check if this device is in the list
             if (response != null) {
                 JSONArray deviceList = response.getJSONArray("devices");
-                if (deviceList != null) {
-
+                if (deviceList != null) {                	
                     for (int x = 0; x < deviceList.length(); x++) {
 
                         JSONObject device = deviceList.getJSONObject(x);
                         if (device != null) {
-                            String uuid = device.getString("uuid");
-
-                            // Found the right device if UUID matches IMEI
+                            String uuid = device.getString("uuid");                            
+                            // Found the right device if UUID matches IMEI                            
+                            // found an error when an imei starts with a 
                             if (uuid.equalsIgnoreCase(imei)) {
-
+                            		
                                 // cache device ID in preferences
                                 cachedId = Integer.parseInt(device.getString("id"));
                                 editor.putString(Constants.PREF_DEVICE_TYPE,
@@ -94,19 +93,24 @@ public class SenseApi {
                                 editor.putLong(Constants.PREF_DEVICE_ID_TIME,
                                         System.currentTimeMillis());
                                 editor.remove(Constants.PREF_SENSOR_LIST);
-                                editor.commit();
-
+                                editor.commit();                                
                                 return cachedId;
                             }
                         }
                     }
                 }
+                else
+                {
+                	Log.e(TAG, "Retrieved device list from commonSense is empty");
+                }
             }
-            return -1;
+            else
+            	return -2; // error return -2           
         } catch (Exception e) {
             Log.e(TAG, "Exception determining device ID: " + e.getMessage());
-            return -1;
+            return -2; // error return -2
         }
+        return -1; // not found return -1
     }
     /**
      * @return a JSONObject from the requested URI
@@ -155,9 +159,14 @@ public class SenseApi {
         try {
             // get device ID to use in communication with CommonSense
             int deviceId = getDeviceId(context);
-            if (deviceId == -1) {
+            if (deviceId == -1) { // -1 no device id found, create new one
                 Log.e(TAG, "Cannot get list of sensors: device ID is unknown.");
-                return new JSONArray("{\"sensors\":[]}");
+                return new JSONArray("[]");
+            }
+            else if(deviceId == -2) // -2 error retrieving info from commonSense
+            {
+            	Log.e(TAG, "Connection error while retrieving device ID from commonSense");
+            	return null;
             }
 
             // check cache retention time for the list of sensors
@@ -288,7 +297,9 @@ public class SenseApi {
             postData = new JSONObject();
             JSONObject device = new JSONObject();
             device.put("type", authPrefs.getString(Constants.PREF_DEVICE_TYPE, phoneType));
-            device.put("uuid", authPrefs.getString(Constants.PREF_PHONE_IMEI, "0000000000"));
+            
+            device.put("uuid", authPrefs.getString(Constants.PREF_PHONE_IMEI, "0000000000")); 
+            Log.e(TAG,"IMEI from json:"+device.toString());
             postData.put("device", device);
 
             response = sendJson(url, postData, "POST", cookie);
