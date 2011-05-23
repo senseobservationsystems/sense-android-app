@@ -414,7 +414,7 @@ public class NoiseSensor extends PhoneStateListener {
             pauseListening();
 
             // recording while not calling is disabled
-            if (isEnabled && state == TelephonyManager.CALL_STATE_IDLE) {
+            if (isEnabled && state == TelephonyManager.CALL_STATE_IDLE && !isCalling) {
                 startListening();
             }
         } catch (Exception e) {
