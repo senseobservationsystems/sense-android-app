@@ -218,50 +218,64 @@ public class SenseSettings extends PreferenceActivity {
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
 
-            final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
-                    MODE_WORLD_WRITEABLE);
-            final Editor editor = mainPrefs.edit();
+            if (key.equals(Constants.PREF_AUTOSTART)) {
+                Log.d(TAG, "Autostart preference changed!");
 
-            // put the new preference in the MAIN_PREFS, so the Sense service can access it
-            try {
-                String value = sharedPreferences.getString(key, "");
-                editor.putString(key, value);
+                final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
+                        MODE_WORLD_WRITEABLE);
+                final Editor editor = statusPrefs.edit();
+
+                boolean autostart = sharedPreferences.getBoolean(key, false);
+                editor.putBoolean(key, autostart);
                 editor.commit();
-                return;
-            } catch (ClassCastException e) {
-                // do nothing, try another preference type
-            }
-            try {
-                boolean value = sharedPreferences.getBoolean(key, false);
-                editor.putBoolean(key, value);
-                editor.commit();
-                return;
-            } catch (ClassCastException e) {
-                // do nothing, try another preference type
-            }
-            try {
-                float value = sharedPreferences.getFloat(key, 0f);
-                editor.putFloat(key, value);
-                editor.commit();
-                return;
-            } catch (ClassCastException e) {
-                // do nothing, try another preference type
-            }
-            try {
-                int value = sharedPreferences.getInt(key, 0);
-                editor.putInt(key, value);
-                editor.commit();
-                return;
-            } catch (ClassCastException e) {
-                // do nothing, try another preference type
-            }
-            try {
-                long value = sharedPreferences.getLong(key, 0l);
-                editor.putLong(key, value);
-                editor.commit();
-                return;
-            } catch (ClassCastException e) {
-                Log.e(TAG, "Can't read new preference setting!");
+
+            } else {
+
+                final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                        MODE_WORLD_WRITEABLE);
+                final Editor editor = mainPrefs.edit();
+
+                // put the new preference in the MAIN_PREFS, so the Sense service can access it
+                try {
+                    String value = sharedPreferences.getString(key, "");
+                    editor.putString(key, value);
+                    editor.commit();
+                    return;
+                } catch (ClassCastException e) {
+                    // do nothing, try another preference type
+                }
+                try {
+                    boolean value = sharedPreferences.getBoolean(key, false);
+                    editor.putBoolean(key, value);
+                    editor.commit();
+                    return;
+                } catch (ClassCastException e) {
+                    // do nothing, try another preference type
+                }
+                try {
+                    float value = sharedPreferences.getFloat(key, 0f);
+                    editor.putFloat(key, value);
+                    editor.commit();
+                    return;
+                } catch (ClassCastException e) {
+                    // do nothing, try another preference type
+                }
+                try {
+                    int value = sharedPreferences.getInt(key, 0);
+                    editor.putInt(key, value);
+                    editor.commit();
+                    return;
+                } catch (ClassCastException e) {
+                    // do nothing, try another preference type
+                }
+                try {
+                    long value = sharedPreferences.getLong(key, 0l);
+                    editor.putLong(key, value);
+                    editor.commit();
+                    return;
+                } catch (ClassCastException e) {
+                    Log.e(TAG, "Can't read new preference setting!");
+                }
             }
         }
     };
@@ -450,18 +464,18 @@ public class SenseSettings extends PreferenceActivity {
     protected Dialog onCreateDialog(int id) {
         Dialog dialog = null;
         switch (id) {
-            case DIALOG_LOGIN :
-                dialog = createDialogLogin();
-                break;
-            case DIALOG_REGISTER :
-                dialog = createDialogRegister();
-                break;
-            case DIALOG_PROGRESS :
-                dialog = createDialogLoginProgress();
-                break;
-            default :
-                dialog = super.onCreateDialog(id);
-                break;
+        case DIALOG_LOGIN:
+            dialog = createDialogLogin();
+            break;
+        case DIALOG_REGISTER:
+            dialog = createDialogRegister();
+            break;
+        case DIALOG_PROGRESS:
+            dialog = createDialogLoginProgress();
+            break;
+        default:
+            dialog = super.onCreateDialog(id);
+            break;
         }
         return dialog;
     }
@@ -470,14 +484,14 @@ public class SenseSettings extends PreferenceActivity {
     protected void onPrepareDialog(int id, Dialog dialog) {
         // make sure the service is started when we try to register or log in
         switch (id) {
-            case DIALOG_LOGIN :
-                bindToSenseService(true);
-                break;
-            case DIALOG_REGISTER :
-                bindToSenseService(true);
-                break;
-            default :
-                break;
+        case DIALOG_LOGIN:
+            bindToSenseService(true);
+            break;
+        case DIALOG_REGISTER:
+            bindToSenseService(true);
+            break;
+        default:
+            break;
         }
     }
 
@@ -489,20 +503,20 @@ public class SenseSettings extends PreferenceActivity {
 
     private void onSampleRateChange(Preference pref, String newValue) {
         switch (Integer.parseInt(newValue)) {
-            case -2 : // real time
-                pref.setSummary("Current setting: Real-time");
-                break;
-            case -1 : // often
-                pref.setSummary("Current setting: Often");
-                break;
-            case 0 : // normal
-                pref.setSummary("Current setting: Normal");
-                break;
-            case 1 : // rarely
-                pref.setSummary("Current setting: Rarely");
-                break;
-            default :
-                pref.setSummary("ERROR");
+        case -2: // real time
+            pref.setSummary("Current setting: Real-time");
+            break;
+        case -1: // often
+            pref.setSummary("Current setting: Often");
+            break;
+        case 0: // normal
+            pref.setSummary("Current setting: Normal");
+            break;
+        case 1: // rarely
+            pref.setSummary("Current setting: Rarely");
+            break;
+        default:
+            pref.setSummary("ERROR");
         }
 
         // restart service if it was running
@@ -524,20 +538,20 @@ public class SenseSettings extends PreferenceActivity {
 
     private void onSyncRateChange(Preference pref, String newValue) {
         switch (Integer.parseInt(newValue)) {
-            case -2 : // real time
-                pref.setSummary("Real-time connection with CommonSense");
-                break;
-            case -1 : // often
-                pref.setSummary("Sync with CommonSense every 5 secs");
-                break;
-            case 0 : // normal
-                pref.setSummary("Sync with CommonSense every minute");
-                break;
-            case 1 : // rarely
-                pref.setSummary("Sync with CommonSense every hour (Eco-mode)");
-                break;
-            default :
-                pref.setSummary("ERROR");
+        case -2: // real time
+            pref.setSummary("Real-time connection with CommonSense");
+            break;
+        case -1: // often
+            pref.setSummary("Sync with CommonSense every 5 secs");
+            break;
+        case 0: // normal
+            pref.setSummary("Sync with CommonSense every minute");
+            break;
+        case 1: // rarely
+            pref.setSummary("Sync with CommonSense every hour (Eco-mode)");
+            break;
+        default:
+            pref.setSummary("ERROR");
         }
 
         // re-set sync alarm
@@ -648,6 +662,8 @@ public class SenseSettings extends PreferenceActivity {
         ComponentName name = startService(serviceIntent);
         if (null == name) {
             Log.w(TAG, "Failed to start Sense service");
+        } else {
+            Log.d(TAG, "Started Sense service");
         }
     }
 
