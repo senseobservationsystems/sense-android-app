@@ -26,7 +26,7 @@
         android:name="android.permission.PROCESS_OUTGOING_CALLS" />
     <uses-permission
         android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"></uses-permission><uses-permission
         android:name="android.permission.RECORD_AUDIO" />
     <uses-permission
         android:name="android.permission.VIBRATE" />
@@ -46,6 +46,7 @@
         android:normalScreens="true"
         android:largeScreens="true"
         android:anyDensity="true" />
+    
 
     <application
         android:label="@string/sense_app_name"
@@ -54,7 +55,8 @@
         <activity
             android:configChanges="orientation"
             android:name="SenseApp"
-            android:theme="@android:style/Theme.Light">
+            android:theme="@android:style/Theme.Light"
+            android:process="nl.sense_os.app">
             <intent-filter>
                 <action
                     android:name="android.intent.action.MAIN" />
@@ -71,7 +73,8 @@
 
         <activity
             android:configChanges="orientation"
-            android:name="SenseSettings">
+            android:name="SenseSettings"
+            android:process="nl.sense_os.app">
             <intent-filter>
                 <action
                     android:name="nl.sense_os.app.Settings" />
@@ -82,7 +85,8 @@
 
         <activity
             android:name="nl.sense_os.service.popquiz.PopQuiz"
-            android:configChanges="orientation">
+            android:configChanges="orientation"
+            android:process="nl.sense_os.service">
             <intent-filter>
                 <action
                     android:name="nl.sense_os.service.DoPeriodic" />
@@ -92,7 +96,8 @@
         </activity>
 
         <service
-            android:name="nl.sense_os.service.SenseService">
+            android:name="nl.sense_os.service.SenseService"
+            android:process="nl.sense_os.service">
             <intent-filter>
                 <action
                     android:name="nl.sense_os.service.ISenseService" />
@@ -100,7 +105,8 @@
         </service>
 
         <service
-            android:name="nl.sense_os.service.MsgHandler">
+            android:name="nl.sense_os.service.MsgHandler"
+            android:process="nl.sense_os.service">
             <intent-filter>
                 <action
                     android:name="nl.sense_os.app.MsgHandler.NEW_MSG" />
@@ -116,7 +122,8 @@
         </service>
 
         <service
-            android:name="nl.sense_os.service.feedback.FeedbackChecker">
+            android:name="nl.sense_os.service.feedback.FeedbackChecker"
+            android:process="nl.sense_os.service">
             <intent-filter>
                 <action
                     android:name="nl.sense_os.service.DoCheckFeedback" />
@@ -126,7 +133,8 @@
         </service>
 
         <receiver
-            android:name="nl.sense_os.service.popquiz.PopQuizRx">
+            android:name="nl.sense_os.service.popquiz.PopQuizRx"
+            android:process="nl.sense_os.service">
             <intent-filter>
                 <action
                     android:name="nl.sense_os.service.AlarmPeriodic" />
@@ -136,7 +144,8 @@
         </receiver>
 
         <receiver
-            android:name="nl.sense_os.service.popquiz.PopQuizSync">
+            android:name="nl.sense_os.service.popquiz.PopQuizSync"
+            android:process="nl.sense_os.service">
             <intent-filter>
                 <action
                     android:name="nl.sense_os.service.AlarmPopQuestionUpdate" />
@@ -146,7 +155,8 @@
         </receiver>
 
         <receiver
-            android:name="nl.sense_os.service.BootRx">
+            android:name="nl.sense_os.service.BootRx"
+            android:process="nl.sense_os.service">
             <intent-filter>
                 <action
                     android:name="android.intent.action.BOOT_COMPLETED" />
@@ -156,7 +166,8 @@
         </receiver>
 
         <receiver
-            android:name="nl.sense_os.service.AliveChecker">
+            android:name="nl.sense_os.service.AliveChecker"
+            android:process="nl.sense_os.service">
             <intent-filter>
                 <action
                     android:name="nl.sense_os.service.CheckAlive" />
@@ -166,7 +177,8 @@
         </receiver>
 
         <receiver
-            android:name="nl.sense_os.service.feedback.FeedbackRx">
+            android:name="nl.sense_os.service.feedback.FeedbackRx"
+            android:process="nl.sense_os.service">
             <intent-filter>
                 <action
                     android:name="nl.sense_os.service.CheckFeedback" />
@@ -176,7 +188,8 @@
         </receiver>
 
         <receiver
-            android:name="nl.sense_os.service.DataTransmitter" />
+            android:name="nl.sense_os.service.DataTransmitter"
+            android:process="nl.sense_os.service" />
 
     </application>
 
