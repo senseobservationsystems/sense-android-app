@@ -2,15 +2,15 @@
 <resources>
     <string-array name="pref_sync_rate_keys">
         <item>Real-Time</item>
-        <item>Often (every 5 seconds)</item>
-        <item>Normal (every minute)</item>
-<!--        <item>Eco-mode (every hour)</item>-->
+        <item>Often (every minute)</item>
+        <item>Normal (every 5 minutes)</item>
+       <item>Eco-mode (every 15 minutes)</item>
     </string-array>
     <string-array name="pref_sync_rate_vals">
         <item>-2</item>
         <item>-1</item>
         <item>0</item>
-<!--        <item>1</item>-->
+       <item>1</item>
     </string-array>
     <string-array name="pref_sample_rate_keys">
         <item>Real-Time (Experimental)</item>

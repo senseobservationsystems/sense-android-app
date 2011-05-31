@@ -7,6 +7,8 @@
     <string name="button_ok">OK</string>
     <string name="button_quit">Quit</string>
     <string name="button_reg">Register</string>
+    <string name="dialog_dev_mode_title">Development mode</string>
+    <string name="dialog_dev_mode_msg">Warning: enabling development mode is designed for Sense testers only. It is not recommended for normal use: your data will not be accessible anymore on CommonSense! </string>
     <string name="dialog_faq_title">Sense FAQ</string>
     <string name="dialog_faq_msg"><b>What is Sense?</b>
     \n

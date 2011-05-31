@@ -5,11 +5,11 @@
         android:title="General settings">
         <Preference
             android:title="Change login"
-            android:key="login" />
+            android:key="login_placeholder" />
         <Preference
             android:title="New user"
             android:summary="Register a new user"
-            android:key="register" />
+            android:key="register_placeholder" />
         <ListPreference
             android:title="Sensor sample rate"
             android:summary="Sampling frequency of the sensing modules"
@@ -36,15 +36,15 @@
             android:defaultValue="false"
             android:key="autostart" />
     </PreferenceCategory>
-    
+
     <PreferenceCategory
         android:title="Specific service settings">
-        
+
         <PreferenceScreen
             android:title="Phone status"
             android:summary="Phone status sensing settings"
             android:enabled="false" />
-            
+
         <PreferenceScreen
             android:title="Location tracker"
             android:summary="Location tracker service settings">
@@ -62,7 +62,7 @@
                     android:key="location_network" />
             </PreferenceCategory>
         </PreferenceScreen>
-        
+
         <PreferenceScreen
             android:title="Ambience sensing"
             android:summary="Ambience sensing settings"
@@ -81,7 +81,7 @@
                     android:title="Light" />
             </PreferenceCategory>
         </PreferenceScreen>
-        
+
         <PreferenceScreen
             android:title="Motion sensing"
             android:summary="Motion sensing settings"
@@ -100,7 +100,7 @@
                     android:defaultValue="False" />
             </PreferenceCategory>
         </PreferenceScreen>
-        
+
         <PreferenceScreen
             android:title="Neighboring devices"
             android:enabled="true"
@@ -119,7 +119,7 @@
                     android:defaultValue="True" />
             </PreferenceCategory>
         </PreferenceScreen>
-        
+
         <PreferenceScreen
             android:title="External Sensors"
             android:enabled="true"
@@ -222,7 +222,7 @@
                 android:title="Body Composition settings"
                 android:summary="Tanita BC-590BT settings" />
         </PreferenceScreen>
-        
+
         <PreferenceScreen
             android:title="Questionnaire"
             android:summary="Periodic questionnare settings"
@@ -251,5 +251,13 @@
                     android:defaultValue="false" />
             </PreferenceCategory>
         </PreferenceScreen>
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="Even more settings">
+        <CheckBoxPreference
+            android:title="Development mode"
+            android:summary="Use unstable version of CommonSense"
+            android:defaultValue="false"
+            android:key="devmode" />
     </PreferenceCategory>
 </PreferenceScreen>

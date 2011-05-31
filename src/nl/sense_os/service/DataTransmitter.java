@@ -36,17 +36,17 @@ public class DataTransmitter extends BroadcastReceiver {
             final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SYNC_RATE, "0"));
             long nextAlarm = 0;
             switch (rate) {
-            case -2: // real-time: clear out the buffer once, reset alarm in 1 hour "just in case"
-                nextAlarm = 1000L * 60 * 60;
+            case -2: // real-time: clear out the buffer once, reset alarm in 15 mins "just in case"
+                nextAlarm = 1000L * 60 * 15;
                 return;
             case -1: // 5 seconds
-                nextAlarm = 1000L * 5;
-                break;
-            case 0: // 1 minute
                 nextAlarm = 1000L * 60;
                 break;
+            case 0: // 1 minute
+                nextAlarm = 1000L * 60 * 5;
+                break;
             case 1: // 1 hour
-                nextAlarm = 1000L * 60 * 60;
+                nextAlarm = 1000L * 60 * 15;
                 break;
             default:
                 Log.e(TAG, "Unexpected sync rate value: " + rate);

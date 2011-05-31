@@ -64,10 +64,15 @@ public class SenseService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
 
+            if (!isStarted) {
+                Log.d(TAG, "Connectivity changed, but the service should not be running anyway...");
+                return;
+            }
+
             final ConnectivityManager mgr = (ConnectivityManager) context
                     .getSystemService(CONNECTIVITY_SERVICE);
             final NetworkInfo info = mgr.getActiveNetworkInfo();
-            if ((null != info) && (info.isConnectedOrConnecting())) {
+            if (null != info && info.isConnectedOrConnecting()) {
 
                 // check that we are not logged in yet before logging in
                 if (false == isLoggedIn) {
@@ -122,18 +127,105 @@ public class SenseService extends Service {
      */
     private class SenseServiceStub extends ISenseService.Stub {
 
+        private static final String TAG = "SenseServiceStub";
+
         @Override
         public boolean changeLogin(String username, String password) throws RemoteException {
             return SenseService.this.changeLogin(username, password);
         }
 
         @Override
-        public void getStatus(ISenseServiceCallback callback) {
-            try {
-                callback.statusReport(SenseService.this.getStatus());
-            } catch (final RemoteException e) {
-                Log.e(TAG, "RemoteException sending status report.", e);
+        public boolean getPrefBool(String key, boolean defValue) throws RemoteException {
+            // Log.d(TAG, "Get preference: " + key);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
+                    MODE_WORLD_WRITEABLE);
+            if (key.equals(Constants.PREF_STATUS_AMBIENCE)
+                    || key.equals(Constants.PREF_STATUS_DEV_PROX)
+                    || key.equals(Constants.PREF_STATUS_EXTERNAL)
+                    || key.equals(Constants.PREF_STATUS_LOCATION)
+                    || key.equals(Constants.PREF_STATUS_MAIN)
+                    || key.equals(Constants.PREF_STATUS_MOTION)
+                    || key.equals(Constants.PREF_STATUS_PHONESTATE)
+                    || key.equals(Constants.PREF_STATUS_POPQUIZ)
+                    || key.equals(Constants.PREF_AUTOSTART)) {
+                prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_WORLD_WRITEABLE);
+            } else if (key.equals(Constants.PREF_DEV_MODE)) {
+                prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
             }
+
+            // return the preference value
+            try {
+                return prefs.getBoolean(key, defValue);
+            } catch (ClassCastException e) {
+                return defValue;
+            }
+        }
+
+        @Override
+        public float getPrefFloat(String key, float defValue) throws RemoteException {
+            // Log.d(TAG, "Get preference: " + key);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
+                    MODE_WORLD_WRITEABLE);
+            try {
+                return prefs.getFloat(key, defValue);
+            } catch (ClassCastException e) {
+                return defValue;
+            }
+        }
+
+        @Override
+        public int getPrefInt(String key, int defValue) throws RemoteException {
+            // Log.d(TAG, "Get preference: " + key);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
+                    MODE_WORLD_WRITEABLE);
+            try {
+                return prefs.getInt(key, defValue);
+            } catch (ClassCastException e) {
+                return defValue;
+            }
+        }
+
+        @Override
+        public long getPrefLong(String key, long defValue) throws RemoteException {
+            // Log.d(TAG, "Get preference: " + key);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
+                    MODE_WORLD_WRITEABLE);
+            if (key.equals(Constants.PREF_SENSOR_LIST_TIME)) {
+                prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+            }
+
+            try {
+                return prefs.getLong(key, defValue);
+            } catch (ClassCastException e) {
+                return defValue;
+            }
+        }
+
+        @Override
+        public String getPrefString(String key, String defValue) throws RemoteException {
+            // Log.d(TAG, "Get preference: " + key);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
+                    MODE_WORLD_WRITEABLE);
+            if (key.equals(Constants.PREF_LOGIN_COOKIE) || key.equals(Constants.PREF_LOGIN_PASS)
+                    || key.equals(Constants.PREF_LOGIN_USERNAME)
+                    || key.equals(Constants.PREF_SENSOR_LIST)
+                    || key.equals(Constants.PREF_DEVICE_ID)
+                    || key.equals(Constants.PREF_PHONE_IMEI)
+                    || key.equals(Constants.PREF_PHONE_TYPE)) {
+                prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+            }
+
+            // return the preference value
+            try {
+                return prefs.getString(key, defValue);
+            } catch (ClassCastException e) {
+                return defValue;
+            }
+        }
+
+        @Override
+        public void getStatus(ISenseServiceCallback callback) throws RemoteException {
+            callback.statusReport(SenseService.this.getStatus());
         }
 
         @Override
@@ -142,37 +234,165 @@ public class SenseService extends Service {
         }
 
         @Override
-        public void toggleDeviceProx(boolean active, ISenseServiceCallback callback) {
-            SenseService.this.toggleDeviceProx(active);
+        public void setPrefBool(String key, boolean value) throws RemoteException {
+            Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
+
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
+                    MODE_WORLD_WRITEABLE);
+            if (key.equals(Constants.PREF_STATUS_AMBIENCE)
+                    || key.equals(Constants.PREF_STATUS_DEV_PROX)
+                    || key.equals(Constants.PREF_STATUS_EXTERNAL)
+                    || key.equals(Constants.PREF_STATUS_LOCATION)
+                    || key.equals(Constants.PREF_STATUS_MAIN)
+                    || key.equals(Constants.PREF_STATUS_MOTION)
+                    || key.equals(Constants.PREF_STATUS_PHONESTATE)
+                    || key.equals(Constants.PREF_STATUS_POPQUIZ)
+                    || key.equals(Constants.PREF_AUTOSTART)) {
+                prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_WORLD_WRITEABLE);
+            } else if (key.equals(Constants.PREF_DEV_MODE)) {
+                prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+            }
+
+            // store value
+            boolean stored = prefs.edit().putBoolean(key, value).commit();
+            if (stored == false) {
+                Log.w(TAG, "Preference " + key + " not stored!");
+            } else if (key.equals(Constants.PREF_DEV_MODE) && isLoggedIn) {
+                login();
+            }
         }
 
         @Override
-        public void toggleExternalSensors(boolean active, ISenseServiceCallback callback) {
-            SenseService.this.toggleExternalSensors(active);
+        public void setPrefFloat(String key, float value) throws RemoteException {
+            Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
+                    MODE_WORLD_WRITEABLE);
+
+            // store value
+            boolean stored = prefs.edit().putFloat(key, value).commit();
+            if (stored == false) {
+                Log.w(TAG, "Preference " + key + " not stored!");
+            }
         }
 
         @Override
-        public void toggleLocation(boolean active, ISenseServiceCallback callback) {
-            SenseService.this.toggleLocation(active);
+        public void setPrefInt(String key, int value) throws RemoteException {
+            Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
+                    MODE_WORLD_WRITEABLE);
+
+            // store value
+            boolean stored = prefs.edit().putFloat(key, value).commit();
+            if (stored == false) {
+                Log.w(TAG, "Preference " + key + " not stored!");
+            }
         }
 
         @Override
-        public void toggleMotion(boolean active, ISenseServiceCallback callback) {
-            SenseService.this.toggleMotion(active);
+        public void setPrefLong(String key, long value) throws RemoteException {
+            Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
+                    MODE_WORLD_WRITEABLE);
+            if (key.equals(Constants.PREF_SENSOR_LIST_TIME)) {
+                prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+            }
+
+            // store value
+            boolean stored = prefs.edit().putLong(key, value).commit();
+            if (stored == false) {
+                Log.w(TAG, "Preference " + key + " not stored!");
+            }
         }
 
         @Override
-        public void toggleNoise(boolean active, ISenseServiceCallback callback) {
+        public void setPrefString(String key, String value) throws RemoteException {
+            Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
+                    MODE_WORLD_WRITEABLE);
+            if (key.equals(Constants.PREF_LOGIN_COOKIE) || key.equals(Constants.PREF_LOGIN_PASS)
+                    || key.equals(Constants.PREF_LOGIN_USERNAME)
+                    || key.equals(Constants.PREF_SENSOR_LIST)
+                    || key.equals(Constants.PREF_DEVICE_ID)
+                    || key.equals(Constants.PREF_PHONE_IMEI)
+                    || key.equals(Constants.PREF_PHONE_TYPE)) {
+                prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+            }
+
+            // store value
+            boolean stored = prefs.edit().putString(key, value).commit();
+            if (stored == false) {
+                Log.w(TAG, "Preference " + key + " not stored!");
+            }
+
+            // special check for sync and sample rate changes
+            if (key.equals(Constants.PREF_SAMPLE_RATE)) {
+                onSampleRateChange();
+            } else if (key.equals(Constants.PREF_SYNC_RATE)) {
+                onSyncRateChange();
+            }
+        }
+
+        @Override
+        public void toggleAmbience(boolean active) {
+            Log.v(TAG, "Toggle ambience: " + active);
+            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Constants.PREF_STATUS_AMBIENCE, active).commit();
             SenseService.this.toggleAmbience(active);
         }
 
         @Override
-        public void togglePhoneState(boolean active, ISenseServiceCallback callback) {
+        public void toggleDeviceProx(boolean active) {
+            Log.v(TAG, "Toggle neighboring devices: " + active);
+            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Constants.PREF_STATUS_DEV_PROX, active).commit();
+            SenseService.this.toggleDeviceProx(active);
+        }
+
+        @Override
+        public void toggleExternalSensors(boolean active) {
+            Log.v(TAG, "Toggle external sensors: " + active);
+            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Constants.PREF_STATUS_EXTERNAL, active).commit();
+            SenseService.this.toggleExternalSensors(active);
+        }
+
+        @Override
+        public void toggleLocation(boolean active) {
+            Log.v(TAG, "Toggle location: " + active);
+            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Constants.PREF_STATUS_LOCATION, active).commit();
+            SenseService.this.toggleLocation(active);
+        }
+
+        @Override
+        public void toggleMain(boolean active) {
+            Log.v(TAG, "Toggle main: " + active);
+            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Constants.PREF_STATUS_MAIN, active).commit();
+            SenseService.this.toggleMain(active);
+        }
+
+        @Override
+        public void toggleMotion(boolean active) {
+            Log.v(TAG, "Toggle motion: " + active);
+            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Constants.PREF_STATUS_MOTION, active).commit();
+            SenseService.this.toggleMotion(active);
+        }
+
+        @Override
+        public void togglePhoneState(boolean active) {
+            Log.v(TAG, "Toggle phone state: " + active);
+            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Constants.PREF_STATUS_PHONESTATE, active).commit();
             SenseService.this.togglePhoneState(active);
         }
 
         @Override
-        public void togglePopQuiz(boolean active, ISenseServiceCallback callback) {
+        public void togglePopQuiz(boolean active) {
+            Log.v(TAG, "Toggle questionnaire: " + active);
+            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Constants.PREF_STATUS_POPQUIZ, active).commit();
             SenseService.this.togglePopQuiz(active);
         }
     }
@@ -196,8 +416,9 @@ public class SenseService extends Service {
     private PhoneStateListener phoneStateListener;
     private ZephyrBioHarness es_bioHarness;
     private ZephyrHxM es_HxM;
+    private boolean isStarted;
+    private boolean isForeground;
     private boolean isLoggedIn;
-    // private boolean isStarted;
     private boolean isAmbienceActive;
     private boolean isDevProxActive;
     private boolean isExternalActive;
@@ -269,15 +490,15 @@ public class SenseService extends Service {
 
         int status = 0;
 
-        status = status + Constants.STATUSCODE_RUNNING;
-        status = this.isLoggedIn ? status + Constants.STATUSCODE_CONNECTED : status;
-        status = this.isPhoneStateActive ? status + Constants.STATUSCODE_PHONESTATE : status;
-        status = this.isLocationActive ? status + Constants.STATUSCODE_LOCATION : status;
-        status = this.isAmbienceActive ? status + Constants.STATUSCODE_AMBIENCE : status;
-        status = this.isQuizActive ? status + Constants.STATUSCODE_QUIZ : status;
-        status = this.isDevProxActive ? status + Constants.STATUSCODE_DEVICE_PROX : status;
-        status = this.isExternalActive ? status + Constants.STATUSCODE_EXTERNAL : status;
-        status = this.isMotionActive ? status + Constants.STATUSCODE_MOTION : status;
+        status = isStarted ? status + Constants.STATUSCODE_RUNNING : status;
+        status = isLoggedIn ? status + Constants.STATUSCODE_CONNECTED : status;
+        status = isPhoneStateActive ? status + Constants.STATUSCODE_PHONESTATE : status;
+        status = isLocationActive ? status + Constants.STATUSCODE_LOCATION : status;
+        status = isAmbienceActive ? status + Constants.STATUSCODE_AMBIENCE : status;
+        status = isQuizActive ? status + Constants.STATUSCODE_QUIZ : status;
+        status = isDevProxActive ? status + Constants.STATUSCODE_DEVICE_PROX : status;
+        status = isExternalActive ? status + Constants.STATUSCODE_EXTERNAL : status;
+        status = isMotionActive ? status + Constants.STATUSCODE_MOTION : status;
 
         return status;
     }
@@ -287,16 +508,17 @@ public class SenseService extends Service {
      */
     private void initFields() {
 
-        this.telMgr = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+        telMgr = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
 
         // statuses
-        this.isDevProxActive = false;
-        this.isLocationActive = false;
-        this.isMotionActive = false;
-        this.isAmbienceActive = false;
-        this.isPhoneStateActive = false;
-        this.isQuizActive = false;
-        this.isExternalActive = false;
+        isStarted = false;
+        isDevProxActive = false;
+        isLocationActive = false;
+        isMotionActive = false;
+        isAmbienceActive = false;
+        isPhoneStateActive = false;
+        isQuizActive = false;
+        isExternalActive = false;
     }
 
     /**
@@ -307,6 +529,8 @@ public class SenseService extends Service {
      * @return <code>true</code> if successful.
      */
     private boolean login() {
+        Log.v(TAG, "Log in...");
+
         // show notification that we are not logged in (yet)
         showNotification(true);
 
@@ -316,10 +540,10 @@ public class SenseService extends Service {
         final String pass = authPrefs.getString(Constants.PREF_LOGIN_PASS, null);
 
         // try to log in
-        if ((username != null) && (pass != null)) {
-            this.isLoggedIn = SenseApi.login(this, username, pass);
+        if (username != null && pass != null) {
+            isLoggedIn = SenseApi.login(this, username, pass);
 
-            if (this.isLoggedIn) {
+            if (isLoggedIn) {
                 // logged in successfully
                 onLogIn();
             } else {
@@ -329,44 +553,41 @@ public class SenseService extends Service {
         } else {
             Log.d(TAG, "Cannot login: username or password unavailable... Username: " + username
                     + ", password: " + pass);
-            this.isLoggedIn = false;
+            isLoggedIn = false;
         }
 
-        return this.isLoggedIn;
+        return isLoggedIn;
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d(TAG, "onBind");
-        return this.binder;
+        Log.v(TAG, "onBind");
+        return binder;
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "onCreate");
+        Log.v(TAG, "onCreate");
 
         // initialize stuff
         initFields();
 
-        // make service as important as regular activities
-        startForegroundCompat();
-
         // Register the receiver for SCREEN OFF events
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
-        registerReceiver(this.screenOffListener, filter);
+        registerReceiver(screenOffListener, filter);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "onDestroy");
+        Log.v(TAG, "onDestroy");
 
         // stop listening for possibility to login
-        if (null != this.connectivityListener) {
+        if (null != connectivityListener) {
             try {
-                unregisterReceiver(this.connectivityListener);
-                this.connectivityListener = null;
+                unregisterReceiver(connectivityListener);
+                connectivityListener = null;
             } catch (IllegalArgumentException e) {
                 Log.w(TAG, "Ignoring exception when trying to unregister connectivity listener");
             }
@@ -374,7 +595,7 @@ public class SenseService extends Service {
 
         // stop listening to screen off receiver
         try {
-            unregisterReceiver(this.screenOffListener);
+            unregisterReceiver(screenOffListener);
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "Ignoring exception when trying to unregister screen off listener");
         }
@@ -404,7 +625,7 @@ public class SenseService extends Service {
         startTransmitAlarms();
 
         // start the periodic checks of the feedback sensor
-        // startFeedbackChecks();
+        startFeedbackChecks();
 
         // show notification
         showNotification(false);
@@ -420,20 +641,28 @@ public class SenseService extends Service {
      */
     private void onLogOut() {
         // check if we were actually logged to prevent overwriting the last active state..
-        if (this.isLoggedIn) {
+        if (isLoggedIn) {
             Log.d(TAG, "Logged out...");
 
             // stop active sensing components
             stopSensorModules();
 
             // update login status
-            this.isLoggedIn = false;
+            isLoggedIn = false;
         }
 
         showNotification(true);
 
-        // stopFeedbackChecks();
+        stopFeedbackChecks();
         stopTransmitAlarms();
+    }
+
+    public void onSampleRateChange() {
+        Log.d(TAG, "Sample rate changed...");
+        if (isLoggedIn) {
+            stopSensorModules();
+            startSensorModules();
+        }
     }
 
     /**
@@ -465,6 +694,12 @@ public class SenseService extends Service {
      *            {@link #stopSelfResult(int)}.
      */
     private void onStartCompat(Intent intent, int flags, int startId) {
+        Log.v(TAG, "onStart");
+
+        if (false == isForeground) {
+            // make service as important as regular activities
+            startForegroundCompat();
+        }
 
         // intent is null when the Service is recreated by Android after it was killed
         boolean relogin = true;
@@ -483,10 +718,17 @@ public class SenseService extends Service {
         }
 
         // register broadcast receiver for login in case of Internet connection changes
-        if (null == this.connectivityListener) {
-            this.connectivityListener = new ConnectivityListener();
+        if (null == connectivityListener) {
+            connectivityListener = new ConnectivityListener();
             IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
-            registerReceiver(this.connectivityListener, filter);
+            registerReceiver(connectivityListener, filter);
+        }
+    }
+
+    public void onSyncRateChange() {
+        Log.d(TAG, "Sync rate changed...");
+        if (isLoggedIn) {
+            startTransmitAlarms();
         }
     }
 
@@ -520,7 +762,7 @@ public class SenseService extends Service {
         authEditor.commit();
 
         // try to register
-        if ((null != username) && (null != password)) {
+        if (null != username && null != password) {
             Log.d(TAG, "Registering... Username: " + username + ", password hash: " + hashPass);
 
             boolean registered = SenseApi.register(this, username, hashPass);
@@ -556,7 +798,7 @@ public class SenseService extends Service {
         note.flags = Notification.FLAG_NO_CLEAR;
 
         // extra info text is shown when the status bar is opened
-        final CharSequence contentTitle = "Sense service";
+        final CharSequence contentTitle = "Sense Platform";
         CharSequence contentText = "";
         if (error) {
             contentText = "Trying to log in...";
@@ -582,7 +824,7 @@ public class SenseService extends Service {
      *            Toast message to display to the user
      */
     private void showToast(final String message) {
-        this.toastHandler.post(new Runnable() {
+        toastHandler.post(new Runnable() {
             @Override
             public void run() {
                 Toast.makeText(SenseService.this, message, Toast.LENGTH_LONG).show();
@@ -633,11 +875,10 @@ public class SenseService extends Service {
      * that the service is running, a notification is shown in the status bar.
      */
     private void startForegroundCompat() {
-
-        startAliveChecks();
+        Log.v(TAG, "Enable foreground status...");
 
         @SuppressWarnings("rawtypes")
-        final Class[] startForegroundSignature = new Class[]{int.class, Notification.class};
+        final Class[] startForegroundSignature = new Class[] { int.class, Notification.class };
         Method startForeground = null;
         try {
             startForeground = getClass().getMethod("startForeground", startForegroundSignature);
@@ -657,19 +898,24 @@ public class SenseService extends Service {
             final Intent notifIntent = new Intent("nl.sense_os.app.SenseApp");
             notifIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             final PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notifIntent, 0);
-            n.setLatestEventInfo(this, "Sense service", "", contentIntent);
+            n.setLatestEventInfo(this, "Sense Platform", "Not logged in", contentIntent);
 
-            Object[] startArgs = {Integer.valueOf(NOTIF_ID), n};
+            Object[] startArgs = { Integer.valueOf(NOTIF_ID), n };
             try {
                 startForeground.invoke(this, startArgs);
             } catch (InvocationTargetException e) {
                 // Should not happen.
                 Log.e(TAG, "Unable to invoke startForeground", e);
+                return;
             } catch (IllegalAccessException e) {
                 // Should not happen.
                 Log.e(TAG, "Unable to invoke startForeground", e);
+                return;
             }
         }
+
+        // update state field
+        isForeground = true;
     }
 
     /**
@@ -679,9 +925,11 @@ public class SenseService extends Service {
     private void startSensorModules() {
 
         final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
-                MODE_WORLD_WRITEABLE);
+                MODE_PRIVATE);
 
         if (statusPrefs.getBoolean(Constants.PREF_STATUS_MAIN, true)) {
+
+            toggleMain(true);
 
             if (statusPrefs.getBoolean(Constants.PREF_STATUS_PHONESTATE, true)) {
                 // Log.d(TAG, "Restart phone state component...");
@@ -758,15 +1006,15 @@ public class SenseService extends Service {
     }
 
     /**
-     * Makes this service a foreground service, as important as 'real' activities. As a reminder
-     * that the service is running, a notification is shown.
+     * Lowers importance of this service back to normal again.
      */
     private void stopForegroundCompat() {
+        Log.v(TAG, "Remove foreground status...");
 
         stopAliveChecks();
 
         @SuppressWarnings("rawtypes")
-        final Class[] stopForegroundSignature = new Class[]{boolean.class};
+        final Class[] stopForegroundSignature = new Class[] { boolean.class };
         Method stopForeground = null;
         try {
             stopForeground = getClass().getMethod("stopForeground", stopForegroundSignature);
@@ -775,50 +1023,59 @@ public class SenseService extends Service {
             stopForeground = null;
         }
 
-        // remove the notification that the service is running
-        final NotificationManager noteMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        noteMgr.cancel(NOTIF_ID);
-
         // call stopForeground in fancy way so old systems do net get confused by unknown methods
         if (stopForeground == null) {
             setForeground(false);
         } else {
-            Object[] stopArgs = {Boolean.TRUE};
+            Object[] stopArgs = { Boolean.TRUE };
             try {
                 stopForeground.invoke(this, stopArgs);
             } catch (InvocationTargetException e) {
                 // Should not happen.
                 Log.w(TAG, "Unable to invoke stopForeground", e);
+                return;
             } catch (IllegalAccessException e) {
                 // Should not happen.
                 Log.w(TAG, "Unable to invoke stopForeground", e);
+                return;
             }
         }
+
+        // remove the notification that the service is running
+        final NotificationManager noteMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        noteMgr.cancel(NOTIF_ID);
+
+        // update state field
+        isForeground = false;
     }
 
     /**
      * Stops any running sensor modules.
      */
     private void stopSensorModules() {
-        if (this.isDevProxActive) {
+
+        if (isStarted) {
+            toggleMain(false);
+        }
+        if (isDevProxActive) {
             toggleDeviceProx(false);
         }
-        if (this.isMotionActive) {
+        if (isMotionActive) {
             toggleMotion(false);
         }
-        if (this.isLocationActive) {
+        if (isLocationActive) {
             toggleLocation(false);
         }
-        if (this.isAmbienceActive) {
+        if (isAmbienceActive) {
             toggleAmbience(false);
         }
-        if (this.isPhoneStateActive) {
+        if (isPhoneStateActive) {
             togglePhoneState(false);
         }
-        if (this.isQuizActive) {
+        if (isQuizActive) {
             togglePopQuiz(false);
         }
-        if (this.isExternalActive) {
+        if (isExternalActive) {
             toggleExternalSensors(false);
         }
     }
@@ -835,23 +1092,23 @@ public class SenseService extends Service {
 
     private void toggleAmbience(boolean active) {
 
-        if (active != this.isAmbienceActive) {
-            this.isAmbienceActive = active;
+        if (active != isAmbienceActive) {
+            isAmbienceActive = active;
 
             if (true == active) {
 
                 // check noise sensor presence
-                if (null != this.noiseSensor) {
+                if (null != noiseSensor) {
                     Log.w(TAG, "Noise sensor is already present!");
-                    this.noiseSensor.disable();
-                    this.noiseSensor = null;
+                    noiseSensor.disable();
+                    noiseSensor = null;
                 }
 
                 // check light sensor presence
-                if (null != this.lightSensor) {
+                if (null != lightSensor) {
                     Log.w(TAG, "Light sensor is already present!");
-                    this.lightSensor.stopLightSensing();
-                    this.lightSensor = null;
+                    lightSensor.stopLightSensing();
+                    lightSensor = null;
                 }
 
                 // get sample rate from preferences
@@ -861,20 +1118,20 @@ public class SenseService extends Service {
                         "0"));
                 int interval = -1;
                 switch (rate) {
-                    case -2 : // real time
-                        interval = -1;
-                        break;
-                    case -1 : // often
-                        interval = 10 * 1000;
-                        break;
-                    case 0 : // normal
-                        interval = 60 * 1000;
-                        break;
-                    case 1 : // rarely (15 minutes)
-                        interval = 15 * 60 * 1000;
-                        break;
-                    default :
-                        Log.e(TAG, "Unexpected sample rate preference.");
+                case -2: // real time
+                    interval = -1;
+                    break;
+                case -1: // often
+                    interval = 10 * 1000;
+                    break;
+                case 0: // normal
+                    interval = 60 * 1000;
+                    break;
+                case 1: // rarely (15 minutes)
+                    interval = 15 * 60 * 1000;
+                    break;
+                default:
+                    Log.e(TAG, "Unexpected sample rate preference.");
                 }
                 final int finalInterval = interval;
 
@@ -900,14 +1157,14 @@ public class SenseService extends Service {
             } else {
 
                 // stop sensing
-                if (null != this.noiseSensor) {
-                    this.telMgr.listen(this.noiseSensor, PhoneStateListener.LISTEN_NONE);
-                    this.noiseSensor.disable();
-                    this.noiseSensor = null;
+                if (null != noiseSensor) {
+                    telMgr.listen(noiseSensor, PhoneStateListener.LISTEN_NONE);
+                    noiseSensor.disable();
+                    noiseSensor = null;
                 }
-                if (null != this.lightSensor) {
-                    this.lightSensor.stopLightSensing();
-                    this.lightSensor = null;
+                if (null != lightSensor) {
+                    lightSensor.stopLightSensing();
+                    lightSensor = null;
                 }
             }
         }
@@ -915,16 +1172,16 @@ public class SenseService extends Service {
 
     private void toggleDeviceProx(boolean active) {
 
-        if (active != this.isDevProxActive) {
-            this.isDevProxActive = active;
+        if (active != isDevProxActive) {
+            isDevProxActive = active;
 
             if (true == active) {
 
                 // check device proximity sensor presence
-                if (null != this.deviceProximity) {
+                if (null != deviceProximity) {
                     Log.w(TAG, "Device proximity sensor is already present!");
-                    this.deviceProximity.stopEnvironmentScanning();
-                    this.deviceProximity = null;
+                    deviceProximity.stopEnvironmentScanning();
+                    deviceProximity = null;
                 }
 
                 // get sample rate
@@ -934,23 +1191,23 @@ public class SenseService extends Service {
                         "0"));
                 int interval = 1;
                 switch (rate) {
-                    case -2 :
-                        interval = 1 * 1000;
-                        break;
-                    case -1 :
-                        // often
-                        interval = 15 * 1000;
-                        break;
-                    case 0 :
-                        // normal
-                        interval = 60 * 1000;
-                        break;
-                    case 1 :
-                        // rarely (15 hour)
-                        interval = 15 * 60 * 1000;
-                        break;
-                    default :
-                        Log.e(TAG, "Unexpected device proximity rate preference.");
+                case -2:
+                    interval = 1 * 1000;
+                    break;
+                case -1:
+                    // often
+                    interval = 60 * 1000;
+                    break;
+                case 0:
+                    // normal
+                    interval = 5 * 60 * 1000;
+                    break;
+                case 1:
+                    // rarely (15 mins)
+                    interval = 15 * 60 * 1000;
+                    break;
+                default:
+                    Log.e(TAG, "Unexpected device proximity rate preference.");
                 }
                 final int finalInterval = interval;
 
@@ -971,9 +1228,9 @@ public class SenseService extends Service {
             } else {
 
                 // stop sensing
-                if (null != this.deviceProximity) {
-                    this.deviceProximity.stopEnvironmentScanning();
-                    this.deviceProximity = null;
+                if (null != deviceProximity) {
+                    deviceProximity.stopEnvironmentScanning();
+                    deviceProximity = null;
                 }
             }
         }
@@ -981,23 +1238,23 @@ public class SenseService extends Service {
 
     private void toggleExternalSensors(boolean active) {
 
-        if (active != this.isExternalActive) {
-            this.isExternalActive = active;
+        if (active != isExternalActive) {
+            isExternalActive = active;
 
             if (true == active) {
 
                 // check BioHarness sensor presence
-                if (null != this.es_bioHarness) {
+                if (null != es_bioHarness) {
                     Log.w(TAG, "Bioharness sensor is already present!");
-                    this.es_bioHarness.stopBioHarness();
-                    this.es_bioHarness = null;
+                    es_bioHarness.stopBioHarness();
+                    es_bioHarness = null;
                 }
 
                 // check HxM sensor presence
-                if (null != this.es_HxM) {
+                if (null != es_HxM) {
                     Log.w(TAG, "HxM sensor is already present!");
-                    this.es_HxM.stopHxM();
-                    this.es_HxM = null;
+                    es_HxM.stopHxM();
+                    es_HxM = null;
                 }
 
                 // get sample rate
@@ -1007,24 +1264,24 @@ public class SenseService extends Service {
                         "0"));
                 int interval = 1;
                 switch (rate) {
-                    case -2 :
-                        interval = 1 * 1000;
-                        break;
-                    case -1 :
-                        // often
-                        interval = 5 * 1000;
-                        break;
-                    case 0 :
-                        // normal
-                        interval = 60 * 1000;
-                        break;
-                    case 1 :
-                        // rarely (15 minutes)
-                        interval = 15 * 60 * 1000;
-                        break;
-                    default :
-                        Log.e(TAG, "Unexpected external sensor rate preference.");
-                        return;
+                case -2:
+                    interval = 1 * 1000;
+                    break;
+                case -1:
+                    // often
+                    interval = 5 * 1000;
+                    break;
+                case 0:
+                    // normal
+                    interval = 60 * 1000;
+                    break;
+                case 1:
+                    // rarely (15 minutes)
+                    interval = 15 * 60 * 1000;
+                    break;
+                default:
+                    Log.e(TAG, "Unexpected external sensor rate preference.");
+                    return;
                 }
                 final int finalInterval = interval;
 
@@ -1048,17 +1305,17 @@ public class SenseService extends Service {
             } else {
 
                 // stop sensing
-                if (null != this.es_bioHarness) {
+                if (null != es_bioHarness) {
                     Log.w(TAG, "Bioharness sensor is already present!");
-                    this.es_bioHarness.stopBioHarness();
-                    this.es_bioHarness = null;
+                    es_bioHarness.stopBioHarness();
+                    es_bioHarness = null;
                 }
 
                 // check HxM sensor presence
-                if (null != this.es_HxM) {
+                if (null != es_HxM) {
                     Log.w(TAG, "HxM sensor is already present!");
-                    this.es_HxM.stopHxM();
-                    this.es_HxM = null;
+                    es_HxM.stopHxM();
+                    es_HxM = null;
                 }
             }
         }
@@ -1066,17 +1323,17 @@ public class SenseService extends Service {
 
     private void toggleLocation(boolean active) {
 
-        if (active != this.isLocationActive) {
-            this.isLocationActive = active;
+        if (active != isLocationActive) {
+            isLocationActive = active;
 
             final LocationManager locMgr = (LocationManager) getSystemService(LOCATION_SERVICE);
             if (true == active) {
 
                 // check location sensor presence
-                if (this.locListener != null) {
+                if (locListener != null) {
                     Log.w(TAG, "location listener is already present!");
-                    locMgr.removeUpdates(this.locListener);
-                    this.locListener = null;
+                    locMgr.removeUpdates(locListener);
+                    locListener = null;
                 }
 
                 // get sample rate
@@ -1087,35 +1344,35 @@ public class SenseService extends Service {
                 long minTime = -1;
                 float minDistance = -1;
                 switch (rate) {
-                    case -2 : // real-time
-                        minTime = 1000;
-                        minDistance = 0;
-                        break;
-                    case -1 : // often
-                        minTime = 15 * 1000;
-                        minDistance = 10;
-                        break;
-                    case 0 : // normal
-                        minTime = 60 * 1000;
-                        minDistance = 25;
-                        break;
-                    case 1 : // rarely
-                        minTime = 15 * 60 * 1000;
-                        minDistance = 25;
-                        break;
-                    default :
-                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                        break;
+                case -2: // real-time
+                    minTime = 1000;
+                    minDistance = 0;
+                    break;
+                case -1: // often
+                    minTime = 15 * 1000;
+                    minDistance = 10;
+                    break;
+                case 0: // normal
+                    minTime = 60 * 1000;
+                    minDistance = 10;
+                    break;
+                case 1: // rarely
+                    minTime = 15 * 60 * 1000;
+                    minDistance = 10;
+                    break;
+                default:
+                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                    break;
                 }
 
                 // check if any providers are selected in the preferences
                 final boolean gps = mainPrefs.getBoolean(Constants.PREF_LOCATION_GPS, true);
                 final boolean network = mainPrefs.getBoolean(Constants.PREF_LOCATION_NETWORK, true);
                 if (gps || network) {
-                    this.locListener = new LocationSensor(this);
+                    locListener = new LocationSensor(this);
                 } else {
                     // GPS and network are disabled in the preferences
-                    this.isLocationActive = false;
+                    isLocationActive = false;
 
                     // show informational Toast
                     showToast(getString(R.string.toast_location_noprovider));
@@ -1124,39 +1381,56 @@ public class SenseService extends Service {
                 // start listening to GPS and/or Network location
                 if (true == gps) {
                     final String gpsProvider = LocationManager.GPS_PROVIDER;
-                    locMgr.requestLocationUpdates(gpsProvider, minTime, minDistance,
-                            this.locListener, Looper.getMainLooper());
+                    locMgr.requestLocationUpdates(gpsProvider, minTime, minDistance, locListener,
+                            Looper.getMainLooper());
                 }
 
                 if (true == network) {
                     final String nwProvider = LocationManager.NETWORK_PROVIDER;
-                    locMgr.requestLocationUpdates(nwProvider, minTime, minDistance,
-                            this.locListener, Looper.getMainLooper());
+                    locMgr.requestLocationUpdates(nwProvider, minTime, minDistance, locListener,
+                            Looper.getMainLooper());
                 }
 
             } else {
 
                 // stop location listener
-                if (null != this.locListener) {
-                    locMgr.removeUpdates(this.locListener);
-                    this.locListener = null;
+                if (null != locListener) {
+                    locMgr.removeUpdates(locListener);
+                    locListener = null;
                 }
             }
         }
     }
 
+    public void toggleMain(boolean active) {
+
+        if (active != isStarted) {
+            Log.d(TAG, "Toggle main: " + active);
+            isStarted = active;
+
+            if (true == active) {
+                startAliveChecks();
+            } else {
+                onLogOut();
+                stopForegroundCompat();
+            }
+        } else {
+            Log.w(TAG, "Main state already at desired state: " + active);
+        }
+    }
+
     private void toggleMotion(boolean active) {
 
-        if (active != this.isMotionActive) {
-            this.isMotionActive = active;
+        if (active != isMotionActive) {
+            isMotionActive = active;
 
             if (true == active) {
 
                 // check motion sensor presence
-                if (this.motionSensor != null) {
+                if (motionSensor != null) {
                     Log.w(TAG, "motion sensor is already present!");
-                    this.motionSensor.stopMotionSensing();
-                    this.motionSensor = null;
+                    motionSensor.stopMotionSensing();
+                    motionSensor = null;
                 }
 
                 // get sample rate
@@ -1166,21 +1440,21 @@ public class SenseService extends Service {
                         "0"));
                 int interval = -1;
                 switch (rate) {
-                    case -2 : // real time
-                        interval = 0;
-                        break;
-                    case -1 : // often
-                        interval = 5 * 1000;
-                        break;
-                    case 0 : // normal
-                        interval = 60 * 1000;
-                        break;
-                    case 1 : // rarely (15 minutes)
-                        interval = 15 * 60 * 1000;
-                        break;
-                    default :
-                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                        break;
+                case -2: // real time
+                    interval = 0;
+                    break;
+                case -1: // often
+                    interval = 5 * 1000;
+                    break;
+                case 0: // normal
+                    interval = 60 * 1000;
+                    break;
+                case 1: // rarely (15 minutes)
+                    interval = 15 * 60 * 1000;
+                    break;
+                default:
+                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                    break;
                 }
                 final int finalInterval = interval;
 
@@ -1199,9 +1473,9 @@ public class SenseService extends Service {
             } else {
 
                 // stop sensing
-                if (null != this.motionSensor) {
-                    this.motionSensor.stopMotionSensing();
-                    this.motionSensor = null;
+                if (null != motionSensor) {
+                    motionSensor.stopMotionSensing();
+                    motionSensor = null;
                 }
             }
         }
@@ -1209,44 +1483,44 @@ public class SenseService extends Service {
 
     private void togglePhoneState(boolean active) {
 
-        if (active != this.isPhoneStateActive) {
-            this.isPhoneStateActive = active;
+        if (active != isPhoneStateActive) {
+            isPhoneStateActive = active;
 
             if (true == active) {
 
                 // check phone state sensor presence
-                if (this.phoneStateListener != null) {
+                if (phoneStateListener != null) {
                     Log.w(TAG, "phone state sensor is already present!");
-                    this.telMgr.listen(this.phoneStateListener, PhoneStateListener.LISTEN_NONE);
-                    this.phoneStateListener = null;
+                    telMgr.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
+                    phoneStateListener = null;
                 }
 
                 // check proximity sensor presence
-                if (this.proximitySensor != null) {
+                if (proximitySensor != null) {
                     Log.w(TAG, "proximity sensor is already present!");
-                    this.proximitySensor.stopProximitySensing();
-                    this.proximitySensor = null;
+                    proximitySensor.stopProximitySensing();
+                    proximitySensor = null;
                 }
 
                 // check battery sensor presence
-                if (this.batterySensor != null) {
+                if (batterySensor != null) {
                     Log.w(TAG, "battery sensor is already present!");
-                    this.batterySensor.stopBatterySensing();
-                    this.batterySensor = null;
+                    batterySensor.stopBatterySensing();
+                    batterySensor = null;
                 }
 
                 // check pressure sensor presence
-                if (this.pressureSensor != null) {
+                if (pressureSensor != null) {
                     Log.w(TAG, "pressure sensor is already present!");
-                    this.pressureSensor.stopPressureSensing();
-                    this.pressureSensor = null;
+                    pressureSensor.stopPressureSensing();
+                    pressureSensor = null;
                 }
 
                 // check phone activity sensor presence
-                if (this.phoneActivitySensor != null) {
+                if (phoneActivitySensor != null) {
                     Log.w(TAG, "phone activity sensor is already present!");
-                    this.phoneActivitySensor.stopPhoneActivitySensing();
-                    this.phoneActivitySensor = null;
+                    phoneActivitySensor.stopPhoneActivitySensing();
+                    phoneActivitySensor = null;
                 }
 
                 // get sample rate
@@ -1256,21 +1530,21 @@ public class SenseService extends Service {
                         "0"));
                 int interval = -1;
                 switch (rate) {
-                    case -2 : // real time
-                        interval = 0;
-                        break;
-                    case -1 : // often
-                        interval = 5 * 1000;
-                        break;
-                    case 0 : // normal
-                        interval = 60 * 1000;
-                        break;
-                    case 1 : // rarely (15 minutes)
-                        interval = 15 * 60 * 1000;
-                        break;
-                    default :
-                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                        break;
+                case -2: // real time
+                    interval = 0;
+                    break;
+                case -1: // often
+                    interval = 5 * 1000;
+                    break;
+                case 0: // normal
+                    interval = 60 * 1000;
+                    break;
+                case 1: // rarely (15 minutes)
+                    interval = 15 * 60 * 1000;
+                    break;
+                default:
+                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                    break;
                 }
                 final int finalInterval = interval;
 
@@ -1306,25 +1580,25 @@ public class SenseService extends Service {
             } else {
 
                 // stop sensing
-                if (null != this.phoneStateListener) {
-                    this.telMgr.listen(this.phoneStateListener, PhoneStateListener.LISTEN_NONE);
-                    this.phoneStateListener = null;
+                if (null != phoneStateListener) {
+                    telMgr.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
+                    phoneStateListener = null;
                 }
-                if (null != this.proximitySensor) {
-                    this.proximitySensor.stopProximitySensing();
-                    this.proximitySensor = null;
+                if (null != proximitySensor) {
+                    proximitySensor.stopProximitySensing();
+                    proximitySensor = null;
                 }
-                if (null != this.pressureSensor) {
-                    this.pressureSensor.stopPressureSensing();
-                    this.pressureSensor = null;
+                if (null != pressureSensor) {
+                    pressureSensor.stopPressureSensing();
+                    pressureSensor = null;
                 }
-                if (null != this.batterySensor) {
-                    this.batterySensor.stopBatterySensing();
-                    this.batterySensor = null;
+                if (null != batterySensor) {
+                    batterySensor.stopBatterySensing();
+                    batterySensor = null;
                 }
-                if (null != this.phoneActivitySensor) {
-                    this.phoneActivitySensor.stopPhoneActivitySensing();
-                    this.phoneActivitySensor = null;
+                if (null != phoneActivitySensor) {
+                    phoneActivitySensor.stopPhoneActivitySensing();
+                    phoneActivitySensor = null;
                 }
             }
         }
