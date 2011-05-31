@@ -1054,9 +1054,6 @@ public class SenseService extends Service {
      */
     private void stopSensorModules() {
 
-        if (isStarted) {
-            toggleMain(false);
-        }
         if (isDevProxActive) {
             toggleDeviceProx(false);
         }
