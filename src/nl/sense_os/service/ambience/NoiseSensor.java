@@ -384,13 +384,18 @@ public class NoiseSensor extends PhoneStateListener {
         }
 
         // create the AudioRecord
-        if (isCalling) {
-            audioRecord = new AudioRecord(MediaRecorder.AudioSource.VOICE_UPLINK,
-                    DEFAULT_SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
-                    AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE);
-        } else {
-            audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, DEFAULT_SAMPLE_RATE,
-                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE);
+        try {
+            if (isCalling) {
+                audioRecord = new AudioRecord(MediaRecorder.AudioSource.VOICE_UPLINK,
+                        DEFAULT_SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
+                        AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE);
+            } else {
+                audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, DEFAULT_SAMPLE_RATE,
+                        AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE);
+            }
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "Failed to create the audiorecord!", e);
+            return false;
         }
 
         if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
