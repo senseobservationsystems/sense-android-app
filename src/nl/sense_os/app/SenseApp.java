@@ -317,7 +317,7 @@ public class SenseApp extends Activity {
             bindToSenseService(true);
 
             // invoke callback method directly to update UI anyway.
-            Log.d(TAG, "Service is not running!");
+            Log.d(TAG, "Not bound to Sense Platform service! Assume it's not running...");
             runOnUiThread(new Runnable() {
 
                 @Override

@@ -64,6 +64,10 @@ public class SenseService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
 
+            final SharedPreferences prefs = context.getSharedPreferences(Constants.STATUS_PREFS,
+                    MODE_PRIVATE);
+            final boolean isStarted = prefs.getBoolean(Constants.PREF_STATUS_MAIN, false);
+
             if (!isStarted) {
                 Log.d(TAG, "Connectivity changed, but the service should not be running anyway...");
                 return;
@@ -416,7 +420,7 @@ public class SenseService extends Service {
     private PhoneStateListener phoneStateListener;
     private ZephyrBioHarness es_bioHarness;
     private ZephyrHxM es_HxM;
-    private boolean isStarted;
+    // private boolean isStarted;
     private boolean isForeground;
     private boolean isLoggedIn;
     private boolean isAmbienceActive;
@@ -490,7 +494,10 @@ public class SenseService extends Service {
 
         int status = 0;
 
-        status = isStarted ? status + Constants.STATUSCODE_RUNNING : status;
+        final SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
+        final boolean isStarted = prefs.getBoolean(Constants.PREF_STATUS_MAIN, false);
+
+        status = isStarted ? Constants.STATUSCODE_RUNNING : status;
         status = isLoggedIn ? status + Constants.STATUSCODE_CONNECTED : status;
         status = isPhoneStateActive ? status + Constants.STATUSCODE_PHONESTATE : status;
         status = isLocationActive ? status + Constants.STATUSCODE_LOCATION : status;
@@ -511,7 +518,6 @@ public class SenseService extends Service {
         telMgr = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
 
         // statuses
-        isStarted = false;
         isDevProxActive = false;
         isLocationActive = false;
         isMotionActive = false;
@@ -572,6 +578,8 @@ public class SenseService extends Service {
 
         // initialize stuff
         initFields();
+
+        startAliveChecks();
 
         // Register the receiver for SCREEN OFF events
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
@@ -695,6 +703,14 @@ public class SenseService extends Service {
      */
     private void onStartCompat(Intent intent, int flags, int startId) {
         Log.v(TAG, "onStart");
+
+        final SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
+        final boolean isStarted = prefs.getBoolean(Constants.PREF_STATUS_MAIN, false);
+        if (false == isStarted) {
+            Log.w(TAG, "Sense service was started when the main status is not set!");
+            stopForegroundCompat();
+            return;
+        }
 
         if (false == isForeground) {
             // make service as important as regular activities
@@ -1401,18 +1417,13 @@ public class SenseService extends Service {
 
     public void toggleMain(boolean active) {
 
-        if (active != isStarted) {
-            Log.d(TAG, "Toggle main: " + active);
-            isStarted = active;
+        Log.d(TAG, "Toggle main: " + active);
 
-            if (true == active) {
-                startAliveChecks();
-            } else {
-                onLogOut();
-                stopForegroundCompat();
-            }
+        if (true == active) {
+            // startAliveChecks();
         } else {
-            Log.w(TAG, "Main state already at desired state: " + active);
+            onLogOut();
+            stopForegroundCompat();
         }
     }
 
