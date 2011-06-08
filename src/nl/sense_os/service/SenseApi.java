@@ -11,9 +11,9 @@ import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -56,7 +56,7 @@ public class SenseApi {
                 return cachedId;
             }
 
-            Log.d(TAG, "Device ID is missing or outdated, refreshing...");
+            Log.v(TAG, "Device ID is missing or outdated, refreshing...");
 
             // Store phone type and IMEI. These are used to uniquely identify this device
             final TelephonyManager telMgr = (TelephonyManager) context
@@ -179,7 +179,7 @@ public class SenseApi {
                 return new JSONArray(cachedSensors);
             }
 
-            Log.d(TAG, "List of sensor IDs is missing or outdated, refreshing...");
+            Log.v(TAG, "List of sensor IDs is missing or outdated, refreshing...");
 
             // get fresh list of sensors for this device from CommonSense
             String cookie = authPrefs.getString(Constants.PREF_LOGIN_COOKIE, "NO_COOKIE");
@@ -288,13 +288,14 @@ public class SenseApi {
 
             // store sensor URL in the preferences
             String content = response.get("content");
-            Log.d(TAG, "Created sensor: \'" + sensorName + "\'");
             JSONObject responseJson = new JSONObject(content);
             JSONObject JSONSensor = responseJson.getJSONObject("sensor");
             sensors.put(JSONSensor);
             Editor authEditor = authPrefs.edit();
             authEditor.putString(Constants.PREF_SENSOR_LIST, sensors.toString());
             authEditor.commit();
+
+            Log.v(TAG, "Created sensor: \'" + sensorName + "\'");
 
             // Add sensor to this device at CommonSense
             String phoneType = authPrefs.getString(Constants.PREF_PHONE_TYPE, "smartphone");
@@ -306,7 +307,6 @@ public class SenseApi {
             device.put("type", authPrefs.getString(Constants.PREF_DEVICE_TYPE, phoneType));
 
             device.put("uuid", authPrefs.getString(Constants.PREF_PHONE_IMEI, "0000000000"));
-            Log.e(TAG, "IMEI from json:" + device.toString());
             postData.put("device", device);
 
             response = sendJson(url, postData, "POST", cookie);
@@ -414,7 +414,7 @@ public class SenseApi {
 
             // store cookie in the preferences
             String cookie = response.get("set-cookie");
-            Log.d(TAG, "CommonSense login ok!");
+            Log.v(TAG, "CommonSense login OK!");
             authEditor.putString(Constants.PREF_LOGIN_COOKIE, cookie);
             authEditor.commit();
 
@@ -477,7 +477,7 @@ public class SenseApi {
                 return false;
             }
 
-            Log.d(TAG, "CommonSense registration: Successful");
+            Log.v(TAG, "CommonSense registration successful");
         } catch (final IOException e) {
             Log.e(TAG, "IOException during registration!", e);
             return false;
@@ -509,6 +509,7 @@ public class SenseApi {
 
             // Let the run-time system (RTS) know that we want input.
             urlConn.setDoInput(true);
+            urlConn.setFixedLengthStreamingMode(json.toString().length());
 
             // we want to do output.
             urlConn.setDoOutput(true);
@@ -549,16 +550,26 @@ public class SenseApi {
             response.put("http response code", "" + urlConn.getResponseCode());
             response.put("content", responseString.toString());
             Map<String, List<String>> headerFields = urlConn.getHeaderFields();
-            Iterator<String> it = headerFields.keySet().iterator();
-            while (it.hasNext()) {
-                String key = it.next();
-                String value = headerFields.get(key).toString().substring(1);
-                value = value.substring(0, value.length() - 1);
-                response.put(key.toLowerCase(), value);
+            for (Entry<String, List<String>> entry : headerFields.entrySet()) {
+                String key = entry.getKey();
+                List<String> value = entry.getValue();
+                if (null != key && null != value) {
+                    key = key.toLowerCase();
+                    String valueString = value.toString();
+                    valueString = valueString.substring(1, valueString.length() - 1);
+                    // Log.d(TAG, "Header field '" + key + "': '" + valueString + "'");
+                    response.put(key, valueString);
+                } else {
+                    // Log.d(TAG, "Skipped header field '" + key + "': '" + value + "'");
+                }
             }
             return response;
         } catch (Exception e) {
-            Log.e(TAG, "Error in posting Json: " + json.toString() + "\n" + e.getMessage());
+            if (null == e.getMessage()) {
+                Log.e(TAG, "Error in posting JSON: " + json.toString(), e);
+            } else {
+                Log.e(TAG, "Error in posting JSON: " + json.toString() + "\n" + e.getMessage());
+            }
             return null;
         } finally {
 
@@ -567,5 +578,4 @@ public class SenseApi {
             }
         }
     }
-
 }

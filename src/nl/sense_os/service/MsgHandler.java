@@ -112,12 +112,16 @@ public class MsgHandler extends Service {
                             + ",  content: \'" + response.get("content") + "\'");
                 else {
                     int bytes = data.toString().getBytes().length;
-                    Log.d(TAG, "Sent sensor data! Sensor ID: " + sensorId + ", raw data size: "
+                    Log.v(TAG, "Sent sensor data! Sensor ID: " + sensorId + ", raw data size: "
                             + bytes + " bytes");
                 }
                 // Log.d(TAG, "  data: " + data);
             } catch (Exception e) {
-                Log.e(TAG, "Exception sending sensor data: " + e.getMessage());
+                if (null != e.getMessage()) {
+                    Log.e(TAG, "Exception sending sensor data: " + e.getMessage());
+                } else {
+                    Log.e(TAG, "Exception sending sensor data!", e);
+                }
             } finally {
                 --nrOfSendMessageThreads;
             }
@@ -219,7 +223,7 @@ public class MsgHandler extends Service {
                 if (conn.getResponseCode() != 201)
                     Log.e(TAG, "Sending file failed. Response code:" + conn.getResponseMessage());
                 else
-                    Log.d(TAG, "Sent file data OK!");
+                    Log.v(TAG, "Sent file data OK!");
             } catch (Exception e) {
                 Log.e(TAG, "Sending sensor file failed:" + e.getMessage());
             } finally {
@@ -258,7 +262,7 @@ public class MsgHandler extends Service {
         // check if there is room in the buffer
         if (this.bufferCount >= MAX_BUFFER) {
             // empty buffer into database
-            Log.d(TAG, "Buffer overflow! Emptying buffer to database");
+            // Log.d(TAG, "Buffer overflow! Emptying buffer to database");
             emptyBufferToDb();
         }
         try {
@@ -287,7 +291,7 @@ public class MsgHandler extends Service {
      * Puts data from the buffer in the flash database for long-term storage
      */
     private void emptyBufferToDb() {
-        Log.d(TAG, "Emptying buffer to database...");
+        Log.v(TAG, "Emptying buffer to persistant database...");
 
         try {
             openDb();
@@ -307,7 +311,7 @@ public class MsgHandler extends Service {
             this.bufferCount = 0;
             this.buffer = new JSONObject();
         } catch (Exception e) {
-            Log.e(TAG, "Error storing buffer in DB!", e);
+            Log.e(TAG, "Error storing buffer in persistant database!", e);
         } finally {
             closeDb();
         }
@@ -438,7 +442,7 @@ public class MsgHandler extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "onCreate");
+        // Log.d(TAG, "onCreate");
 
         this.buffer = new JSONObject();
         this.bufferCount = 0;
@@ -446,7 +450,7 @@ public class MsgHandler extends Service {
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "onDestroy");
+        // Log.d(TAG, "onDestroy");
 
         emptyBufferToDb();
     }
@@ -478,7 +482,7 @@ public class MsgHandler extends Service {
     private boolean sendDataFromBuffer() {
 
         if (this.bufferCount > 0) {
-            Log.i(TAG, "Sending " + this.bufferCount + " values from local buffer to CommonSense");
+            Log.v(TAG, "Sending " + this.bufferCount + " values from local buffer to CommonSense");
             try {
                 int sentCount = 0;
                 int sentIndex = 0;
@@ -531,13 +535,13 @@ public class MsgHandler extends Service {
         try {
             // query the database
             openDb();
-            String[] cols = {DbHelper.COL_ROWID, DbHelper.COL_JSON, DbHelper.COL_SENSOR};
+            String[] cols = { DbHelper.COL_ROWID, DbHelper.COL_JSON, DbHelper.COL_SENSOR };
             String sel = DbHelper.COL_ACTIVE + "!=\'true\'";
             c = this.db.query(DbHelper.TABLE_NAME, cols, sel, null, null, null,
                     DbHelper.COL_SENSOR, null);
 
             if (c.getCount() > 0) {
-                Log.i(TAG, "Sending " + c.getCount() + " values from database to CommonSense");
+                Log.v(TAG, "Sending " + c.getCount() + " values from database to CommonSense");
 
                 // Send Data from each sensor
                 int sentCount = 0;
@@ -586,7 +590,7 @@ public class MsgHandler extends Service {
                 while (false == c.isAfterLast()) {
                     int id = c.getInt(c.getColumnIndex(DbHelper.COL_ROWID));
                     String where = DbHelper.COL_ROWID + "=?";
-                    String[] whereArgs = {"" + id};
+                    String[] whereArgs = { "" + id };
                     this.db.delete(DbHelper.TABLE_NAME, where, whereArgs);
                     c.moveToNext();
                 }

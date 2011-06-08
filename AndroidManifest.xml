@@ -2,9 +2,32 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="nl.sense_os.app"
-    android:versionCode="20110522"
-    android:versionName="2.1.0b1">
-    <!-- android:sharedUserId="nl.sense_os.platform"> -->
+    android:versionCode="20110608"
+    android:versionName="2.1.0">
+    
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="true" />
+    <uses-feature
+        android:name="android.hardware.microphone"
+        android:required="true" />
+    <uses-feature
+        android:name="android.hardware.wifi"
+        android:required="true" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="true" />
+    <uses-feature
+        android:name="android.hardware.bluetooth"
+        android:required="true" />
+    <!-- implied by permission PROCESS OUTGOING_CALLS, but not required -->
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+    <!-- implied by permission CAMERA, but not required -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <uses-permission
         android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -26,7 +49,9 @@
         android:name="android.permission.PROCESS_OUTGOING_CALLS" />
     <uses-permission
         android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"></uses-permission><uses-permission
+    <uses-permission
+        android:name="android.permission.RECEIVE_BOOT_COMPLETED"></uses-permission>
+    <uses-permission
         android:name="android.permission.RECORD_AUDIO" />
     <uses-permission
         android:name="android.permission.VIBRATE" />
@@ -34,25 +59,25 @@
         android:name="android.permission.WAKE_LOCK" />
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <!-- WRITE_SECURE_SETTINGS permission is silently denied on install: -->
-    <!-- <uses-permission -->
-    <!-- android:name="android.permission.WRITE_SECURE_SETTINGS" /> -->
 
     <uses-sdk
-        android:minSdkVersion="4" />
+        android:minSdkVersion="4"
+        android:targetSdkVersion="7" />
 
-    <supports-screens
-        android:smallScreens="true"
-        android:normalScreens="true"
-        android:largeScreens="true"
-        android:anyDensity="true" />
-    
+    <!-- we support all screen sizes by default, thanks to SDK version >= 4 -->
+    <!-- <supports-screens -->
+    <!-- android:smallScreens="true" -->
+    <!-- android:normalScreens="true" -->
+    <!-- android:largeScreens="true" -->
+    <!-- android:anyDensity="true" /> -->
+
 
     <application
         android:label="@string/sense_app_name"
         android:icon="@drawable/ic_launcher_sense">
 
         <activity
+            android:launchMode="singleInstance"
             android:configChanges="orientation"
             android:name="SenseApp"
             android:theme="@android:style/Theme.Light"

@@ -72,7 +72,7 @@ public class SenseApp extends Activity {
                     Log.e(TAG, "RemoteException checking login", e);
                 }
             } else {
-                Log.e(TAG, "Skipping login task: service=null. Is the service bound?");
+                Log.w(TAG, "Skipping login task: service=null. Is the service bound?");
             }
             return success;
         }
@@ -142,10 +142,10 @@ public class SenseApp extends Activity {
                         toggleMain(true);
                     }
                 } catch (final RemoteException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "RemoteException registering new user:", e);
                 }
             } else {
-                Log.e(TAG, "Skipping registration task: service=null. Is the service bound?");
+                Log.w(TAG, "Skipping registration task: service=null. Is the service bound?");
             }
             return success;
         }
@@ -198,7 +198,7 @@ public class SenseApp extends Activity {
         @Override
         public void statusReport(final int status) {
 
-            Log.v(TAG, "Status report from Sense Platform service...");
+            Log.v(TAG, "Received status report from Sense Platform service...");
 
             runOnUiThread(new Runnable() {
 
@@ -294,7 +294,7 @@ public class SenseApp extends Activity {
             final int flag = autoCreate ? BIND_AUTO_CREATE : 0;
             isServiceBound = bindService(serviceIntent, serviceConn, flag);
         } else {
-            Log.v(TAG, "Already bound...");
+            // Log.d(TAG, "Already bound...");
         }
     }
 
@@ -317,7 +317,7 @@ public class SenseApp extends Activity {
             bindToSenseService(true);
 
             // invoke callback method directly to update UI anyway.
-            Log.d(TAG, "Not bound to Sense Platform service! Assume it's not running...");
+            // Log.d(TAG, "Not bound to Sense Platform service! Assume it's not running...");
             runOnUiThread(new Runnable() {
 
                 @Override
@@ -1084,7 +1084,7 @@ public class SenseApp extends Activity {
         if (true == isServiceBound && null != serviceConn) {
             unbindService(serviceConn);
         } else {
-            Log.v(TAG, "Already unbound...");
+            // Log.d(TAG, "Already unbound...");
         }
         service = null;
         isServiceBound = false;
@@ -1100,11 +1100,11 @@ public class SenseApp extends Activity {
     private void updateUi(int status) {
 
         final boolean running = (status & Constants.STATUSCODE_RUNNING) > 0;
-        Log.d(TAG, "'running' status: " + running);
+        Log.v(TAG, "'running' status: " + running);
         ((CheckBox) findViewById(R.id.main_cb)).setChecked(running);
 
         final boolean connected = (status & Constants.STATUSCODE_CONNECTED) > 0;
-        Log.d(TAG, "'connected' status: " + connected);
+        Log.v(TAG, "'connected' status: " + connected);
 
         // show connection status in main service field
         TextView mainFirstLine = (TextView) findViewById(R.id.main_firstline);
@@ -1134,7 +1134,7 @@ public class SenseApp extends Activity {
         text1.setEnabled(connected);
         text2.setEnabled(connected);
         if (callstate) {
-            Log.d(TAG, "'phone state' enabled");
+            Log.v(TAG, "'phone state' enabled");
         }
 
         // enable location list row
@@ -1148,7 +1148,7 @@ public class SenseApp extends Activity {
         text1.setEnabled(connected);
         text2.setEnabled(connected);
         if (location) {
-            Log.d(TAG, "'location' enabled");
+            Log.v(TAG, "'location' enabled");
         }
 
         // enable motion list row
@@ -1161,7 +1161,7 @@ public class SenseApp extends Activity {
         text1.setEnabled(connected);
         text2.setEnabled(connected);
         if (motion) {
-            Log.d(TAG, "'motion' enabled");
+            Log.v(TAG, "'motion' enabled");
         }
 
         // enable ambience list row
@@ -1175,7 +1175,7 @@ public class SenseApp extends Activity {
         text1.setEnabled(connected);
         text2.setEnabled(connected);
         if (ambience) {
-            Log.d(TAG, "'ambience' enabled");
+            Log.v(TAG, "'ambience' enabled");
         }
 
         // enable device proximity row
@@ -1188,7 +1188,7 @@ public class SenseApp extends Activity {
         text1.setEnabled(connected);
         text2.setEnabled(connected);
         if (deviceProx) {
-            Log.d(TAG, "'neighboring devices' enabled");
+            Log.v(TAG, "'neighboring devices' enabled");
         }
 
         // enable external sensor list row
@@ -1201,7 +1201,7 @@ public class SenseApp extends Activity {
         text1.setEnabled(connected);
         text2.setEnabled(connected);
         if (external_sensors) {
-            Log.d(TAG, "'external sensors' enabled");
+            Log.v(TAG, "'external sensors' enabled");
         }
 
         // enable pop quiz list row
@@ -1214,7 +1214,7 @@ public class SenseApp extends Activity {
         text1.setEnabled(false);
         text2.setEnabled(false);
         if (popQuiz) {
-            Log.d(TAG, "'questionnaire' enabled");
+            Log.v(TAG, "'questionnaire' enabled");
         }
     }
 }
