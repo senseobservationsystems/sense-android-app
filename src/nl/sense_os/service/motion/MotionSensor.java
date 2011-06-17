@@ -143,9 +143,9 @@ public class MotionSensor implements SensorEventListener {
             i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
             this.context.startService(i);
         }
-        Log.d(TAG,"Motion thread runnig delay:"+sampleDelay+" motionSensingActive:"+motionSensingActive+" useFallDetector:"+useFallDetector);
+        
         if (sampleDelay > 500 && motionSensingActive && !useFallDetector) {
-        	Log.d(TAG,"Delay to big, stopping..");
+        
             // unregister the listener and start again in sampleDelay seconds
             stopMotionSensing();
             motionHandler.postDelayed(motionThread = new Runnable() {
