@@ -143,7 +143,9 @@ public class MotionSensor implements SensorEventListener {
             i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
             this.context.startService(i);
         }
+        Log.d(TAG,"Motion thread runnig delay:"+sampleDelay+" motionSensingActive:"+motionSensingActive+" useFallDetector:"+useFallDetector);
         if (sampleDelay > 500 && motionSensingActive && !useFallDetector) {
+        	Log.d(TAG,"Delay to big, stopping..");
             // unregister the listener and start again in sampleDelay seconds
             stopMotionSensing();
             motionHandler.postDelayed(motionThread = new Runnable() {
@@ -174,7 +176,7 @@ public class MotionSensor implements SensorEventListener {
         // check if the falldetector is enabled
         final SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
                 Context.MODE_WORLD_WRITEABLE);
-        useFallDetector = mainPrefs.getBoolean(Constants.PREF_MOTION_FALL_DETECT, true);
+        useFallDetector = mainPrefs.getBoolean(Constants.PREF_MOTION_FALL_DETECT, false);
         if (fallDetector.demo = mainPrefs.getBoolean(Constants.PREF_MOTION_FALL_DETECT_DEMO, false)) {
             useFallDetector = true;
         }
@@ -191,7 +193,7 @@ public class MotionSensor implements SensorEventListener {
                     || sensor.getType() == Sensor.TYPE_ORIENTATION
                     || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
                 // Log.d(TAG, "registering for sensor " + sensor.getName());
-                smgr.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
+                smgr.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
             }
         }
     }
