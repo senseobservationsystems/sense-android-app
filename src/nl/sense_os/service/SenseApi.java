@@ -372,9 +372,10 @@ public class SenseApi {
      *            username for login
      * @param pass
      *            hashed password for login
-     * @return <code>true</code> if successfully logged in
+     * @return 0 if login completed successfully, -2 if login was forbidden, and -1 for any other
+     *         errors.
      */
-    public static boolean login(Context context, String username, String pass) {
+    public static int login(Context context, String username, String pass) {
         try {
             final SharedPreferences authPrefs = context.getSharedPreferences(Constants.AUTH_PREFS,
                     Context.MODE_PRIVATE);
@@ -387,20 +388,23 @@ public class SenseApi {
             final HashMap<String, String> response = sendJson(url, user, "POST", "");
             if (response == null) {
                 // request failed
-                return false;
+                return -1;
             }
 
             final Editor authEditor = authPrefs.edit();
 
             // if response code is not 200 (OK), the login was incorrect
-            if (response.get("http response code").compareToIgnoreCase("200") != 0) {
-                // incorrect login
-                Log.e(TAG,
-                        "CommonSense login incorrect! Response code: "
-                                + response.get("http response code"));
+            String responseCode = response.get("http response code");
+            if ("403".equalsIgnoreCase(responseCode)) {
+                Log.e(TAG, "CommonSense login refused! Response: forbidden!");
                 authEditor.remove(Constants.PREF_LOGIN_COOKIE);
                 authEditor.commit();
-                return false;
+                return -2;
+            } else if (!"200".equalsIgnoreCase(responseCode)) {
+                Log.e(TAG, "CommonSense login failed! Response: " + responseCode);
+                authEditor.remove(Constants.PREF_LOGIN_COOKIE);
+                authEditor.commit();
+                return -1;
             }
 
             // if no cookie was returned, something went horribly wrong
@@ -409,7 +413,7 @@ public class SenseApi {
                 Log.e(TAG, "CommonSense login failed: no cookie received.");
                 authEditor.remove(Constants.PREF_LOGIN_COOKIE);
                 authEditor.commit();
-                return false;
+                return -1;
             }
 
             // store cookie in the preferences
@@ -418,7 +422,7 @@ public class SenseApi {
             authEditor.putString(Constants.PREF_LOGIN_COOKIE, cookie);
             authEditor.commit();
 
-            return true;
+            return 0;
 
         } catch (Exception e) {
             Log.e(TAG, "Exception during login: " + e.getMessage());
@@ -428,7 +432,7 @@ public class SenseApi {
             final Editor editor = authPrefs.edit();
             editor.remove(Constants.PREF_LOGIN_COOKIE);
             editor.commit();
-            return false;
+            return -1;
         }
     }
 
@@ -441,9 +445,10 @@ public class SenseApi {
      *            username to register
      * @param pass
      *            hashed password for the new user
-     * @return <code>true</code> if registration completed successfully
+     * @return 0 if registration completed successfully, -2 if the user already exists, and -1
+     *         otherwise.
      */
-    public static boolean register(Context context, String username, String pass) {
+    public static int register(Context context, String username, String pass) {
 
         // clear cached settings of the previous user
         final SharedPreferences authPrefs = context.getSharedPreferences(Constants.AUTH_PREFS,
@@ -468,30 +473,32 @@ public class SenseApi {
             final HashMap<String, String> response = SenseApi.sendJson(url, data, "POST", "");
             if (response == null) {
                 Log.e(TAG, "Error registering new user. response=null");
-                return false;
+                return -1;
             }
-            if (response.get("http response code").compareToIgnoreCase("201") != 0) {
-                Log.e(TAG,
-                        "Error registering new user. Got response code:"
-                                + response.get("http response code"));
-                return false;
+            String responseCode = response.get("http response code");
+            if ("201".equalsIgnoreCase(responseCode)) {
+                Log.v(TAG, "CommonSense registration successful");
+            } else if ("409".equalsIgnoreCase(responseCode)) {
+                Log.e(TAG, "Error registering new user! User already exists");
+                return -2;
+            } else {
+                Log.e(TAG, "Error registering new user! Response code: " + responseCode);
+                return -1;
             }
-
-            Log.v(TAG, "CommonSense registration successful");
         } catch (final IOException e) {
             Log.e(TAG, "IOException during registration!", e);
-            return false;
+            return -1;
         } catch (final IllegalAccessError e) {
             Log.e(TAG, "IllegalAccessError during registration!", e);
-            return false;
+            return -1;
         } catch (JSONException e) {
             Log.e(TAG, "JSONException during registration!", e);
-            return false;
+            return -1;
         } catch (Exception e) {
             Log.e(TAG, "Exception during registration!", e);
-            return false;
+            return -1;
         }
-        return true;
+        return 0;
     }
 
     /**
@@ -524,8 +531,8 @@ public class SenseApi {
             urlConn.setRequestProperty("Content-Length", "" + json.toString().length());
             urlConn.setRequestProperty("Content-Type", "application/json");
             urlConn.setInstanceFollowRedirects(false);
-            // Set cookie
-            urlConn.setRequestProperty("Cookie", cookie);
+
+            urlConn.connect();
 
             // Send POST output.
             DataOutputStream printout;
@@ -536,19 +543,25 @@ public class SenseApi {
             printout.close();
 
             // Get Response
-            InputStream is = urlConn.getInputStream();
-            BufferedReader rd = new BufferedReader(new InputStreamReader(is), 1024);
-            String line;
-            StringBuffer responseString = new StringBuffer();
-            while ((line = rd.readLine()) != null) {
-                responseString.append(line);
-                responseString.append('\r');
+            HashMap<String, String> response = new HashMap<String, String>();
+            int responseCode = urlConn.getResponseCode();
+            response.put("http response code", "" + urlConn.getResponseCode());
+
+            // content is only available for 2xx requests
+            if (200 <= responseCode && 300 > responseCode) {
+                InputStream is = urlConn.getInputStream();
+                BufferedReader rd = new BufferedReader(new InputStreamReader(is), 1024);
+                String line;
+                StringBuffer responseString = new StringBuffer();
+                while ((line = rd.readLine()) != null) {
+                    responseString.append(line);
+                    responseString.append('\r');
+                }
+                rd.close();
+                response.put("content", responseString.toString());
             }
 
-            rd.close();
-            HashMap<String, String> response = new HashMap<String, String>();
-            response.put("http response code", "" + urlConn.getResponseCode());
-            response.put("content", responseString.toString());
+            // read header fields
             Map<String, List<String>> headerFields = urlConn.getHeaderFields();
             for (Entry<String, List<String>> entry : headerFields.entrySet()) {
                 String key = entry.getKey();
@@ -564,11 +577,12 @@ public class SenseApi {
                 }
             }
             return response;
+
         } catch (Exception e) {
             if (null == e.getMessage()) {
                 Log.e(TAG, "Error in posting JSON: " + json.toString(), e);
             } else {
-                Log.e(TAG, "Error in posting JSON: " + json.toString() + "\n" + e.getMessage());
+                Log.e(TAG, "Error in posting JSON: " + json.toString() + "\n" + e.getMessage(), e);
             }
             return null;
         } finally {

@@ -135,7 +135,7 @@ public class SenseService extends Service {
         private static final String TAG = "SenseServiceStub";
 
         @Override
-        public boolean changeLogin(String username, String password) throws RemoteException {
+        public int changeLogin(String username, String password) throws RemoteException {
             return SenseService.this.changeLogin(username, password);
         }
 
@@ -234,7 +234,7 @@ public class SenseService extends Service {
         }
 
         @Override
-        public boolean register(String username, String password) throws RemoteException {
+        public int register(String username, String password) throws RemoteException {
             return SenseService.this.register(username, password);
         }
 
@@ -440,7 +440,7 @@ public class SenseService extends Service {
      * 
      * @return <code>true</code> if login was changed successfully
      */
-    private boolean changeLogin(String username, String password) {
+    private int changeLogin(String username, String password) {
 
         // log out before changing to a new user
         onLogOut();
@@ -533,9 +533,10 @@ public class SenseService extends Service {
      * {@link #isLoggedIn} status accordingly. Can also be called from Activities that are bound to
      * the service.
      * 
-     * @return <code>true</code> if successful.
+     * @return 0 if login completed successfully, -2 if login was forbidden, and -1 for any other
+     *         errors.
      */
-    private boolean login() {
+    private int login() {
         Log.v(TAG, "Log in...");
 
         // show notification that we are not logged in (yet)
@@ -547,14 +548,20 @@ public class SenseService extends Service {
         final String pass = authPrefs.getString(Constants.PREF_LOGIN_PASS, null);
 
         // try to log in
+        int result = -1;
         if (username != null && pass != null) {
-            isLoggedIn = SenseApi.login(this, username, pass);
+            result = SenseApi.login(this, username, pass);
 
-            if (isLoggedIn) {
+            if (0 == result) {
                 // logged in successfully
+                isLoggedIn = true;
                 onLogIn();
+            } else if (-2 == result) {
+                Log.w(TAG, "Login forbidden!");
+                isLoggedIn = false;
             } else {
-                Log.w(TAG, "Login failed");
+                Log.w(TAG, "Login failed!");
+                isLoggedIn = false;
             }
 
         } else {
@@ -563,7 +570,7 @@ public class SenseService extends Service {
             isLoggedIn = false;
         }
 
-        return isLoggedIn;
+        return result;
     }
 
     @Override
@@ -754,9 +761,10 @@ public class SenseService extends Service {
      * updates the {@link #isLoggedIn} status accordingly. Can also be called from Activities that
      * are bound to the service.
      * 
-     * @return <code>true</code> if successful.
+     * @return 0 if registration completed successfully, -2 if the user already exists, and -1 for
+     *         any other errors.
      */
-    private boolean register(String username, String password) {
+    private int register(String username, String password) {
 
         // log out before registering a new user
         onLogOut();
@@ -779,11 +787,12 @@ public class SenseService extends Service {
         authEditor.commit();
 
         // try to register
+        int registered = -1;
         if (null != username && null != password) {
             Log.v(TAG, "Registering... Username: " + username + ", password hash: " + hashPass);
 
-            boolean registered = SenseApi.register(this, username, hashPass);
-            if (registered) {
+            registered = SenseApi.register(this, username, hashPass);
+            if (registered == 0) {
                 login();
             } else {
                 Log.w(TAG, "Registration failed");
@@ -794,7 +803,7 @@ public class SenseService extends Service {
             // username + ", password hash: " + hashPass);
             isLoggedIn = false;
         }
-        return isLoggedIn;
+        return registered;
     }
 
     /**

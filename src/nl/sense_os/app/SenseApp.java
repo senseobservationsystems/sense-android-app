@@ -50,42 +50,41 @@ public class SenseApp extends Activity {
      * arguments. Clears any open login dialogs before start, and displays a progress dialog during
      * operation. If the check fails, the login dialog is shown again.
      */
-    private class CheckLoginTask extends AsyncTask<String, Void, Boolean> {
+    private class CheckLoginTask extends AsyncTask<String, Void, Integer> {
         private static final String TAG = "CheckLoginTask";
 
         @Override
-        protected Boolean doInBackground(String... params) {
-            boolean success = false;
+        protected Integer doInBackground(String... params) {
+            int result = -1;
 
             String username = params[0];
             String password = params[1];
 
             if (service != null) {
                 try {
-                    success = service.changeLogin(username, password);
-
-                    // start sensing after the login
-                    if (success) {
-                        toggleMain(true);
-                    }
+                    result = service.changeLogin(username, password);
                 } catch (final RemoteException e) {
                     Log.e(TAG, "RemoteException checking login", e);
                 }
             } else {
                 Log.w(TAG, "Skipping login task: service=null. Is the service bound?");
             }
-            return success;
+            return result;
         }
 
         @Override
-        protected void onPostExecute(Boolean result) {
+        protected void onPostExecute(Integer result) {
             try {
                 dismissDialog(DIALOG_PROGRESS);
             } catch (final IllegalArgumentException e) {
                 // do nothing, perhaps the progress dialog was already dismissed
             }
 
-            if (result != true) {
+            if (result.intValue() == -2) {
+                Toast.makeText(SenseApp.this, R.string.toast_login_forbidden, Toast.LENGTH_LONG)
+                        .show();
+                showDialog(DIALOG_LOGIN);
+            } else if (result.intValue() == -1) {
                 Toast.makeText(SenseApp.this, R.string.toast_login_fail, Toast.LENGTH_LONG).show();
                 showDialog(DIALOG_LOGIN);
             } else {
@@ -123,42 +122,43 @@ public class SenseApp extends Activity {
      * as arguments. Clears any open registeration dialogs before start, and displays a progress
      * dialog during operation. If the check fails, the registration dialog is shown again.
      */
-    private class CheckRegisterTask extends AsyncTask<String, Void, Boolean> {
+    private class CheckRegisterTask extends AsyncTask<String, Void, Integer> {
         private static final String TAG = "CheckRegisterTask";
 
         @Override
-        protected Boolean doInBackground(String... params) {
-            boolean success = false;
+        protected Integer doInBackground(String... params) {
+            int result = -1;
 
             String username = params[0];
             String password = params[1];
 
             if (service != null) {
                 try {
-                    success = service.register(username, password);
-
-                    // start sensing after the very first login
-                    if (success) {
-                        toggleMain(true);
-                    }
+                    result = service.register(username, password);
                 } catch (final RemoteException e) {
                     Log.e(TAG, "RemoteException registering new user:", e);
                 }
             } else {
                 Log.w(TAG, "Skipping registration task: service=null. Is the service bound?");
             }
-            return success;
+            return result;
         }
 
         @Override
-        protected void onPostExecute(Boolean result) {
+        protected void onPostExecute(Integer result) {
+            Log.v(TAG, "Registration result: " + result.intValue());
+
             try {
                 dismissDialog(DIALOG_PROGRESS);
             } catch (final IllegalArgumentException e) {
                 // do nothing
             }
 
-            if (result != true) {
+            if (result.intValue() == -2) {
+                Toast.makeText(SenseApp.this, R.string.toast_reg_conflict, Toast.LENGTH_LONG)
+                        .show();
+                showDialog(DIALOG_REGISTER);
+            } else if (result.intValue() == -1) {
                 Toast.makeText(SenseApp.this, R.string.toast_reg_fail, Toast.LENGTH_LONG).show();
                 showDialog(DIALOG_REGISTER);
             } else {
@@ -184,7 +184,7 @@ public class SenseApp extends Activity {
             try {
                 dismissDialog(DIALOG_REGISTER);
             } catch (final IllegalArgumentException e) {
-                e.printStackTrace();
+                // do nothing
             }
             showDialog(DIALOG_PROGRESS);
         }

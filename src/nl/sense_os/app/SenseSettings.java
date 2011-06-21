@@ -43,22 +43,22 @@ public class SenseSettings extends PreferenceActivity {
      * as arguments. Clears any open login dialogs before start, and displays a progress dialog
      * during operation. If the login fails, the login dialog is shown again.
      */
-    private class CheckLoginTask extends AsyncTask<String, Void, Boolean> {
+    private class CheckLoginTask extends AsyncTask<String, Void, Integer> {
         private static final String TAG = "CheckLoginTask";
 
         @Override
-        protected Boolean doInBackground(String... params) {
-            boolean success = false;
+        protected Integer doInBackground(String... params) {
+            int result = -1;
 
             String username = params[0];
             String password = params[1];
 
             if (service != null) {
                 try {
-                    success = service.changeLogin(username, password);
+                    result = service.changeLogin(username, password);
 
                     // start service
-                    if (success) {
+                    if (0 == result) {
                         startSenseService();
                     }
                 } catch (final RemoteException e) {
@@ -67,17 +67,21 @@ public class SenseSettings extends PreferenceActivity {
             } else {
                 Log.d(TAG, "Skipping login task: service=null. Is the service bound?");
             }
-            return success;
+            return result;
         }
 
         @Override
-        protected void onPostExecute(Boolean result) {
+        protected void onPostExecute(Integer result) {
             try {
                 dismissDialog(DIALOG_PROGRESS);
             } catch (final IllegalArgumentException e) {
                 // do nothing
             }
-            if (result != true) {
+            if (result == -2) {
+                Toast.makeText(SenseSettings.this, R.string.toast_login_forbidden,
+                        Toast.LENGTH_LONG).show();
+                showDialog(DIALOG_LOGIN);
+            } else if (result == -1) {
                 Toast.makeText(SenseSettings.this, R.string.toast_login_fail, Toast.LENGTH_LONG)
                         .show();
                 showDialog(DIALOG_LOGIN);
@@ -127,22 +131,22 @@ public class SenseSettings extends PreferenceActivity {
      * progress dialog during operation. If the registration fails, the registration dialog is shown
      * again.
      */
-    private class CheckRegisterTask extends AsyncTask<String, Void, Boolean> {
+    private class CheckRegisterTask extends AsyncTask<String, Void, Integer> {
         private static final String TAG = "CheckRegisterTask";
 
         @Override
-        protected Boolean doInBackground(String... params) {
-            boolean success = false;
+        protected Integer doInBackground(String... params) {
+            int result = -1;
 
             String username = params[0];
             String password = params[1];
 
             if (service != null) {
                 try {
-                    success = service.register(username, password);
+                    result = service.register(username, password);
 
                     // start service
-                    if (success) {
+                    if (0 == result) {
                         startSenseService();
                     }
                 } catch (final RemoteException e) {
@@ -151,20 +155,24 @@ public class SenseSettings extends PreferenceActivity {
             } else {
                 Log.d(TAG, "Skipping registration task: service=null. Is the service bound?");
             }
-            return success;
+            return result;
         }
 
         @Override
-        protected void onPostExecute(Boolean result) {
+        protected void onPostExecute(Integer result) {
             try {
                 dismissDialog(DIALOG_PROGRESS);
             } catch (final IllegalArgumentException e) {
                 // do nothing
             }
 
-            if (result != true) {
-                Toast.makeText(SenseSettings.this, getString(R.string.toast_reg_fail),
-                        Toast.LENGTH_LONG).show();
+            if (result.intValue() == -2) {
+                Toast.makeText(SenseSettings.this, R.string.toast_reg_conflict, Toast.LENGTH_LONG)
+                        .show();
+                showDialog(DIALOG_REGISTER);
+            } else if (result.intValue() == -1) {
+                Toast.makeText(SenseSettings.this, R.string.toast_reg_fail, Toast.LENGTH_LONG)
+                        .show();
                 showDialog(DIALOG_REGISTER);
             } else {
                 Toast.makeText(SenseSettings.this, getString(R.string.toast_reg_ok),

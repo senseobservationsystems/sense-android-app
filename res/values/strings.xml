@@ -54,11 +54,13 @@
     <string name="pq_welcome_msg2">User:</string>
     <string name="pq_welcome_title">Pop quiz</string>
     <string name="toast_location_noprovider">All location providers are disabled in the preferences. Location service not started.</string>
-    <string name="toast_login_fail">Login failed, please try again.</string>
+    <string name="toast_login_fail">Login failed! Possible connection problems.</string>
+    <string name="toast_login_forbidden">Login failed! Invalid username or password.</string>
     <string name="toast_login_ok">Login successful.</string>
     <string name="toast_login_error_conn">No data connection available. Service will retry automatically.</string>
     <string name="toast_quiz_refresh">Quiz questions are being refreshed...</string>
-    <string name="toast_reg_fail">Registration failed, please try again.</string>
+    <string name="toast_reg_fail">Registration failed! Possible connection problems.</string>
+    <string name="toast_reg_conflict">Registration failed! The user already exists.</string>
     <string name="toast_reg_ok">Registration successful.</string>
     <string name="toast_reg_pass">Passwords do not match, please try again.</string>
     <string name="toast_toggle_dev_prox">Device proximity will update every ?.</string>
