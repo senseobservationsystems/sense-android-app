@@ -362,6 +362,8 @@ public class MsgHandler extends Service {
                 json.put("val", intent.getStringExtra(KEY_VALUE));
             } else if (type.equals(Constants.SENSOR_DATA_TYPE_FILE)) {
                 json.put("val", intent.getStringExtra(KEY_VALUE));
+            }  else if (type.equals(Constants.SENSOR_DATA_TYPE_JSON_TIME_SERIE)) {
+                json.put("val", new JSONObject(intent.getStringExtra(KEY_VALUE)));             
             } else {
                 Log.e(TAG, "Unexpected data type: " + type);
                 return;
@@ -387,7 +389,7 @@ public class MsgHandler extends Service {
                     value += intent.getFloatExtra(KEY_VALUE, Float.MIN_VALUE);
                 } else if (type.equals(Constants.SENSOR_DATA_TYPE_INT)) {
                     value += intent.getIntExtra(KEY_VALUE, Integer.MIN_VALUE);
-                } else if (type.equals(Constants.SENSOR_DATA_TYPE_JSON)) {
+                } else if (type.equals(Constants.SENSOR_DATA_TYPE_JSON) || type.equals(Constants.SENSOR_DATA_TYPE_JSON_TIME_SERIE)) {
                     try {
                         value += new JSONObject(intent.getStringExtra(KEY_VALUE)).toString();
                     } catch (JSONException e) {

@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.zip.GZIPOutputStream;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -34,6 +35,7 @@ import android.util.Log;
 public class SenseApi {
 
     private static final String TAG = "SenseApi";
+    private static final boolean USE_COMPRESSION = false;
     private static final long CACHE_REFRESH = 1000l * 60 * 60; // 1 hour
 
     /**
@@ -508,40 +510,55 @@ public class SenseApi {
             String cookie) {
         HttpURLConnection urlConn = null;
         try {
+        	Log.d(TAG, "Sending:"+url.toString());
             // Open New URL connection channel.
             urlConn = (HttpURLConnection) url.openConnection();
 
             // set post request
             urlConn.setRequestMethod(method);
-
+           
             // Let the run-time system (RTS) know that we want input.
             urlConn.setDoInput(true);
-            urlConn.setFixedLengthStreamingMode(json.toString().length());
 
             // we want to do output.
             urlConn.setDoOutput(true);
-
+            
             // We want no caching
             urlConn.setUseCaches(false);
 
+            // Set content type
+            urlConn.setRequestProperty("Content-Type", "application/json");            
+            
+            urlConn.setInstanceFollowRedirects(false);
+            
             // Set cookie
             urlConn.setRequestProperty("Cookie", cookie);
 
-            // Set content size
-            urlConn.setRequestProperty("Content-Length", "" + json.toString().length());
-            urlConn.setRequestProperty("Content-Type", "application/json");
-            urlConn.setInstanceFollowRedirects(false);
-
-            urlConn.connect();
-
             // Send POST output.
             DataOutputStream printout;
-            printout = new DataOutputStream(urlConn.getOutputStream());
+           
+//            String testData = "username=epi&password=d0f92a90d5500f1d5c4136966c5c7e63"
+            // Set compression
+            if(USE_COMPRESSION)
+            {
+            	// Don't Set content size
+            	urlConn.setRequestProperty("Transfer-Encoding", "chunked");
+            	urlConn.setRequestProperty("Content-Encoding", "gzip");
+            	GZIPOutputStream zipStream = new GZIPOutputStream(urlConn.getOutputStream());           
+            	printout = new DataOutputStream(zipStream);
+            }
+            else
+            {
+            	// Set content size
+            	urlConn.setFixedLengthStreamingMode(json.toString().length());
+            	urlConn.setRequestProperty("Content-Length", "" +json.toString().length());
+            	printout = new DataOutputStream(urlConn.getOutputStream());
+            }
 
             printout.writeBytes(json.toString());
             printout.flush();
             printout.close();
-
+            
             // Get Response
             HashMap<String, String> response = new HashMap<String, String>();
             int responseCode = urlConn.getResponseCode();
