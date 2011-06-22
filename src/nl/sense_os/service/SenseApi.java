@@ -510,55 +510,53 @@ public class SenseApi {
             String cookie) {
         HttpURLConnection urlConn = null;
         try {
-        	Log.d(TAG, "Sending:"+url.toString());
+            // Log.d(TAG, "Sending:" + url.toString());
+
             // Open New URL connection channel.
             urlConn = (HttpURLConnection) url.openConnection();
 
             // set post request
             urlConn.setRequestMethod(method);
-           
+
             // Let the run-time system (RTS) know that we want input.
             urlConn.setDoInput(true);
 
             // we want to do output.
             urlConn.setDoOutput(true);
-            
+
             // We want no caching
             urlConn.setUseCaches(false);
 
             // Set content type
-            urlConn.setRequestProperty("Content-Type", "application/json");            
-            
+            urlConn.setRequestProperty("Content-Type", "application/json");
+
             urlConn.setInstanceFollowRedirects(false);
-            
+
             // Set cookie
             urlConn.setRequestProperty("Cookie", cookie);
 
             // Send POST output.
             DataOutputStream printout;
-           
-//            String testData = "username=epi&password=d0f92a90d5500f1d5c4136966c5c7e63"
+
+            // String testData = "username=epi&password=d0f92a90d5500f1d5c4136966c5c7e63"
             // Set compression
-            if(USE_COMPRESSION)
-            {
-            	// Don't Set content size
-            	urlConn.setRequestProperty("Transfer-Encoding", "chunked");
-            	urlConn.setRequestProperty("Content-Encoding", "gzip");
-            	GZIPOutputStream zipStream = new GZIPOutputStream(urlConn.getOutputStream());           
-            	printout = new DataOutputStream(zipStream);
-            }
-            else
-            {
-            	// Set content size
-            	urlConn.setFixedLengthStreamingMode(json.toString().length());
-            	urlConn.setRequestProperty("Content-Length", "" +json.toString().length());
-            	printout = new DataOutputStream(urlConn.getOutputStream());
+            if (USE_COMPRESSION) {
+                // Don't Set content size
+                urlConn.setRequestProperty("Transfer-Encoding", "chunked");
+                urlConn.setRequestProperty("Content-Encoding", "gzip");
+                GZIPOutputStream zipStream = new GZIPOutputStream(urlConn.getOutputStream());
+                printout = new DataOutputStream(zipStream);
+            } else {
+                // Set content size
+                urlConn.setFixedLengthStreamingMode(json.toString().length());
+                urlConn.setRequestProperty("Content-Length", "" + json.toString().length());
+                printout = new DataOutputStream(urlConn.getOutputStream());
             }
 
             printout.writeBytes(json.toString());
             printout.flush();
             printout.close();
-            
+
             // Get Response
             HashMap<String, String> response = new HashMap<String, String>();
             int responseCode = urlConn.getResponseCode();
@@ -599,7 +597,8 @@ public class SenseApi {
             if (null == e.getMessage()) {
                 Log.e(TAG, "Error in posting JSON: " + json.toString(), e);
             } else {
-                Log.e(TAG, "Error in posting JSON: " + json.toString() + "\n" + e.getMessage(), e);
+                // less verbose output
+                Log.e(TAG, "Error in posting JSON: " + json.toString() + "\n" + e.getMessage());
             }
             return null;
         } finally {

@@ -751,9 +751,7 @@ public class SenseService extends Service {
 
     public void onSyncRateChange() {
         Log.v(TAG, "Sync rate changed...");
-        if (isLoggedIn) {
-            startTransmitAlarms();
-        }
+        startTransmitAlarms();
     }
 
     /**
@@ -865,6 +863,8 @@ public class SenseService extends Service {
      * immediately after creation.
      */
     private void startAliveChecks() {
+
+        Log.d(TAG, "Start periodic checks if Sense is still alive...");
 
         // put alive status in the preferences
         final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
@@ -994,11 +994,14 @@ public class SenseService extends Service {
      * Start periodic broadcast to trigger the MsgHandler to flush its buffer to CommonSense.
      */
     private void startTransmitAlarms() {
+
+        Log.d(TAG, "Start periodic data transmission alarms...");
+
         Intent alarm = new Intent(this, DataTransmitter.class);
         PendingIntent operation = PendingIntent.getBroadcast(this, DataTransmitter.REQID, alarm, 0);
         AlarmManager mgr = (AlarmManager) getSystemService(ALARM_SERVICE);
         mgr.cancel(operation);
-        mgr.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), operation);
+        mgr.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 5000, operation);
     }
 
     /**
