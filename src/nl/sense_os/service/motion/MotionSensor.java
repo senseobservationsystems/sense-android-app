@@ -47,13 +47,12 @@ public class MotionSensor implements SensorEventListener {
     private Runnable motionThread = null;
     private long sampleDelay = 0; // in milliseconds
     private long[] lastLocalSampleTimes = new long[50];
-    private long localBufferTime = 10 * 1000;
+    private long localBufferTime = 30 * 1000;
     private List<Sensor> sensors;
     private SensorManager smgr;
     private boolean EPI_MODE = false;
     private JSONArray[] dataBuffer = new JSONArray[10];
-    private long lastFall;
-
+    
     public MotionSensor(Context context) {
         this.context = context;
         smgr = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
@@ -84,14 +83,8 @@ public class MotionSensor implements SensorEventListener {
 
             if (fallDetector.fallDetected(accVecSum))
             {
-                sendFallMessage(true); // send msg
-                lastFall = System.currentTimeMillis();
-            }
-            else if(System.currentTimeMillis() > lastFall+1000 && lastFall != 0)
-            {
-            	sendFallMessage(false); // send msg
-            	 lastFall = 0;
-            }
+                sendFallMessage(true); // send msg               
+            }           
 
         }
         if (System.currentTimeMillis() > lastSampleTimes[sensor.getType()] + sampleDelay) 
