@@ -941,6 +941,8 @@ public class SenseService extends Service {
                 return;
             }
         }
+        
+        startAliveChecks();
 
         // update state field
         isForeground = true;

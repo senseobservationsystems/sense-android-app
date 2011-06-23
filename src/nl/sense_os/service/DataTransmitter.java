@@ -26,7 +26,7 @@ public class DataTransmitter extends BroadcastReceiver {
         Log.d(TAG, "onReceive");
 
         final SharedPreferences statusPrefs = context.getSharedPreferences(Constants.STATUS_PREFS,
-                Context.MODE_WORLD_WRITEABLE);
+                Context.MODE_PRIVATE);
         final boolean alive = statusPrefs.getBoolean(Constants.PREF_ALIVE, false);
 
         // check if the service is (supposed to be) alive before scheduling next alarm
