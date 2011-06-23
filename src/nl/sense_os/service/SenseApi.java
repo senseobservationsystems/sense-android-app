@@ -506,8 +506,7 @@ public class SenseApi {
     /**
      * This method sends a JSON object to update or create an item it returns the HTTP-response code
      */
-    public static HashMap<String, String> sendJson(URL url, JSONObject json, String method,
-            String cookie) {
+    public static HashMap<String, String> sendJson(URL url, JSONObject json, String method, String cookie) {
         HttpURLConnection urlConn = null;
         try {
             // Log.d(TAG, "Sending:" + url.toString());
@@ -534,7 +533,7 @@ public class SenseApi {
 
             // Set cookie
             urlConn.setRequestProperty("Cookie", cookie);
-
+            
             // Send POST output.
             DataOutputStream printout;
 

@@ -104,9 +104,8 @@ public class MsgHandler extends Service {
             String sensorId = url.substring(start, end);
 
             try {
-                HashMap<String, String> response = SenseApi.sendJson(new URL(url), data, "POST",
-                        cookie);
-                if (response.get("http response code").compareToIgnoreCase("201") != 0)
+                HashMap<String, String> response = SenseApi.sendJson(new URL(url), data, "POST", cookie);
+                if (response != null && response.get("http response code").compareToIgnoreCase("201") != 0)
                     Log.e(TAG, "Sending sensor data failed. Sensor: " + sensorId
                             + ", HTTP response code:" + response.get("http response code")
                             + ",  content: \'" + response.get("content") + "\'");

@@ -50,7 +50,7 @@ public class MotionSensor implements SensorEventListener {
     private long localBufferTime = 30 * 1000;
     private List<Sensor> sensors;
     private SensorManager smgr;
-    private boolean EPI_MODE = false;
+    private boolean EPI_MODE = true;
     private JSONArray[] dataBuffer = new JSONArray[10];
     
     public MotionSensor(Context context) {
@@ -59,6 +59,7 @@ public class MotionSensor implements SensorEventListener {
         sensors = smgr.getSensorList(Sensor.TYPE_ALL);
         fallDetector = new FallDetector();
     }
+    
 
     public long getSampleDelay() {
         return sampleDelay;
