@@ -33,11 +33,16 @@ public class BatterySensor {
 
         @Override
         public void onReceive(Context context, Intent intent) {
+            // Log.d(TAG, "BatteryChangeReceiver received broadcast");
+
             boolean gotData = false;
+
             if (System.currentTimeMillis() > lastSampleTime + sampleDelay) {
-                // Send a message when the screen state has changed
+
+                // Send a message when the battery state has changed
                 JSONObject json = new JSONObject();
                 if (intent.getAction().equals(Intent.ACTION_BATTERY_CHANGED)) {
+
                     gotData = true;
                     int level = intent.getIntExtra("level", 0);
                     int scale = intent.getIntExtra("scale", 100);
@@ -55,8 +60,7 @@ public class BatterySensor {
                         if (plugType > 0) {
                             statusString = statusString
                                     + " "
-                                    + ((plugType == BatteryManager.BATTERY_PLUGGED_AC)
-                                            ? "AC"
+                                    + ((plugType == BatteryManager.BATTERY_PLUGGED_AC) ? "AC"
                                             : "USB");
                         }
                         try {
@@ -98,8 +102,10 @@ public class BatterySensor {
                         Log.e(TAG, "JSONException preparing screen activity data");
                     }
                 }
-                // check if the intent was a screen change intent
+
                 if (gotData) {
+                    Log.d(TAG, "Transmit battery state: " + json.toString());
+
                     Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
                     i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
                     i.putExtra(MsgHandler.KEY_VALUE, json.toString());
@@ -108,7 +114,9 @@ public class BatterySensor {
                     lastSampleTime = System.currentTimeMillis();
                     context.startService(i);
                 }
-                // check if the intent was a activity change intent
+
+            } else {
+                Log.d(TAG, "Skipped battery state update: too soon after last transmission...");
             }
         }
     };

@@ -50,6 +50,7 @@ public class SensePhoneState extends PhoneStateListener {
     private Context context;
     private PhoneStateUpdater updater = new PhoneStateUpdater();
     private boolean lastMsgIndicatorState;
+    private boolean msgIndicatorUpdated = false;
     private String lastServiceState;
     private String lastSignalStrength;
     private String lastDataConnectionState;
@@ -70,10 +71,15 @@ public class SensePhoneState extends PhoneStateListener {
             @Override
             public void run() {
 
-                Log.d(TAG, "Transmit phone state...");
+                if (null != lastIp || null != lastDataConnectionState
+                        || true == msgIndicatorUpdated || null != lastServiceState
+                        || null != lastSignalStrength) {
+                    Log.v(TAG, "Transmit the latest phone state...");
+                }
 
                 // IP address
                 if (null != lastIp) {
+                    Log.d(TAG, "Transmit IP address...");
                     Intent ipAddress = new Intent(MsgHandler.ACTION_NEW_MSG);
                     ipAddress.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_IP);
                     ipAddress.putExtra(MsgHandler.KEY_VALUE, lastIp);
@@ -86,6 +92,7 @@ public class SensePhoneState extends PhoneStateListener {
 
                 // data connection state
                 if (null != lastDataConnectionState) {
+                    Log.d(TAG, "Transmit data connection state...");
                     Intent dataConnection = new Intent(MsgHandler.ACTION_NEW_MSG);
                     dataConnection.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_DATA);
                     dataConnection.putExtra(MsgHandler.KEY_VALUE, lastDataConnectionState);
@@ -98,16 +105,22 @@ public class SensePhoneState extends PhoneStateListener {
                 }
 
                 // message waiting indicator
-                Intent msgIndicator = new Intent(MsgHandler.ACTION_NEW_MSG);
-                msgIndicator.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_UNREAD);
-                msgIndicator.putExtra(MsgHandler.KEY_VALUE, lastMsgIndicatorState);
-                msgIndicator.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_BOOL);
-                msgIndicator.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
-                context.startService(msgIndicator);
-                lastMsgIndicatorState = false;
+                if (msgIndicatorUpdated) {
+                    Log.d(TAG, "Transmit unread messages indicator...");
+                    Intent msgIndicator = new Intent(MsgHandler.ACTION_NEW_MSG);
+                    msgIndicator.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_UNREAD);
+                    msgIndicator.putExtra(MsgHandler.KEY_VALUE, lastMsgIndicatorState);
+                    msgIndicator
+                            .putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_BOOL);
+                    msgIndicator.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+                    context.startService(msgIndicator);
+
+                    msgIndicatorUpdated = false;
+                }
 
                 // service state
                 if (null != lastServiceState) {
+                    Log.d(TAG, "Transmit service state...");
                     Intent serviceState = new Intent(MsgHandler.ACTION_NEW_MSG);
                     serviceState.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_SERVICE);
                     serviceState.putExtra(MsgHandler.KEY_VALUE, lastServiceState);
@@ -121,6 +134,7 @@ public class SensePhoneState extends PhoneStateListener {
 
                 // signal strength
                 if (null != lastSignalStrength) {
+                    Log.d(TAG, "Transmit signal strength...");
                     Intent signalStrength = new Intent(MsgHandler.ACTION_NEW_MSG);
                     signalStrength.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_SIGNAL);
                     signalStrength.putExtra(MsgHandler.KEY_VALUE, lastSignalStrength);
@@ -173,6 +187,7 @@ public class SensePhoneState extends PhoneStateListener {
 
     @Override
     public void onCallStateChanged(int state, String incomingNumber) {
+        // Log.d(TAG, "Call state changed...");
 
         JSONObject json = new JSONObject();
         try {
@@ -217,6 +232,7 @@ public class SensePhoneState extends PhoneStateListener {
 
     @Override
     public void onDataConnectionStateChanged(int state) {
+        Log.d(TAG, "Connection state changed...");
 
         String strState = "";
         switch (state) {
@@ -264,7 +280,9 @@ public class SensePhoneState extends PhoneStateListener {
 
     @Override
     public void onMessageWaitingIndicatorChanged(boolean unreadMsgs) {
+        Log.d(TAG, "Message waiting changed...");
         lastMsgIndicatorState = unreadMsgs;
+        msgIndicatorUpdated = true;
     }
 
     @Override
