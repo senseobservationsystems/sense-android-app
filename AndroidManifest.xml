@@ -108,7 +108,7 @@
             </intent-filter>
         </activity>
 
-        <activity
+        <activity        
             android:name="nl.sense_os.service.popquiz.PopQuiz"
             android:configChanges="orientation"
             android:process="nl.sense_os.service">
@@ -120,7 +120,7 @@
             </intent-filter>
         </activity>
 
-        <service
+        <service            
             android:name="nl.sense_os.service.SenseService"
             android:process="nl.sense_os.service">
             <intent-filter>
@@ -131,7 +131,7 @@
 
         <service
             android:name="nl.sense_os.service.MsgHandler"
-            android:process="nl.sense_os.service">
+            android:process="nl.sense_os.msgs">
             <intent-filter>
                 <action
                     android:name="nl.sense_os.app.MsgHandler.NEW_MSG" />
@@ -192,7 +192,7 @@
 
         <receiver
             android:name="nl.sense_os.service.AliveChecker"
-            android:process="nl.sense_os.service">
+            android:process="nl.sense_os.service.alivechecker">
             <intent-filter>
                 <action
                     android:name="nl.sense_os.service.CheckAlive" />
@@ -214,7 +214,7 @@
 
         <receiver
             android:name="nl.sense_os.service.DataTransmitter"
-            android:process="nl.sense_os.service" />
+            android:process="nl.sense_os.service.datatransmitter" />
 
     </application>
 

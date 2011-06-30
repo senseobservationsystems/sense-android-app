@@ -47,10 +47,12 @@ public class MotionSensor implements SensorEventListener {
     private Runnable motionThread = null;
     private long sampleDelay = 0; // in milliseconds
     private long[] lastLocalSampleTimes = new long[50];
-    private long localBufferTime = 30 * 1000;
+    private long localBufferTime = 15 * 1000;
     private List<Sensor> sensors;
     private SensorManager smgr;
-    private boolean EPI_MODE = true;
+    private boolean EPI_MODE = false;
+    private long firstTimeSend = 0;
+    private int sentCnt = 0;
     private JSONArray[] dataBuffer = new JSONArray[10];
     
     public MotionSensor(Context context) {
@@ -176,6 +178,10 @@ public class MotionSensor implements SensorEventListener {
 		            this.context.startService(i);
 		            dataBuffer[sensor.getType()] = new JSONArray();
 		            lastLocalSampleTimes[sensor.getType()] = System.currentTimeMillis();
+		            if(firstTimeSend == 0)
+		            	firstTimeSend = System.currentTimeMillis();
+		            
+		           // Log.d(TAG, "Times sent:"+(sentCnt++)+" elapse time:"+(System.currentTimeMillis()-firstTimeSend)+" should send:"+(System.currentTimeMillis()-firstTimeSend)/localBufferTime);
 	            }
             }
             else
@@ -189,8 +195,7 @@ public class MotionSensor implements SensorEventListener {
 	            i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
 	            this.context.startService(i);
             }
-        }
-        
+        }        
         if (sampleDelay > 500 && motionSensingActive && !useFallDetector) {
         
             // unregister the listener and start again in sampleDelay seconds
@@ -244,7 +249,7 @@ public class MotionSensor implements SensorEventListener {
                     || sensor.getType() == Sensor.TYPE_ORIENTATION
                     || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
                 // Log.d(TAG, "registering for sensor " + sensor.getName());
-                smgr.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+                smgr.registerListener(this, sensor, (useFallDetector||EPI_MODE)  ? SensorManager.SENSOR_DELAY_GAME :  SensorManager.SENSOR_DELAY_NORMAL);
             }
         }
     }

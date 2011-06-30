@@ -597,7 +597,7 @@ public class SenseApi {
                 Log.e(TAG, "Error in posting JSON: " + json.toString(), e);
             } else {
                 // less verbose output
-                Log.e(TAG, "Error in posting JSON: " + json.toString() + "\n" + e.getMessage());
+                Log.e(TAG, "Error in posting JSON: " + json.toString(), e);
             }
             return null;
         } finally {

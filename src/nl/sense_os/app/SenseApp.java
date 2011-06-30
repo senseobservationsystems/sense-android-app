@@ -1124,20 +1124,6 @@ public class SenseApp extends Activity {
             mainDescription.setText("Press to start Sense service");
         }
 
-        // sanity check
-        if (running && !connected) {
-            // if the service says it is running but not logged in, make sure it retries
-            Log.d(TAG, "Force service start");
-            new Runnable() {
-
-                @Override
-                public void run() {
-                    Intent serviceIntent = new Intent(ISenseService.class.getName());
-                    ComponentName name = startService(serviceIntent);
-                }
-            }.run();
-        }
-
         // enable phone state list row
         CheckBox button = (CheckBox) findViewById(R.id.phonestate_cb);
         final boolean callstate = (status & Constants.STATUSCODE_PHONESTATE) > 0;
