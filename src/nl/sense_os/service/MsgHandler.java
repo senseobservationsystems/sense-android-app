@@ -751,13 +751,21 @@ public class MsgHandler extends Service {
 		{
 			JSONArray dataArray = data.getJSONArray("data");                	
 			for (int index = 0; index < dataArray.length(); index++) 
-			{		                	
+			{	
 				Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
 				i.putExtra(MsgHandler.KEY_SENSOR_NAME, sensorName);
-				i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, deviceType);
-				i.putExtra(MsgHandler.KEY_VALUE, dataArray.getJSONObject(index).getString("value"));
+				i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, deviceType);			
 				i.putExtra(MsgHandler.KEY_DATA_TYPE, dataType);
 				i.putExtra(MsgHandler.KEY_TIMESTAMP, (long)(((float)Double.parseDouble(dataArray.getJSONObject(index).getString("date")))*1000f));
+				String value = dataArray.getJSONObject(index).getString("value");
+				if (dataType.equals(Constants.SENSOR_DATA_TYPE_BOOL)) {
+					i.putExtra(MsgHandler.KEY_VALUE, Boolean.getBoolean(value));
+				} else if (dataType.equals(Constants.SENSOR_DATA_TYPE_FLOAT)) {
+					i.putExtra(MsgHandler.KEY_VALUE,Float.parseFloat(value));
+				} else if (dataType.equals(Constants.SENSOR_DATA_TYPE_INT)) {
+					i.putExtra(MsgHandler.KEY_VALUE,Integer.parseInt(value));
+				} else				
+					i.putExtra(MsgHandler.KEY_VALUE, value);
 				context.startService(i);
 				Log.d(TAG, sensorName+" data requeued.");
 			}
