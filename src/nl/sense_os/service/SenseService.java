@@ -438,6 +438,7 @@ public class SenseService extends Service {
 	private boolean isMotionActive;
 	private boolean isPhoneStateActive;
 	private boolean isQuizActive;
+	private boolean newProccess = false;
 	private TelephonyManager telMgr = null;    
 	private final Handler toastHandler = new Handler(Looper.getMainLooper());    
 	private ChildThread ambienceThread, deviceProxThread, externalSensorsThread, 
@@ -594,16 +595,26 @@ public class SenseService extends Service {
 		super.onCreate();
 		Log.v(TAG, "\n\nonCreate...\n\n");
 
-		initThreads();
+//		int pid = android.os.Process.myPid();
+//		final SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
+//		final int storedPid = prefs.getInt("PID", 0);
+//		if(pid != storedPid)
+//		{
+//			newProccess = true;
+//			final Editor prefEditor = prefs.edit();
+//			prefEditor.putInt("PID", pid);
+//			prefEditor.commit();
 
-		// initialize stuff
-		initFields();
+			initThreads();
 
-		startAliveChecks();
+			// initialize stuff
+			initFields();
 
+			startAliveChecks();
+		//			}
 		// Register the receiver for SCREEN OFF events
-//		IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
-//		registerReceiver(screenOffListener, filter);
+		//		IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+		//		registerReceiver(screenOffListener, filter);
 	}
 	/* These are the handlers for the child processes of the selected services
 	 * 
@@ -746,7 +757,7 @@ public class SenseService extends Service {
 	 */
 	private void onStartCompat(final Intent intent, int flags, int startId) {
 		Log.v(TAG, "onStart...");
-
+		
 		startThread.handler.post(new Runnable() {
 			public void run() {
 

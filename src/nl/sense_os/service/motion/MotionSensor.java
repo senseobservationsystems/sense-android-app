@@ -50,7 +50,7 @@ public class MotionSensor implements SensorEventListener {
     private long localBufferTime = 15 * 1000;
     private List<Sensor> sensors;
     private SensorManager smgr;
-    private boolean EPI_MODE = false;
+    private boolean EPI_MODE = true;
     private long firstTimeSend = 0;
     private int sentCnt = 0;
     private JSONArray[] dataBuffer = new JSONArray[10];
