@@ -22,6 +22,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -48,6 +50,7 @@ public class SensePhoneState extends PhoneStateListener {
 	private static final String NAME_SERVICE = "service state";
 	private static final String NAME_SIGNAL = "signal strength";
 	private static final String NAME_UNREAD = "unread msg";
+	private static final String NAME_CONNECTION_TYPE = "connection type";
 	private static final String TAG = "Sense PhoneStateListener";
 	private static final int REQID = 0xdeadbeef;
 	private static final String ACTION_UPDATE_PHONESTATE = "nl.sense_os.service.UpdatePhoneState";
@@ -60,6 +63,8 @@ public class SensePhoneState extends PhoneStateListener {
 	private String lastDataConnectionState;
 	private String lastIp;
 	private boolean isSensing;	
+	
+	private int previousConnectionType = -2; //used to detect changes in connection type
 	
 	private ChildThread ct = null;
 
@@ -293,6 +298,32 @@ public class SensePhoneState extends PhoneStateListener {
 		}
 
 		lastDataConnectionState = strState;
+		
+		//check network type
+        ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo active = connectivityManager.getActiveNetworkInfo();
+        String typeName;
+        int type = -1;
+        if (active == null)
+                typeName = "none";
+        else {
+                typeName = active.getTypeName();
+                type = active.getType();
+        }
+
+		// only send changes. Note that this method is also called when another part of the state changed. 
+		if (previousConnectionType != type) {
+			previousConnectionType = type;
+
+			//pass message immediately to the MsgHandler
+			Intent msg = new Intent(MsgHandler.ACTION_NEW_MSG);
+			msg.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_CONNECTION_TYPE);
+			msg.putExtra(MsgHandler.KEY_VALUE, typeName);
+			msg.putExtra(MsgHandler.KEY_SENSOR_DEVICE, NAME_CONNECTION_TYPE);
+			msg.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_STRING);
+			msg.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+			context.startService(msg);
+		}
 	}
 
 	@Override
