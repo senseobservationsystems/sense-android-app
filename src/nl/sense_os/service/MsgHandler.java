@@ -119,7 +119,7 @@ public class MsgHandler extends Service {
         }
 
         @Override
-        public void handleMessage(android.os.Message msg) {
+        public void handleMessage(Message msg) {
 
             // get sensor URL at CommonSense
             String url = getSensorUrl();

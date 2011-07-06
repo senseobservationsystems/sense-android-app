@@ -840,7 +840,7 @@ public class SenseService extends Service {
 		if (null != username && null != password) {
 			Log.v(TAG, "Registering... Username: " + username + ", password hash: " + hashPass);
 
-			registered = SenseApi.register(this, username, hashPass);
+			registered = SenseApi.registerUser(this, username, hashPass);
 			if (registered == 0) {
 				login();
 			} else {
