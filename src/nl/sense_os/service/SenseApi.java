@@ -67,8 +67,7 @@ public class SenseApi {
 
             // check if we are already updating the device ID
             if (isUpdatingDeviceID) {
-                Log.d(TAG,
-                        "Thread-safe wizardry! --------> Skip updating device ID, another thread is already on it");
+                //Log.d(TAG,                        "Thread-safe wizardry! --------> Skip updating device ID, another thread is already on it");
                 return cachedId != -1 ? cachedId : -2;
             }
 
@@ -138,7 +137,7 @@ public class SenseApi {
             return -2;
 
         } finally {
-            Log.d(TAG, "Thread-safe wizardry! --------> Device ID update complete");
+//            Log.d(TAG, "Thread-safe wizardry! --------> Device ID update complete");
             isUpdatingDeviceID = false;
         }
     }
@@ -170,8 +169,7 @@ public class SenseApi {
 
             // check if we are already updating the device ID
             if (isUpdatingSensorList) {
-                Log.d(TAG,
-                        "Thread-safe wizardry! --------> Skip updating sensor list, another thread is already on it");
+                //Log.d(TAG,                        "Thread-safe wizardry! --------> Skip updating sensor list, another thread is already on it");
                 return null != cachedSensors ? new JSONArray(cachedSensors) : null;
             }
 
@@ -185,7 +183,7 @@ public class SenseApi {
         Log.v(TAG, "List of sensor IDs is missing or outdated, refreshing...");
 
         try {
-            Log.d(TAG, "Thread-safe wizardry! --------> Sensor list update start...");
+//            Log.d(TAG, "Thread-safe wizardry! --------> Sensor list update start...");
             isUpdatingSensorList = true;
 
             // get device ID to use in communication with CommonSense
@@ -231,7 +229,7 @@ public class SenseApi {
             return null;
 
         } finally {
-            Log.d(TAG, "Thread-safe wizardry! --------> Sensor list update complete...");
+//            Log.d(TAG, "Thread-safe wizardry! --------> Sensor list update complete...");
             isUpdatingSensorList = false;
         }
     }
