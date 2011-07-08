@@ -7,6 +7,19 @@
  */
 package nl.sense_os.service.motion;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
+import java.util.List;
+import java.util.Locale;
+
+import nl.sense_os.service.Constants;
+import nl.sense_os.service.MsgHandler;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -16,19 +29,6 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Handler;
 import android.util.Log;
-
-import nl.sense_os.service.Constants;
-import nl.sense_os.service.MsgHandler;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.NumberFormat;
-import java.util.List;
-import java.util.Locale;
 
 public class MotionSensor implements SensorEventListener {
 
@@ -52,16 +52,14 @@ public class MotionSensor implements SensorEventListener {
     private SensorManager smgr;
     private boolean EPI_MODE = false;
     private long firstTimeSend = 0;
-    private int sentCnt = 0;
     private JSONArray[] dataBuffer = new JSONArray[10];
-    
+
     public MotionSensor(Context context) {
         this.context = context;
         smgr = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         sensors = smgr.getSensorList(Sensor.TYPE_ALL);
         fallDetector = new FallDetector();
     }
-    
 
     public long getSampleDelay() {
         return sampleDelay;
@@ -84,14 +82,12 @@ public class MotionSensor implements SensorEventListener {
             double aZ = event.values[2];
             float accVecSum = (float) Math.sqrt((aX * aX) + (aY * aY) + (aZ * aZ));
 
-            if (fallDetector.fallDetected(accVecSum))
-            {
-                sendFallMessage(true); // send msg               
-            }           
+            if (fallDetector.fallDetected(accVecSum)) {
+                sendFallMessage(true); // send msg
+            }
 
         }
-        if (System.currentTimeMillis() > lastSampleTimes[sensor.getType()] + sampleDelay) 
-        {
+        if (System.currentTimeMillis() > lastSampleTimes[sensor.getType()] + sampleDelay) {
             lastSampleTimes[sensor.getType()] = System.currentTimeMillis();
 
             String sensorName = "";
@@ -110,12 +106,12 @@ public class MotionSensor implements SensorEventListener {
                 break;
             }
 
-            if((sensor.getType() != Sensor.TYPE_ACCELEROMETER) && EPI_MODE)
-            	return;
-            
+            if ((sensor.getType() != Sensor.TYPE_ACCELEROMETER) && EPI_MODE)
+                return;
+
             DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.ENGLISH);
-            NumberFormat formatter = new DecimalFormat("###.###", otherSymbols);            
-            
+            NumberFormat formatter = new DecimalFormat("###.###", otherSymbols);
+
             JSONObject json = new JSONObject();
             int axis = 0;
             try {
@@ -156,48 +152,47 @@ public class MotionSensor implements SensorEventListener {
             }
 
             // add the data to the buffer if we are in realtime mode:
-            if(EPI_MODE)
-            {
-            	if(dataBuffer[sensor.getType()] == null)
-            		 dataBuffer[sensor.getType()] = new JSONArray();
-            	dataBuffer[sensor.getType()].put(json);           
-            	if(lastLocalSampleTimes[sensor.getType()] == 0)
-            		lastLocalSampleTimes[sensor.getType()] = System.currentTimeMillis();
+            if (EPI_MODE) {
+                if (dataBuffer[sensor.getType()] == null)
+                    dataBuffer[sensor.getType()] = new JSONArray();
+                dataBuffer[sensor.getType()].put(json);
+                if (lastLocalSampleTimes[sensor.getType()] == 0)
+                    lastLocalSampleTimes[sensor.getType()] = System.currentTimeMillis();
 
-	            if(System.currentTimeMillis() > (lastLocalSampleTimes[sensor.getType()] + localBufferTime))
-	            {
-	            	// send the stuff
-	            	Log.d(TAG, "Transmit accelerodata:"+dataBuffer[sensor.getType()].length());
-	            	 // pass message to the MsgHandler
-		            Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-		            i.putExtra(MsgHandler.KEY_SENSOR_NAME, sensorName);
-		            i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());
-		            i.putExtra(MsgHandler.KEY_VALUE, "{\"interval\":"+Math.round(localBufferTime/dataBuffer[sensor.getType()].length())+",\"data\":"+dataBuffer[sensor.getType()].toString()+"}");
-		            i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON_TIME_SERIE);
-		            i.putExtra(MsgHandler.KEY_TIMESTAMP, lastLocalSampleTimes[sensor.getType()]);
-		            this.context.startService(i);
-		            dataBuffer[sensor.getType()] = new JSONArray();
-		            lastLocalSampleTimes[sensor.getType()] = System.currentTimeMillis();
-		            if(firstTimeSend == 0)
-		            	firstTimeSend = System.currentTimeMillis();
-		            
-		           // Log.d(TAG, "Times sent:"+(sentCnt++)+" elapse time:"+(System.currentTimeMillis()-firstTimeSend)+" should send:"+(System.currentTimeMillis()-firstTimeSend)/localBufferTime);
-	            }
+                if (System.currentTimeMillis() > (lastLocalSampleTimes[sensor.getType()] + localBufferTime)) {
+                    // send the stuff
+                    Log.d(TAG, "Transmit accelerodata:" + dataBuffer[sensor.getType()].length());
+                    // pass message to the MsgHandler
+                    Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
+                    i.putExtra(MsgHandler.KEY_SENSOR_NAME, sensorName);
+                    i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());
+                    i.putExtra(
+                            MsgHandler.KEY_VALUE,
+                            "{\"interval\":"
+                                    + Math.round(localBufferTime
+                                            / dataBuffer[sensor.getType()].length()) + ",\"data\":"
+                                    + dataBuffer[sensor.getType()].toString() + "}");
+                    i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON_TIME_SERIE);
+                    i.putExtra(MsgHandler.KEY_TIMESTAMP, lastLocalSampleTimes[sensor.getType()]);
+                    this.context.startService(i);
+                    dataBuffer[sensor.getType()] = new JSONArray();
+                    lastLocalSampleTimes[sensor.getType()] = System.currentTimeMillis();
+                    if (firstTimeSend == 0)
+                        firstTimeSend = System.currentTimeMillis();
+                }
+            } else {
+                // pass message to the MsgHandler
+                Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
+                i.putExtra(MsgHandler.KEY_SENSOR_NAME, sensorName);
+                i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());
+                i.putExtra(MsgHandler.KEY_VALUE, json.toString());
+                i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
+                i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+                this.context.startService(i);
             }
-            else
-            {
-	            // pass message to the MsgHandler
-	            Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-	            i.putExtra(MsgHandler.KEY_SENSOR_NAME, sensorName);
-	            i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());
-	            i.putExtra(MsgHandler.KEY_VALUE, json.toString());
-	            i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
-	            i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
-	            this.context.startService(i);
-            }
-        }        
+        }
         if (sampleDelay > 500 && motionSensingActive && !useFallDetector) {
-        
+
             // unregister the listener and start again in sampleDelay seconds
             stopMotionSensing();
             motionHandler.postDelayed(motionThread = new Runnable() {
@@ -225,10 +220,10 @@ public class MotionSensor implements SensorEventListener {
     }
 
     public void startMotionSensing(long _sampleDelay) {
-    	
-    	if(EPI_MODE)
-    		_sampleDelay = 0;
-    	
+
+        if (EPI_MODE)
+            _sampleDelay = 0;
+
         // check if the falldetector is enabled
         final SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
                 Context.MODE_WORLD_WRITEABLE);
@@ -249,7 +244,9 @@ public class MotionSensor implements SensorEventListener {
                     || sensor.getType() == Sensor.TYPE_ORIENTATION
                     || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
                 // Log.d(TAG, "registering for sensor " + sensor.getName());
-                smgr.registerListener(this, sensor, (useFallDetector||EPI_MODE)  ? SensorManager.SENSOR_DELAY_GAME :  SensorManager.SENSOR_DELAY_NORMAL);
+                smgr.registerListener(this, sensor,
+                        (useFallDetector || EPI_MODE) ? SensorManager.SENSOR_DELAY_GAME
+                                : SensorManager.SENSOR_DELAY_NORMAL);
             }
         }
     }
