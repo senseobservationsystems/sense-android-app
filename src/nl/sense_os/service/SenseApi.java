@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.apache.http.HttpEntity;
@@ -35,7 +36,7 @@ import android.util.Log;
 public class SenseApi {
 
     private static final String TAG = "SenseApi";
-    private static final boolean USE_COMPRESSION = false;
+    private static final boolean USE_COMPRESSION = true;
     private static final long CACHE_REFRESH = 1000l * 60 * 60; // 1 hour
     private static volatile boolean isUpdatingDeviceID = false;
     private static volatile boolean isUpdatingSensorList = false;
@@ -139,43 +140,6 @@ public class SenseApi {
         } finally {
             Log.d(TAG, "Thread-safe wizardry! --------> Device ID update complete");
             isUpdatingDeviceID = false;
-        }
-    }
-
-    /**
-     * @return a JSONObject from the requested URI
-     */
-    public static JSONObject getJsonObject(URI uri, String cookie) {
-        try {
-            final HttpGet get = new HttpGet(uri);
-            get.setHeader("Cookie", cookie);
-            final HttpClient client = new DefaultHttpClient();
-
-            // client.getConnectionManager().closeIdleConnections(2, TimeUnit.SECONDS);
-            final HttpResponse response = client.execute(get);
-            if (response == null) {
-                return null;
-            }
-            if (response.getStatusLine().getStatusCode() != 200) {
-                Log.e(TAG, "Error receiving content for " + uri.toString() + ". Status code: "
-                        + response.getStatusLine().getStatusCode());
-                return null;
-            }
-
-            HttpEntity entity = response.getEntity();
-            InputStream is = entity.getContent();
-            BufferedReader rd = new BufferedReader(new InputStreamReader(is), 1024);
-            String line;
-            StringBuffer responseString = new StringBuffer();
-            while ((line = rd.readLine()) != null) {
-                responseString.append(line);
-                responseString.append('\r');
-            }
-            rd.close();
-            return new JSONObject(responseString.toString());
-        } catch (Exception e) {
-            Log.e(TAG, "Error receiving content for " + uri.toString() + ": " + e.getMessage());
-            return null;
         }
     }
 
@@ -615,6 +579,49 @@ public class SenseApi {
         return 0;
     }
 
+
+    /**
+     * @return a JSONObject from the requested URI
+     */
+    public static JSONObject getJsonObject(URI uri, String cookie) {
+        try {
+            final HttpGet get = new HttpGet(uri);            
+            get.setHeader("Cookie", cookie);
+            if(USE_COMPRESSION)
+            	get.setHeader("Accept-Encoding", "gzip");
+            final HttpClient client = new DefaultHttpClient();
+            
+            // client.getConnectionManager().closeIdleConnections(2, TimeUnit.SECONDS);
+            final HttpResponse response = client.execute(get);
+            if (response == null) {
+                return null;
+            }
+            if (response.getStatusLine().getStatusCode() != 200) {
+                Log.e(TAG, "Error receiving content for " + uri.toString() + ". Status code: "
+                        + response.getStatusLine().getStatusCode());
+                return null;
+            }
+
+            HttpEntity entity = response.getEntity();
+            InputStream is = entity.getContent();
+            if(USE_COMPRESSION)
+            	is = new GZIPInputStream(is);
+            
+            BufferedReader rd = new BufferedReader(new InputStreamReader(is), 1024);
+            String line;
+            StringBuffer responseString = new StringBuffer();
+            while ((line = rd.readLine()) != null) {
+                responseString.append(line);
+                responseString.append('\r');
+            }
+            rd.close();
+            return new JSONObject(responseString.toString());
+        } catch (Exception e) {
+            Log.e(TAG, "Error receiving content for " + uri.toString() + ": " + e.getMessage());
+            return null;
+        }
+    }
+    
     /**
      * This method sends a JSON object to update or create an item it returns the HTTP-response code
      */
@@ -623,7 +630,7 @@ public class SenseApi {
         HttpURLConnection urlConn = null;
         try {
             // Log.d(TAG, "Sending:" + url.toString());
-
+        	
             // Open New URL connection channel.
             urlConn = (HttpURLConnection) url.openConnection();
 
@@ -641,7 +648,6 @@ public class SenseApi {
 
             // Set content type
             urlConn.setRequestProperty("Content-Type", "application/json");
-
             urlConn.setInstanceFollowRedirects(false);
 
             // Set cookie
@@ -650,7 +656,6 @@ public class SenseApi {
             // Send POST output.
             DataOutputStream printout;
 
-            // String testData = "username=epi&password=d0f92a90d5500f1d5c4136966c5c7e63"
             // Set compression
             if (USE_COMPRESSION) {
                 // Don't Set content size
@@ -659,13 +664,13 @@ public class SenseApi {
                 GZIPOutputStream zipStream = new GZIPOutputStream(urlConn.getOutputStream());
                 printout = new DataOutputStream(zipStream);
             } else {
-                // Set content size
+                // Set content size            	
                 urlConn.setFixedLengthStreamingMode(json.toString().length());
                 urlConn.setRequestProperty("Content-Length", "" + json.toString().length());
                 printout = new DataOutputStream(urlConn.getOutputStream());
             }
-
-            printout.writeBytes(json.toString());
+         
+            printout.writeBytes(json.toString());            
             printout.flush();
             printout.close();
 
@@ -681,9 +686,10 @@ public class SenseApi {
                 String line;
                 StringBuffer responseString = new StringBuffer();
                 while ((line = rd.readLine()) != null) {
+                	Log.d(TAG, line);
                     responseString.append(line);
                     responseString.append('\r');
-                }
+                }                
                 rd.close();
                 response.put("content", responseString.toString());
             }
