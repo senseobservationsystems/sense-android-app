@@ -685,8 +685,7 @@ public class SenseApi {
                 BufferedReader rd = new BufferedReader(new InputStreamReader(is), 1024);
                 String line;
                 StringBuffer responseString = new StringBuffer();
-                while ((line = rd.readLine()) != null) {
-                	Log.d(TAG, line);
+                while ((line = rd.readLine()) != null) {                	
                     responseString.append(line);
                     responseString.append('\r');
                 }                
