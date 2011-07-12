@@ -30,13 +30,14 @@ import org.json.JSONObject;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.os.Build;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
 public class SenseApi {
 
     private static final String TAG = "SenseApi";
-    private static final boolean USE_COMPRESSION = true;
+    private static final boolean USE_COMPRESSION = false;
     private static final long CACHE_REFRESH = 1000l * 60 * 60; // 1 hour
     private static volatile boolean isUpdatingDeviceID = false;
     private static volatile boolean isUpdatingSensorList = false;
@@ -67,7 +68,8 @@ public class SenseApi {
 
             // check if we are already updating the device ID
             if (isUpdatingDeviceID) {
-                //Log.d(TAG,                        "Thread-safe wizardry! --------> Skip updating device ID, another thread is already on it");
+                // Log.d(TAG,
+                // "Thread-safe wizardry! --------> Skip updating device ID, another thread is already on it");
                 return cachedId != -1 ? cachedId : -2;
             }
 
@@ -84,7 +86,7 @@ public class SenseApi {
                 .getDeviceId();
 
         try {
-            Log.d(TAG, "Thread-safe wizardry! --------> Device ID update start");
+            // Log.d(TAG, "Thread-safe wizardry! --------> Device ID update start");
             isUpdatingDeviceID = true;
 
             // get list of devices that are already registered at CommonSense for this user
@@ -97,10 +99,11 @@ public class SenseApi {
             if (response != null) {
                 JSONArray deviceList = response.getJSONArray("devices");
 
+                String uuid = "";
                 for (int x = 0; x < deviceList.length(); x++) {
 
                     JSONObject device = deviceList.getJSONObject(x);
-                    String uuid = device.getString("uuid");
+                    uuid = device.getString("uuid");
 
                     // pad the UUID with leading zeros, CommonSense API removes them
                     while (uuid.length() < imei.length()) {
@@ -137,7 +140,7 @@ public class SenseApi {
             return -2;
 
         } finally {
-//            Log.d(TAG, "Thread-safe wizardry! --------> Device ID update complete");
+            // Log.d(TAG, "Thread-safe wizardry! --------> Device ID update complete");
             isUpdatingDeviceID = false;
         }
     }
@@ -169,7 +172,8 @@ public class SenseApi {
 
             // check if we are already updating the device ID
             if (isUpdatingSensorList) {
-                //Log.d(TAG,                        "Thread-safe wizardry! --------> Skip updating sensor list, another thread is already on it");
+                // Log.d(TAG,
+                // "Thread-safe wizardry! --------> Skip updating sensor list, another thread is already on it");
                 return null != cachedSensors ? new JSONArray(cachedSensors) : null;
             }
 
@@ -183,7 +187,7 @@ public class SenseApi {
         Log.v(TAG, "List of sensor IDs is missing or outdated, refreshing...");
 
         try {
-//            Log.d(TAG, "Thread-safe wizardry! --------> Sensor list update start...");
+            // Log.d(TAG, "Thread-safe wizardry! --------> Sensor list update start...");
             isUpdatingSensorList = true;
 
             // get device ID to use in communication with CommonSense
@@ -229,7 +233,7 @@ public class SenseApi {
             return null;
 
         } finally {
-//            Log.d(TAG, "Thread-safe wizardry! --------> Sensor list update complete...");
+            // Log.d(TAG, "Thread-safe wizardry! --------> Sensor list update complete...");
             isUpdatingSensorList = false;
         }
     }
@@ -473,16 +477,19 @@ public class SenseApi {
 
             Log.v(TAG, "Created sensor: \'" + sensorName + "\'");
 
+            // / get device properties
+            final String imei = ((TelephonyManager) context
+                    .getSystemService(Context.TELEPHONY_SERVICE)).getDeviceId();
+            final String phoneType = Build.MODEL;
+
             // Add sensor to this device at CommonSense
-            String phoneType = authPrefs.getString(Constants.PREF_PHONE_TYPE, "smartphone");
             String rawUrl = devMode ? Constants.URL_DEV_ADD_SENSOR_TO_DEVICE
                     : Constants.URL_ADD_SENSOR_TO_DEVICE;
             url = new URL(rawUrl.replaceFirst("<id>", id));
             postData = new JSONObject();
             JSONObject device = new JSONObject();
-            device.put("type", authPrefs.getString(Constants.PREF_DEVICE_TYPE, phoneType));
-
-            device.put("uuid", authPrefs.getString(Constants.PREF_PHONE_IMEI, "0000000000"));
+            device.put("type", phoneType);
+            device.put("uuid", imei);
             postData.put("device", device);
 
             response = sendJson(url, postData, "POST", cookie);
@@ -577,18 +584,17 @@ public class SenseApi {
         return 0;
     }
 
-
     /**
      * @return a JSONObject from the requested URI
      */
     public static JSONObject getJsonObject(URI uri, String cookie) {
         try {
-            final HttpGet get = new HttpGet(uri);            
+            final HttpGet get = new HttpGet(uri);
             get.setHeader("Cookie", cookie);
-            if(USE_COMPRESSION)
-            	get.setHeader("Accept-Encoding", "gzip");
+            if (USE_COMPRESSION)
+                get.setHeader("Accept-Encoding", "gzip");
             final HttpClient client = new DefaultHttpClient();
-            
+
             // client.getConnectionManager().closeIdleConnections(2, TimeUnit.SECONDS);
             final HttpResponse response = client.execute(get);
             if (response == null) {
@@ -602,9 +608,9 @@ public class SenseApi {
 
             HttpEntity entity = response.getEntity();
             InputStream is = entity.getContent();
-            if(USE_COMPRESSION)
-            	is = new GZIPInputStream(is);
-            
+            if (USE_COMPRESSION)
+                is = new GZIPInputStream(is);
+
             BufferedReader rd = new BufferedReader(new InputStreamReader(is), 1024);
             String line;
             StringBuffer responseString = new StringBuffer();
@@ -619,7 +625,7 @@ public class SenseApi {
             return null;
         }
     }
-    
+
     /**
      * This method sends a JSON object to update or create an item it returns the HTTP-response code
      */
@@ -628,7 +634,7 @@ public class SenseApi {
         HttpURLConnection urlConn = null;
         try {
             // Log.d(TAG, "Sending:" + url.toString());
-        	
+
             // Open New URL connection channel.
             urlConn = (HttpURLConnection) url.openConnection();
 
@@ -662,13 +668,13 @@ public class SenseApi {
                 GZIPOutputStream zipStream = new GZIPOutputStream(urlConn.getOutputStream());
                 printout = new DataOutputStream(zipStream);
             } else {
-                // Set content size            	
+                // Set content size
                 urlConn.setFixedLengthStreamingMode(json.toString().length());
                 urlConn.setRequestProperty("Content-Length", "" + json.toString().length());
                 printout = new DataOutputStream(urlConn.getOutputStream());
             }
-         
-            printout.writeBytes(json.toString());            
+
+            printout.writeBytes(json.toString());
             printout.flush();
             printout.close();
 
@@ -683,10 +689,10 @@ public class SenseApi {
                 BufferedReader rd = new BufferedReader(new InputStreamReader(is), 1024);
                 String line;
                 StringBuffer responseString = new StringBuffer();
-                while ((line = rd.readLine()) != null) {                	
+                while ((line = rd.readLine()) != null) {
                     responseString.append(line);
                     responseString.append('\r');
-                }                
+                }
                 rd.close();
                 response.put("content", responseString.toString());
             }
