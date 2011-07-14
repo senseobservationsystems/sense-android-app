@@ -640,9 +640,10 @@ public class SenseService extends Service {
     /**
      * Performs tasks after successful login: gets list of registered sensors; starts the sensing
      * modules in the same state as before logout; starts periodic alarms for data transmission and
-     * feedback checking.
+     * feedback checking. Method is synchronized to make sure
+     * {@link SenseApi#getRegisteredSensors(Context)} is only called by one thread at a time.
      */
-    private void onLogIn() {
+    private synchronized void onLogIn() {
         Log.v(TAG, "Logged in! Starting service...");
 
         // Retrieve the online registered sensor list
@@ -659,9 +660,6 @@ public class SenseService extends Service {
 
         // show notification
         showNotification(false);
-
-        // send broadcast that something has changed in the status
-        sendBroadcast(new Intent(ACTION_SERVICE_BROADCAST));
     }
 
     /**
@@ -706,7 +704,7 @@ public class SenseService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         onStartCompat(intent, flags, startId);
-        return START_STICKY;
+        return START_NOT_STICKY; // not sticky: Sense checks its own alive state
     }
 
     /**
@@ -1015,6 +1013,9 @@ public class SenseService extends Service {
                 togglePopQuiz(true);
             }
         }
+
+        // send broadcast that something has changed in the status
+        sendBroadcast(new Intent(ACTION_SERVICE_BROADCAST));
     }
 
     /**
@@ -1133,6 +1134,9 @@ public class SenseService extends Service {
         if (isExternalActive) {
             toggleExternalSensors(false);
         }
+
+        // send broadcast that something has changed in the status
+        sendBroadcast(new Intent(ACTION_SERVICE_BROADCAST));
     }
 
     /**

@@ -39,8 +39,6 @@ public class SenseApi {
     private static final String TAG = "SenseApi";
     private static final boolean USE_COMPRESSION = false;
     private static final long CACHE_REFRESH = 1000l * 60 * 60; // 1 hour
-    private static volatile boolean isUpdatingDeviceID = false;
-    private static volatile boolean isUpdatingSensorList = false;
 
     /**
      * Gets the current device ID for use with CommonSense. The device ID is cached in the
@@ -66,13 +64,6 @@ public class SenseApi {
                 return cachedId;
             }
 
-            // check if we are already updating the device ID
-            if (isUpdatingDeviceID) {
-                // Log.d(TAG,
-                // "Thread-safe wizardry! --------> Skip updating device ID, another thread is already on it");
-                return cachedId != -1 ? cachedId : -2;
-            }
-
         } catch (Exception e) {
             Log.e(TAG, "Failed to get device ID! Exception while checking cache: ", e);
             return -2; // error return -2
@@ -86,9 +77,6 @@ public class SenseApi {
                 .getDeviceId();
 
         try {
-            // Log.d(TAG, "Thread-safe wizardry! --------> Device ID update start");
-            isUpdatingDeviceID = true;
-
             // get list of devices that are already registered at CommonSense for this user
             boolean devMode = authPrefs.getBoolean(Constants.PREF_DEV_MODE, false);
             final URI uri = new URI(devMode ? Constants.URL_DEV_DEVICES : Constants.URL_DEVICES);
@@ -139,9 +127,6 @@ public class SenseApi {
             Log.e(TAG, "Failed to get device ID: exception communicating wih CommonSense!", e);
             return -2;
 
-        } finally {
-            // Log.d(TAG, "Thread-safe wizardry! --------> Device ID update complete");
-            isUpdatingDeviceID = false;
         }
     }
 
@@ -170,13 +155,6 @@ public class SenseApi {
                 return new JSONArray(cachedSensors);
             }
 
-            // check if we are already updating the device ID
-            if (isUpdatingSensorList) {
-                // Log.d(TAG,
-                // "Thread-safe wizardry! --------> Skip updating sensor list, another thread is already on it");
-                return null != cachedSensors ? new JSONArray(cachedSensors) : null;
-            }
-
         } catch (Exception e) {
             // should not happen, we are only using stuff that was previously cached
             Log.e(TAG, "Failed to get list of sensors! Exception while checking cache: ", e);
@@ -187,8 +165,6 @@ public class SenseApi {
         Log.v(TAG, "List of sensor IDs is missing or outdated, refreshing...");
 
         try {
-            // Log.d(TAG, "Thread-safe wizardry! --------> Sensor list update start...");
-            isUpdatingSensorList = true;
 
             // get device ID to use in communication with CommonSense
             int deviceId = getDeviceId(context);
@@ -199,8 +175,7 @@ public class SenseApi {
 
             } else if (deviceId == -2) {
                 // there was an error retrieving info from CommonSense: give up
-                Log.e(TAG,
-                        "Problem getting list of sensors: failed to get device ID from CommonSense");
+                Log.e(TAG, "Problem getting sensor list: failed to get device ID from CommonSense");
                 return null;
             }
 
@@ -232,9 +207,6 @@ public class SenseApi {
             Log.e(TAG, "Exception in retrieving registered sensors: ", e);
             return null;
 
-        } finally {
-            // Log.d(TAG, "Thread-safe wizardry! --------> Sensor list update complete...");
-            isUpdatingSensorList = false;
         }
     }
 
@@ -277,7 +249,7 @@ public class SenseApi {
             } else {
                 // couldn't get the list of sensors, probably a connection problem: give up
                 Log.w(TAG, "Failed to get URL for sensor '" + sensorName
-                        + "': the was an error getting the list of sensors");
+                        + "': there was an error getting the list of sensors");
                 return null;
             }
 
@@ -475,7 +447,7 @@ public class SenseApi {
             authEditor.putString(Constants.PREF_SENSOR_LIST, sensors.toString());
             authEditor.commit();
 
-            Log.v(TAG, "Created sensor: \'" + sensorName + "\'");
+            Log.v(TAG, "-------> Created sensor: \'" + sensorName + "\'");
 
             // / get device properties
             final String imei = ((TelephonyManager) context

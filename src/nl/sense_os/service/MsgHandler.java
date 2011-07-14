@@ -99,18 +99,17 @@ public class MsgHandler extends Service {
             this.data = data;
             this.sensorName = sensorName;
             this.dataType = dataType;
-            this.deviceType = deviceType;
+            this.deviceType = deviceType != null ? deviceType : sensorName;
             this.context = context;
         }
 
         private String getSensorUrl() {
             String url = null;
             try {
-                final String f_deviceType = deviceType != null ? deviceType : sensorName;
-                String dataStructure = (String) ((JSONObject) ((JSONArray) data.get("data")).get(0))
+                String sensorValue = (String) ((JSONObject) ((JSONArray) data.get("data")).get(0))
                         .get("value");
-                url = SenseApi.getSensorUrl(context, sensorName, dataStructure, dataType,
-                        f_deviceType);
+                url = MsgHandler.this.getSensorUrl(context, sensorName, sensorValue, dataType,
+                        deviceType);
             } catch (Exception e) {
                 Log.e(TAG, "Exception retrieving sensor URL from API", e);
             }
@@ -340,6 +339,7 @@ public class MsgHandler extends Service {
         }
     }
 
+    private static final String TAG = "Sense MsgHandler";
     public static final String ACTION_NEW_MSG = "nl.sense_os.app.MsgHandler.NEW_MSG";
     public static final String ACTION_NEW_FILE = "nl.sense_os.app.MsgHandler.NEW_FILE";
     public static final String ACTION_SEND_DATA = "nl.sense_os.app.MsgHandler.SEND_DATA";
@@ -352,7 +352,6 @@ public class MsgHandler extends Service {
     private static final int MAX_NR_OF_SEND_MSG_THREADS = 50;
     private static final int MAX_POST_DATA = 100;
     private static final int MAX_POST_DATA_TIME_SERIE = 20;
-    private static final String TAG = "Sense MsgHandler";
     private JSONObject buffer;
     private int bufferCount;
     private SQLiteDatabase db;
@@ -482,6 +481,18 @@ public class MsgHandler extends Service {
         } finally {
             closeDb();
         }
+    }
+
+    /**
+     * Calls through to the Sense API class. This method is synchronized to make sure that multiple
+     * thread do not create multiple sensors at the same time.
+     * 
+     * @return The URL of the sensor at CommonSense, or null if an error occurred.
+     */
+    private synchronized String getSensorUrl(Context context, String sensorName,
+            String sensorValue, String dataType, String deviceType) {
+        String url = SenseApi.getSensorUrl(context, sensorName, sensorValue, dataType, deviceType);
+        return url;
     }
 
     /**
