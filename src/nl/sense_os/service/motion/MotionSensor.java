@@ -191,7 +191,8 @@ public class MotionSensor implements SensorEventListener {
                 this.context.startService(i);
             }
         }
-        if (sampleDelay > 500 && motionSensingActive && !useFallDetector) {
+        //TODO: the unregister somehow causes android to stop rotating the screen (at least on Nexus S). Disabling this as a workaround
+        if (false) {//sampleDelay > 500 && motionSensingActive && !useFallDetector) {
 
             // unregister the listener and start again in sampleDelay seconds
             stopMotionSensing();
