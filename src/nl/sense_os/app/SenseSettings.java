@@ -65,7 +65,7 @@ public class SenseSettings extends PreferenceActivity {
                     Log.e(TAG, "RemoteException changing login.", e);
                 }
             } else {
-                Log.d(TAG, "Skipping login task: service=null. Is the service bound?");
+                Log.w(TAG, "Skipping login task: service=null. Is the service bound?");
             }
             return result;
         }
@@ -97,7 +97,7 @@ public class SenseSettings extends PreferenceActivity {
                 editor.commit();
 
                 // make sure at least the phone state is sensing
-                bindToSenseService(true);
+                bindToSenseService();
                 if (service != null) {
                     try {
                         service.togglePhoneState(true);
@@ -153,7 +153,7 @@ public class SenseSettings extends PreferenceActivity {
                     Log.e(TAG, "RemoteException starting sensing after login.", e);
                 }
             } else {
-                Log.d(TAG, "Skipping registration task: service=null. Is the service bound?");
+                Log.w(TAG, "Skipping registration task: service=null. Is the service bound?");
             }
             return result;
         }
@@ -186,7 +186,7 @@ public class SenseSettings extends PreferenceActivity {
                 editor.commit();
 
                 // make sure at least the phone state is sensing
-                bindToSenseService(true);
+                bindToSenseService();
                 if (service != null) {
                     try {
                         service.togglePhoneState(true);
@@ -222,7 +222,7 @@ public class SenseSettings extends PreferenceActivity {
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
 
-            Log.d(TAG, "Preference " + key + " changed...");
+            // Log.v(TAG, "Preference " + key + " changed...");
 
             if (service == null) {
                 Log.e(TAG, "Could not send preference to Sense Platform service: service = null!");
@@ -296,7 +296,7 @@ public class SenseSettings extends PreferenceActivity {
 
         @Override
         public void onServiceConnected(ComponentName className, IBinder binder) {
-            Log.d(TAG, "Bound to Sense Platform service...");
+            // Log.v(TAG, "Bound to Sense Platform service...");
             service = ISenseService.Stub.asInterface(binder);
             isServiceBound = true;
             loadPreferences();
@@ -306,7 +306,7 @@ public class SenseSettings extends PreferenceActivity {
         @Override
         public void onServiceDisconnected(ComponentName className) {
             /* this is not called when the service is stopped, only when it is suddenly killed! */
-            Log.d(TAG, "Sense Platform disconnected...");
+            // Log.v(TAG, "Sense Platform disconnected...");
             service = null;
             isServiceBound = false;
         }
@@ -318,12 +318,11 @@ public class SenseSettings extends PreferenceActivity {
      * @param autoCreate
      *            <code>true</code> if the service should be created when it is not running yet
      */
-    private void bindToSenseService(boolean autoCreate) {
+    private void bindToSenseService() {
         // start the service if it was not running already
-        if (this.service == null) {
+        if (service == null) {
             final Intent serviceIntent = new Intent(ISenseService.class.getName());
-            final int flag = autoCreate ? BIND_AUTO_CREATE : 0;
-            this.isServiceBound = bindService(serviceIntent, this.serviceConn, flag);
+            isServiceBound = bindService(serviceIntent, serviceConn, BIND_AUTO_CREATE);
         }
     }
 
@@ -470,7 +469,7 @@ public class SenseSettings extends PreferenceActivity {
         }
 
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        prefs.unregisterOnSharedPreferenceChangeListener(this.changeListener);
+        prefs.unregisterOnSharedPreferenceChangeListener(changeListener);
         Editor editor = prefs.edit();
 
         try {
@@ -555,7 +554,7 @@ public class SenseSettings extends PreferenceActivity {
             Log.e(TAG, "Exception getting preferences from Sense Platform service!", e);
         }
 
-        prefs.registerOnSharedPreferenceChangeListener(this.changeListener);
+        prefs.registerOnSharedPreferenceChangeListener(changeListener);
 
     }
 
@@ -615,29 +614,14 @@ public class SenseSettings extends PreferenceActivity {
         super.onDestroy();
 
         SharedPreferences appPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        appPrefs.unregisterOnSharedPreferenceChangeListener(this.changeListener);
+        appPrefs.unregisterOnSharedPreferenceChangeListener(changeListener);
 
         unbindFromSenseService();
     }
 
     @Override
-    protected void onPrepareDialog(int id, Dialog dialog) {
-        // make sure the service is started when we try to register or log in
-        switch (id) {
-        case DIALOG_LOGIN:
-            bindToSenseService(true);
-            break;
-        case DIALOG_REGISTER:
-            bindToSenseService(true);
-            break;
-        default:
-            break;
-        }
-    }
-
-    @Override
     protected void onResume() {
-        bindToSenseService(true);
+        bindToSenseService();
         super.onResume();
     }
 
@@ -755,10 +739,10 @@ public class SenseSettings extends PreferenceActivity {
             syncPref.setSummary("Real-time connection with CommonSense");
             break;
         case -1: // often
-            syncPref.setSummary("Sync with CommonSense every minute");
+            syncPref.setSummary("Sync with CommonSense every minute (Often)");
             break;
         case 0: // normal
-            syncPref.setSummary("Sync with CommonSense every 5 minutes");
+            syncPref.setSummary("Sync with CommonSense every 5 minutes (Normal)");
             break;
         case 1: // rarely
             syncPref.setSummary("Sync with CommonSense every 15 minutes (Eco-mode)");
@@ -784,10 +768,10 @@ public class SenseSettings extends PreferenceActivity {
      */
     private void unbindFromSenseService() {
 
-        if (true == this.isServiceBound && null != this.serviceConn) {
-            unbindService(this.serviceConn);
+        if (true == isServiceBound && null != serviceConn) {
+            unbindService(serviceConn);
         }
-        this.service = null;
-        this.isServiceBound = false;
+        service = null;
+        isServiceBound = false;
     }
 }

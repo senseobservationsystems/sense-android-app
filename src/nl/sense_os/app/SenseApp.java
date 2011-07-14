@@ -146,7 +146,7 @@ public class SenseApp extends Activity {
 
         @Override
         protected void onPostExecute(Integer result) {
-            Log.v(TAG, "Registration result: " + result.intValue());
+            // Log.d(TAG, "Registration result: " + result.intValue());
 
             try {
                 dismissDialog(DIALOG_PROGRESS);
@@ -197,8 +197,7 @@ public class SenseApp extends Activity {
 
         @Override
         public void statusReport(final int status) {
-
-            Log.v(TAG, "Received status report from Sense Platform service...");
+            // Log.v(TAG, "Received status report from Sense Platform service...");
 
             runOnUiThread(new Runnable() {
 
@@ -218,7 +217,7 @@ public class SenseApp extends Activity {
 
         @Override
         public void onServiceConnected(ComponentName className, IBinder binder) {
-            Log.v(TAG, "Bound to Sense Platform service...");
+            // Log.v(TAG, "Bound to Sense Platform service...");
 
             service = ISenseService.Stub.asInterface(binder);
             try {
@@ -230,7 +229,7 @@ public class SenseApp extends Activity {
 
         @Override
         public void onServiceDisconnected(ComponentName className) {
-            Log.v(TAG, "Sense Platform service disconnected...");
+            // Log.v(TAG, "Sense Platform service disconnected...");
 
             /* this is not called when the service is stopped, only when it is suddenly killed! */
             service = null;
@@ -280,19 +279,15 @@ public class SenseApp extends Activity {
     public static final String PREF_COMMONSENSE_VERSION = "cs_version";
 
     /**
-     * Binds to the Sense Service.
-     * 
-     * @param autoCreate
-     *            <code>true</code> if the service should be created when it is not running yet
+     * Binds to the Sense Service, creating it if necessary.
      */
-    private void bindToSenseService(boolean autoCreate) {
-        Log.v(TAG, "Try to bind to Sense Platform service");
+    private void bindToSenseService() {
+        // Log.v(TAG, "Try to bind to Sense Platform service");
 
         // start the service if it was not running already
         if (service == null) {
             final Intent serviceIntent = new Intent(ISenseService.class.getName());
-            final int flag = autoCreate ? BIND_AUTO_CREATE : 0;
-            isServiceBound = bindService(serviceIntent, serviceConn, flag);
+            isServiceBound = bindService(serviceIntent, serviceConn, BIND_AUTO_CREATE);
         } else {
             // Log.d(TAG, "Already bound...");
         }
@@ -303,7 +298,7 @@ public class SenseApp extends Activity {
      * buttons ToggleButtons showing the service's state.
      */
     private void checkServiceStatus() {
-        Log.v(TAG, "Checking service status..");
+        // Log.v(TAG, "Checking service status..");
 
         if (null != service) {
             try {
@@ -314,7 +309,7 @@ public class SenseApp extends Activity {
             }
         } else {
             // service is not running,
-            bindToSenseService(true);
+            bindToSenseService();
 
             // invoke callback method directly to update UI anyway.
             // Log.d(TAG, "Not bound to Sense Platform service! Assume it's not running...");
@@ -579,7 +574,7 @@ public class SenseApp extends Activity {
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.sense_app);
     }
@@ -628,6 +623,12 @@ public class SenseApp extends Activity {
     }
 
     @Override
+    protected void onDestroy() {
+        unbindFromSenseService();
+        super.onDestroy();
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
         case MENU_FAQ:
@@ -654,7 +655,7 @@ public class SenseApp extends Activity {
         super.onPause();
 
         // unbind from service
-        unbindFromSenseService();
+        // unbindFromSenseService();
 
         // unregister service state listener
         try {
@@ -669,10 +670,10 @@ public class SenseApp extends Activity {
         // make sure the service is started when we try to register or log in
         switch (id) {
         case DIALOG_LOGIN:
-            bindToSenseService(true);
+            bindToSenseService();
             break;
         case DIALOG_REGISTER:
-            bindToSenseService(true);
+            bindToSenseService();
             break;
         default:
             break;
@@ -683,7 +684,7 @@ public class SenseApp extends Activity {
     protected void onResume() {
         super.onResume();
 
-        bindToSenseService(true);
+        bindToSenseService();
 
         // register receiver for updates
         IntentFilter filter = new IntentFilter(SenseService.ACTION_SERVICE_BROADCAST);
@@ -713,7 +714,7 @@ public class SenseApp extends Activity {
     }
 
     private void toggleAmbience(boolean active) {
-        Log.v(TAG, "Toggle ambience: " + active);
+        // Log.v(TAG, "Toggle ambience: " + active);
 
         if (null != service) {
 
@@ -765,7 +766,7 @@ public class SenseApp extends Activity {
     }
 
     private void toggleDeviceProx(boolean active) {
-        Log.v(TAG, "Toggle neighboring devices: " + active);
+        // Log.v(TAG, "Toggle neighboring devices: " + active);
 
         if (null != service) {
             try {
@@ -809,7 +810,7 @@ public class SenseApp extends Activity {
     }
 
     private void toggleExternalSensors(boolean active) {
-        Log.v(TAG, "Toggle external sensors: " + active);
+        // Log.v(TAG, "Toggle external sensors: " + active);
 
         if (null != service) {
 
@@ -856,7 +857,7 @@ public class SenseApp extends Activity {
     }
 
     private void toggleLocation(boolean active) {
-        Log.v(TAG, "Toggle location: " + active);
+        // Log.v(TAG, "Toggle location: " + active);
 
         if (null != service) {
 
@@ -909,7 +910,7 @@ public class SenseApp extends Activity {
      * Afterwards, the UI is updated to make the ToggleButtons show the new service state.
      */
     private void toggleMain(boolean active) {
-        Log.v(TAG, "Toggle main: " + active);
+        // Log.v(TAG, "Toggle main: " + active);
 
         if (null != service) {
             try {
@@ -929,12 +930,11 @@ public class SenseApp extends Activity {
             } else {
                 if (null == service) {
                     // also bind to service
-                    bindToSenseService(true);
+                    bindToSenseService();
                 }
             }
 
         } else {
-
             // // stop service
             // Intent serviceIntent = new Intent(ISenseService.class.getName());
             // boolean stopped = stopService(serviceIntent);
@@ -946,14 +946,14 @@ public class SenseApp extends Activity {
             // }
             //
             // // re-bind to the service
-            // bindToSenseService(true);
+            // bindToSenseService();
         }
 
         checkServiceStatus();
     }
 
     private void toggleMotion(boolean active) {
-        Log.v(TAG, "Toggle motion: " + active);
+        // Log.v(TAG, "Toggle motion: " + active);
 
         if (null != service) {
 
@@ -1000,7 +1000,7 @@ public class SenseApp extends Activity {
     }
 
     private void togglePhoneState(boolean active) {
-        Log.v(TAG, "Toggle phone state: " + active);
+        // Log.v(TAG, "Toggle phone state: " + active);
 
         // toggle state in service
         if (null != service) {
@@ -1079,7 +1079,7 @@ public class SenseApp extends Activity {
      * Unbinds from the Sense service, resets {@link #service} and {@link #isServiceBound}.
      */
     private void unbindFromSenseService() {
-        Log.v(TAG, "Try to unbind from Sense Platform service");
+        // Log.v(TAG, "Try to unbind from Sense Platform service");
 
         if (true == isServiceBound && null != serviceConn) {
             unbindService(serviceConn);
@@ -1100,11 +1100,11 @@ public class SenseApp extends Activity {
     private void updateUi(int status) {
 
         final boolean running = (status & Constants.STATUSCODE_RUNNING) > 0;
-        Log.v(TAG, "'running' status: " + running);
+        // Log.v(TAG, "'running' status: " + running);
         ((CheckBox) findViewById(R.id.main_cb)).setChecked(running);
 
         final boolean connected = (status & Constants.STATUSCODE_CONNECTED) > 0;
-        Log.v(TAG, "'connected' status: " + connected);
+        // Log.v(TAG, "'connected' status: " + connected);
 
         // show connection status in main service field
         TextView mainFirstLine = (TextView) findViewById(R.id.main_firstline);
@@ -1134,7 +1134,7 @@ public class SenseApp extends Activity {
         text1.setEnabled(connected);
         text2.setEnabled(connected);
         if (callstate) {
-            Log.v(TAG, "'phone state' enabled");
+            // Log.v(TAG, "'phone state' enabled");
         }
 
         // enable location list row
@@ -1148,7 +1148,7 @@ public class SenseApp extends Activity {
         text1.setEnabled(connected);
         text2.setEnabled(connected);
         if (location) {
-            Log.v(TAG, "'location' enabled");
+            // Log.v(TAG, "'location' enabled");
         }
 
         // enable motion list row
@@ -1161,7 +1161,7 @@ public class SenseApp extends Activity {
         text1.setEnabled(connected);
         text2.setEnabled(connected);
         if (motion) {
-            Log.v(TAG, "'motion' enabled");
+            // Log.v(TAG, "'motion' enabled");
         }
 
         // enable ambience list row
@@ -1175,7 +1175,7 @@ public class SenseApp extends Activity {
         text1.setEnabled(connected);
         text2.setEnabled(connected);
         if (ambience) {
-            Log.v(TAG, "'ambience' enabled");
+            // Log.v(TAG, "'ambience' enabled");
         }
 
         // enable device proximity row
@@ -1188,7 +1188,7 @@ public class SenseApp extends Activity {
         text1.setEnabled(connected);
         text2.setEnabled(connected);
         if (deviceProx) {
-            Log.v(TAG, "'neighboring devices' enabled");
+            // Log.v(TAG, "'neighboring devices' enabled");
         }
 
         // enable external sensor list row
@@ -1201,7 +1201,7 @@ public class SenseApp extends Activity {
         text1.setEnabled(connected);
         text2.setEnabled(connected);
         if (external_sensors) {
-            Log.v(TAG, "'external sensors' enabled");
+            // Log.v(TAG, "'external sensors' enabled");
         }
 
         // enable pop quiz list row
@@ -1214,7 +1214,7 @@ public class SenseApp extends Activity {
         text1.setEnabled(false);
         text2.setEnabled(false);
         if (popQuiz) {
-            Log.v(TAG, "'questionnaire' enabled");
+            // Log.v(TAG, "'questionnaire' enabled");
         }
     }
 }
