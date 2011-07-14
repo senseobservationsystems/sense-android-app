@@ -431,9 +431,8 @@ public class SenseService extends Service {
     private SensePhoneState phoneStateListener;
     private ZephyrBioHarness es_bioHarness;
     private ZephyrHxM es_HxM;
-    // private boolean isStarted;
-    private boolean isForeground, isLoggedIn, isAmbienceActive, isDevProxActive, isExternalActive,
-            isLocationActive, isMotionActive, isPhoneStateActive, isQuizActive;
+    private boolean isStarted, isForeground, isLoggedIn, isAmbienceActive, isDevProxActive,
+            isExternalActive, isLocationActive, isMotionActive, isPhoneStateActive, isQuizActive;
     private final Handler toastHandler = new Handler(Looper.getMainLooper());
     private HandlerThread ambienceThread, motionThread, deviceProxThread, extSensorsThread,
             locationThread, phoneStateThread;
@@ -499,9 +498,6 @@ public class SenseService extends Service {
 
         int status = 0;
 
-        final SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
-        final boolean isStarted = prefs.getBoolean(Constants.PREF_STATUS_MAIN, false);
-
         status = isStarted ? Constants.STATUSCODE_RUNNING : status;
         status = isLoggedIn ? status + Constants.STATUSCODE_CONNECTED : status;
         status = isPhoneStateActive ? status + Constants.STATUSCODE_PHONESTATE : status;
@@ -513,21 +509,6 @@ public class SenseService extends Service {
         status = isMotionActive ? status + Constants.STATUSCODE_MOTION : status;
 
         return status;
-    }
-
-    /**
-     * Initializes the global fields of this class.
-     */
-    private void initFields() {
-
-        // statuses
-        isDevProxActive = false;
-        isLocationActive = false;
-        isMotionActive = false;
-        isAmbienceActive = false;
-        isPhoneStateActive = false;
-        isQuizActive = false;
-        isExternalActive = false;
     }
 
     /**
@@ -581,37 +562,20 @@ public class SenseService extends Service {
         return binder;
     }
 
+    /**
+     * Does nothing except poop out a log message. The service is really started in onStart,
+     * otherwise it would also start when an activity binds to it.
+     */
     @Override
     public void onCreate() {
-
         super.onCreate();
-        Log.v(TAG, "\n\nonCreate...\n\n");
-
-        // int pid = android.os.Process.myPid();
-        // final SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS,
-        // MODE_PRIVATE);
-        // final int storedPid = prefs.getInt("PID", 0);
-        // if(pid != storedPid)
-        // {
-        // newProccess = true;
-        // final Editor prefEditor = prefs.edit();
-        // prefEditor.putInt("PID", pid);
-        // prefEditor.commit();
-
-        // initialize stuff
-        initFields();
-
-        startAliveChecks();
-        // }
-        // Register the receiver for SCREEN OFF events
-        // IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
-        // registerReceiver(screenOffListener, filter);
+        Log.v(TAG, "-------> Sense Platform service created... <-------");
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.v(TAG, "onDestroy...");
+        Log.v(TAG, "-------> Sense Platform service destroyed... <-------");
 
         // stop listening for possibility to login
         if (null != connectivityListener) {
@@ -730,44 +694,49 @@ public class SenseService extends Service {
 
             @Override
             public void handleMessage(Message msg) {
-                final SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS,
-                        MODE_PRIVATE);
-                final boolean isStarted = prefs.getBoolean(Constants.PREF_STATUS_MAIN, false);
-                if (false == isStarted) {
-                    Log.w(TAG, "Sense service was started when the main status is not set!");
-                    stopForegroundCompat();
-                    return;
-                }
 
-                if (false == isForeground) {
+                try {
+                    final SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS,
+                            MODE_PRIVATE);
+                    isStarted = prefs.getBoolean(Constants.PREF_STATUS_MAIN, false);
+                    if (false == isStarted) {
+                        Log.w(TAG, "Sense service was started when the main status is not set!");
+                        stopForegroundCompat();
+                        return;
+                    }
+
                     // make service as important as regular activities
-                    startForegroundCompat();
+                    if (false == isForeground) {
+                        startForegroundCompat();
+                    }
+
+                    // intent is null when the Service is recreated by Android after it was killed
+                    boolean relogin = true;
+                    if (null != intent) {
+                        relogin = intent.getBooleanExtra(ACTION_RELOGIN, false);
+                    }
+
+                    // try to login immediately
+                    if (false == isLoggedIn || relogin) {
+                        login();
+                    } else {
+                        checkVersion();
+
+                        // restart the individual modules
+                        startSensorModules();
+                    }
+
+                    // register broadcast receiver for login in case of Internet connection changes
+                    if (null == connectivityListener) {
+                        connectivityListener = new ConnectivityListener();
+                        IntentFilter filter = new IntentFilter(
+                                ConnectivityManager.CONNECTIVITY_ACTION);
+                        registerReceiver(connectivityListener, filter);
+                    }
+
+                } finally {
+                    this.getLooper().quit();
                 }
-
-                // intent is null when the Service is recreated by Android after it was killed
-                boolean relogin = true;
-                if (null != intent) {
-                    relogin = intent.getBooleanExtra(ACTION_RELOGIN, false);
-                }
-
-                // try to login immediately
-                if (false == isLoggedIn || relogin) {
-                    login();
-                } else {
-                    checkVersion();
-
-                    // restart the individual modules
-                    startSensorModules();
-                }
-
-                // register broadcast receiver for login in case of Internet connection changes
-                if (null == connectivityListener) {
-                    connectivityListener = new ConnectivityListener();
-                    IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
-                    registerReceiver(connectivityListener, filter);
-                }
-
-                this.getLooper().quit();
             };
         }.sendEmptyMessage(0);
     }
@@ -886,8 +855,9 @@ public class SenseService extends Service {
      * immediately after creation.
      */
     private void startAliveChecks() {
-
         Log.d(TAG, "Start periodic checks if Sense is still alive...");
+
+        isStarted = true;
 
         // put alive status in the preferences
         final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
@@ -1036,6 +1006,9 @@ public class SenseService extends Service {
      * Stops the periodic checks to keep the service alive.
      */
     private void stopAliveChecks() {
+
+        isStarted = false;
+
         // remove alive status in the preferences
         final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
                 MODE_WORLD_WRITEABLE);
@@ -1522,7 +1495,6 @@ public class SenseService extends Service {
             startAliveChecks();
         } else {
             onLogOut();
-
             stopForegroundCompat();
         }
     }
@@ -1533,6 +1505,10 @@ public class SenseService extends Service {
             isMotionActive = active;
 
             if (true == active) {
+
+                // Register the receiver for SCREEN OFF events
+                // IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+                // registerReceiver(screenOffListener, filter);
 
                 // check motion sensor presence
                 if (motionSensor != null) {
@@ -1585,6 +1561,13 @@ public class SenseService extends Service {
                 });
 
             } else {
+
+                // Unregister the receiver for SCREEN OFF events
+                // try {
+                // unregisterReceiver(screenOffListener);
+                // } catch (IllegalArgumentException e) {
+                // Log.d(TAG, "Ignoring exception when trying to unregister screen off listener");
+                // }
 
                 // stop sensing
                 if (null != motionSensor) {
