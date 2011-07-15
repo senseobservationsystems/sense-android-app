@@ -37,7 +37,7 @@ import android.util.Log;
 public class SenseApi {
 
     private static final String TAG = "SenseApi";
-    private static final boolean USE_COMPRESSION = false;
+    private static final boolean USE_COMPRESSION = true;
     private static final long CACHE_REFRESH = 1000l * 60 * 60; // 1 hour
 
     /**

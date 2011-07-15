@@ -351,7 +351,7 @@ public class MsgHandler extends Service {
     private static final int MAX_BUFFER = 1048500; // 1mb in bytes
     private static final int MAX_NR_OF_SEND_MSG_THREADS = 50;
     private static final int MAX_POST_DATA = 100;
-    private static final int MAX_POST_DATA_TIME_SERIE = 20;
+    private static final int MAX_POST_DATA_TIME_SERIE = 10;
     private JSONObject buffer;
     private int bufferCount;
     private SQLiteDatabase db;
