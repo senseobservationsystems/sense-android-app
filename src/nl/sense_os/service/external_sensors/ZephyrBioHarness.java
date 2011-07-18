@@ -5,6 +5,21 @@
  */
 package nl.sense_os.service.external_sensors;
 
+import it.gerdavax.android.bluetooth.LocalBluetoothDevice;
+import it.gerdavax.android.bluetooth.LocalBluetoothDeviceListener;
+import it.gerdavax.android.bluetooth.RemoteBluetoothDevice;
+
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.UUID;
+
+import nl.sense_os.service.Constants;
+import nl.sense_os.service.MsgHandler;
+
+import org.json.JSONObject;
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -18,21 +33,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
-import nl.sense_os.service.Constants;
-import nl.sense_os.service.MsgHandler;
-
-import org.json.JSONObject;
-
-import it.gerdavax.android.bluetooth.LocalBluetoothDevice;
-import it.gerdavax.android.bluetooth.LocalBluetoothDeviceListener;
-import it.gerdavax.android.bluetooth.RemoteBluetoothDevice;
-
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.UUID;
-
 public class ZephyrBioHarness {
 
     /*
@@ -44,8 +44,7 @@ public class ZephyrBioHarness {
 
         public ProcessZephyrBioHarnessMessage(String deviceName) {
             this.deviceName = deviceName;
-            this.prefs = context
-                    .getSharedPreferences(Constants.MAIN_PREFS, Context.MODE_WORLD_WRITEABLE);
+            this.prefs = context.getSharedPreferences(Constants.MAIN_PREFS, Context.MODE_PRIVATE);
         }
 
         public boolean processMessage(byte[] buffer) throws Exception {

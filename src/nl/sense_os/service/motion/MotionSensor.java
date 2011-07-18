@@ -39,6 +39,7 @@ public class MotionSensor implements SensorEventListener {
     private static final String TAG = "Sense MotionSensor";
     private FallDetector fallDetector;
     private boolean useFallDetector;
+    private boolean epiMode;
     private boolean firstStart = true;
     private Context context;
     private long[] lastSampleTimes = new long[50];
@@ -50,7 +51,6 @@ public class MotionSensor implements SensorEventListener {
     private long localBufferTime = 15 * 1000;
     private List<Sensor> sensors;
     private SensorManager smgr;
-    private boolean EPI_MODE = false;
     private long firstTimeSend = 0;
     private JSONArray[] dataBuffer = new JSONArray[10];
 
@@ -67,9 +67,11 @@ public class MotionSensor implements SensorEventListener {
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // Log.d(TAG, "Accuracy changed...");
-        // Log.d(TAG, "Sensor: " + sensor.getName() + "(" + sensor.getType() + "), accuracy: " +
-        // accuracy);
+        if (accuracy == SensorManager.SENSOR_STATUS_UNRELIABLE) {
+            Log.w(TAG, sensor.getName() + " accuracy is unreliable!");
+        } else if (accuracy == SensorManager.SENSOR_STATUS_ACCURACY_LOW) {
+            Log.w(TAG, sensor.getName() + " accuracy is low!");
+        }
     }
 
     @Override
@@ -80,7 +82,7 @@ public class MotionSensor implements SensorEventListener {
             double aX = event.values[1];
             double aY = event.values[0];
             double aZ = event.values[2];
-            float accVecSum = (float) Math.sqrt((aX * aX) + (aY * aY) + (aZ * aZ));
+            float accVecSum = (float) Math.sqrt(aX * aX + aY * aY + aZ * aZ);
 
             if (fallDetector.fallDetected(accVecSum)) {
                 sendFallMessage(true); // send msg
@@ -106,8 +108,9 @@ public class MotionSensor implements SensorEventListener {
                 break;
             }
 
-            if ((sensor.getType() != Sensor.TYPE_ACCELEROMETER) && EPI_MODE)
+            if (sensor.getType() != Sensor.TYPE_ACCELEROMETER && epiMode) {
                 return;
+            }
 
             DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.ENGLISH);
             NumberFormat formatter = new DecimalFormat("###.###", otherSymbols);
@@ -131,8 +134,9 @@ public class MotionSensor implements SensorEventListener {
                                 || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
                             json.put("y-axis", formatter.format(value));
                         } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
-                                || sensor.getType() == Sensor.TYPE_GYROSCOPE)
+                                || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
                             json.put("pitch", formatter.format(value));
+                        }
                         break;
                     case 2:
                         if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
@@ -152,14 +156,17 @@ public class MotionSensor implements SensorEventListener {
             }
 
             // add the data to the buffer if we are in realtime mode:
-            if (EPI_MODE) {
-                if (dataBuffer[sensor.getType()] == null)
+            if (epiMode) {
+                if (dataBuffer[sensor.getType()] == null) {
                     dataBuffer[sensor.getType()] = new JSONArray();
+                }
                 dataBuffer[sensor.getType()].put(json);
-                if (lastLocalSampleTimes[sensor.getType()] == 0)
+                if (lastLocalSampleTimes[sensor.getType()] == 0) {
                     lastLocalSampleTimes[sensor.getType()] = System.currentTimeMillis();
+                }
 
-                if (System.currentTimeMillis() > (lastLocalSampleTimes[sensor.getType()] + localBufferTime)) {
+                if (System.currentTimeMillis() > lastLocalSampleTimes[sensor.getType()]
+                        + localBufferTime) {
                     // send the stuff
                     Log.d(TAG, "Transmit accelerodata:" + dataBuffer[sensor.getType()].length());
                     // pass message to the MsgHandler
@@ -174,11 +181,12 @@ public class MotionSensor implements SensorEventListener {
                                     + dataBuffer[sensor.getType()].toString() + "}");
                     i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON_TIME_SERIE);
                     i.putExtra(MsgHandler.KEY_TIMESTAMP, lastLocalSampleTimes[sensor.getType()]);
-                    this.context.startService(i);
+                    context.startService(i);
                     dataBuffer[sensor.getType()] = new JSONArray();
                     lastLocalSampleTimes[sensor.getType()] = System.currentTimeMillis();
-                    if (firstTimeSend == 0)
+                    if (firstTimeSend == 0) {
                         firstTimeSend = System.currentTimeMillis();
+                    }
                 }
             } else {
                 // pass message to the MsgHandler
@@ -188,11 +196,16 @@ public class MotionSensor implements SensorEventListener {
                 i.putExtra(MsgHandler.KEY_VALUE, json.toString());
                 i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
                 i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
-                this.context.startService(i);
+                context.startService(i);
             }
         }
-        //TODO: the unregister somehow causes android to stop rotating the screen (at least on Nexus S). Disabling this as a workaround
-        if (false) {//sampleDelay > 500 && motionSensingActive && !useFallDetector) {
+
+        // unregister the motion sensor if this was set in the preferences
+        SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
+                Context.MODE_PRIVATE);
+        boolean unregPref = mainPrefs.getBoolean(Constants.PREF_MOTION_UNREG, false);
+
+        if (unregPref && sampleDelay > 500 && motionSensingActive && !useFallDetector) {
 
             // unregister the listener and start again in sampleDelay seconds
             stopMotionSensing();
@@ -206,10 +219,6 @@ public class MotionSensor implements SensorEventListener {
         }
     }
 
-    public void setSampleDelay(long _sampleDelay) {
-        sampleDelay = _sampleDelay;
-    }
-
     private void sendFallMessage(boolean fall) {
         Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
         i.putExtra(MsgHandler.KEY_SENSOR_NAME, "fall detector");
@@ -217,17 +226,24 @@ public class MotionSensor implements SensorEventListener {
         i.putExtra(MsgHandler.KEY_VALUE, fall);
         i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_BOOL);
         i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
-        this.context.startService(i);
+        context.startService(i);
     }
 
-    public void startMotionSensing(long _sampleDelay) {
+    public void setSampleDelay(long _sampleDelay) {
+        sampleDelay = _sampleDelay;
+    }
 
-        if (EPI_MODE)
-            _sampleDelay = 0;
+    public void startMotionSensing(long sampleDelay) {
 
-        // check if the falldetector is enabled
         final SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
-                Context.MODE_WORLD_WRITEABLE);
+                Context.MODE_PRIVATE);
+        epiMode = mainPrefs.getBoolean(Constants.PREF_EPI_MODE, false);
+
+        if (epiMode) {
+            sampleDelay = 0;
+        }
+
+        // check if the fall detector is enabled
         useFallDetector = mainPrefs.getBoolean(Constants.PREF_MOTION_FALL_DETECT, false);
         if (fallDetector.demo = mainPrefs.getBoolean(Constants.PREF_MOTION_FALL_DETECT_DEMO, false)) {
             useFallDetector = true;
@@ -239,14 +255,14 @@ public class MotionSensor implements SensorEventListener {
         }
 
         motionSensingActive = true;
-        setSampleDelay(_sampleDelay);
+        setSampleDelay(sampleDelay);
         for (Sensor sensor : sensors) {
             if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
                     || sensor.getType() == Sensor.TYPE_ORIENTATION
                     || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
                 // Log.d(TAG, "registering for sensor " + sensor.getName());
                 smgr.registerListener(this, sensor,
-                        (useFallDetector || EPI_MODE) ? SensorManager.SENSOR_DELAY_GAME
+                        useFallDetector || epiMode ? SensorManager.SENSOR_DELAY_GAME
                                 : SensorManager.SENSOR_DELAY_NORMAL);
             }
         }

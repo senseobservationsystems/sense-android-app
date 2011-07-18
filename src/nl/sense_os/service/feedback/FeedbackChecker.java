@@ -40,7 +40,7 @@ public class FeedbackChecker extends IntentService {
             // get last feedback sensor value
             if (cookie != null) {
                 try {
-                    JSONObject json = SenseApi.getJsonObject(new URI(url), cookie);
+                    JSONObject json = SenseApi.getJsonObject(this, new URI(url), cookie);
                     // parseFeedback(json);
 
                     sendFeedback(json, actionAfterCheck);

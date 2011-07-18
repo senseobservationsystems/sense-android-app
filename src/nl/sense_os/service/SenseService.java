@@ -152,8 +152,7 @@ public class SenseService extends Service {
         @Override
         public boolean getPrefBool(String key, boolean defValue) throws RemoteException {
             // Log.d(TAG, "Get preference: " + key);
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
-                    MODE_WORLD_WRITEABLE);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             if (key.equals(Constants.PREF_STATUS_AMBIENCE)
                     || key.equals(Constants.PREF_STATUS_DEV_PROX)
                     || key.equals(Constants.PREF_STATUS_EXTERNAL)
@@ -163,7 +162,7 @@ public class SenseService extends Service {
                     || key.equals(Constants.PREF_STATUS_PHONESTATE)
                     || key.equals(Constants.PREF_STATUS_POPQUIZ)
                     || key.equals(Constants.PREF_AUTOSTART)) {
-                prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_WORLD_WRITEABLE);
+                prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
             } else if (key.equals(Constants.PREF_DEV_MODE)) {
                 prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
             }
@@ -179,8 +178,7 @@ public class SenseService extends Service {
         @Override
         public float getPrefFloat(String key, float defValue) throws RemoteException {
             // Log.d(TAG, "Get preference: " + key);
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
-                    MODE_WORLD_WRITEABLE);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             try {
                 return prefs.getFloat(key, defValue);
             } catch (ClassCastException e) {
@@ -191,8 +189,7 @@ public class SenseService extends Service {
         @Override
         public int getPrefInt(String key, int defValue) throws RemoteException {
             // Log.d(TAG, "Get preference: " + key);
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
-                    MODE_WORLD_WRITEABLE);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             try {
                 return prefs.getInt(key, defValue);
             } catch (ClassCastException e) {
@@ -203,8 +200,7 @@ public class SenseService extends Service {
         @Override
         public long getPrefLong(String key, long defValue) throws RemoteException {
             // Log.d(TAG, "Get preference: " + key);
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
-                    MODE_WORLD_WRITEABLE);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             if (key.equals(Constants.PREF_SENSOR_LIST_TIME)) {
                 prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
             }
@@ -219,8 +215,7 @@ public class SenseService extends Service {
         @Override
         public String getPrefString(String key, String defValue) throws RemoteException {
             // Log.d(TAG, "Get preference: " + key);
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
-                    MODE_WORLD_WRITEABLE);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             if (key.equals(Constants.PREF_LOGIN_COOKIE) || key.equals(Constants.PREF_LOGIN_PASS)
                     || key.equals(Constants.PREF_LOGIN_USERNAME)
                     || key.equals(Constants.PREF_SENSOR_LIST)
@@ -252,8 +247,7 @@ public class SenseService extends Service {
         public void setPrefBool(String key, boolean value) throws RemoteException {
             // Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
 
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
-                    MODE_WORLD_WRITEABLE);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             if (key.equals(Constants.PREF_STATUS_AMBIENCE)
                     || key.equals(Constants.PREF_STATUS_DEV_PROX)
                     || key.equals(Constants.PREF_STATUS_EXTERNAL)
@@ -263,7 +257,7 @@ public class SenseService extends Service {
                     || key.equals(Constants.PREF_STATUS_PHONESTATE)
                     || key.equals(Constants.PREF_STATUS_POPQUIZ)
                     || key.equals(Constants.PREF_AUTOSTART)) {
-                prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_WORLD_WRITEABLE);
+                prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
             } else if (key.equals(Constants.PREF_DEV_MODE)) {
                 prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
             }
@@ -280,8 +274,7 @@ public class SenseService extends Service {
         @Override
         public void setPrefFloat(String key, float value) throws RemoteException {
             // Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
-                    MODE_WORLD_WRITEABLE);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
 
             // store value
             boolean stored = prefs.edit().putFloat(key, value).commit();
@@ -293,8 +286,7 @@ public class SenseService extends Service {
         @Override
         public void setPrefInt(String key, int value) throws RemoteException {
             // Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
-                    MODE_WORLD_WRITEABLE);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
 
             // store value
             boolean stored = prefs.edit().putFloat(key, value).commit();
@@ -306,8 +298,7 @@ public class SenseService extends Service {
         @Override
         public void setPrefLong(String key, long value) throws RemoteException {
             // Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
-                    MODE_WORLD_WRITEABLE);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             if (key.equals(Constants.PREF_SENSOR_LIST_TIME)) {
                 prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
             }
@@ -322,8 +313,7 @@ public class SenseService extends Service {
         @Override
         public void setPrefString(String key, String value) throws RemoteException {
             // Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS,
-                    MODE_WORLD_WRITEABLE);
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             if (key.equals(Constants.PREF_LOGIN_COOKIE) || key.equals(Constants.PREF_LOGIN_PASS)
                     || key.equals(Constants.PREF_LOGIN_USERNAME)
                     || key.equals(Constants.PREF_SENSOR_LIST)
@@ -475,7 +465,7 @@ public class SenseService extends Service {
             PackageInfo packageInfo = getPackageManager().getPackageInfo("nl.sense_os.app", 0);
             String versionName = packageInfo.versionName;
             URI uri = new URI(Constants.URL_VERSION + "?version=" + versionName);
-            final JSONObject version = SenseApi.getJsonObject(uri, "");
+            final JSONObject version = SenseApi.getJsonObject(this, uri, "");
 
             if (version == null) {
                 return;
@@ -852,19 +842,12 @@ public class SenseService extends Service {
 
     /**
      * Starts the checks that periodically check if the service is still alive. Should be started
-     * immediately after creation.
+     * immediately after sensing starts.
      */
     private void startAliveChecks() {
         Log.d(TAG, "Start periodic checks if Sense is still alive...");
 
         isStarted = true;
-
-        // put alive status in the preferences
-        final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
-                MODE_WORLD_WRITEABLE);
-        final Editor editor = statusPrefs.edit();
-        editor.putBoolean(Constants.PREF_ALIVE, true);
-        editor.commit();
 
         // start the alarms
         final Intent alarmIntent = new Intent(AliveChecker.ACTION_CHECK_ALIVE);
@@ -1009,13 +992,6 @@ public class SenseService extends Service {
 
         isStarted = false;
 
-        // remove alive status in the preferences
-        final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
-                MODE_WORLD_WRITEABLE);
-        final Editor editor = statusPrefs.edit();
-        editor.putBoolean(Constants.PREF_ALIVE, false);
-        editor.commit();
-
         // stop the alive check broadcasts
         final Intent alarmIntent = new Intent(AliveChecker.ACTION_CHECK_ALIVE);
         final PendingIntent alarmOp = PendingIntent.getBroadcast(this,
@@ -1151,7 +1127,7 @@ public class SenseService extends Service {
 
                 // get sample rate from preferences
                 final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
-                        MODE_WORLD_WRITEABLE);
+                        MODE_PRIVATE);
                 final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SAMPLE_RATE,
                         "0"));
                 int interval = -1;
@@ -1233,7 +1209,7 @@ public class SenseService extends Service {
 
                 // get sample rate
                 final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
-                        MODE_WORLD_WRITEABLE);
+                        MODE_PRIVATE);
                 final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SAMPLE_RATE,
                         "0"));
                 int interval = 1;
@@ -1316,7 +1292,7 @@ public class SenseService extends Service {
 
                 // get sample rate
                 final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
-                        MODE_WORLD_WRITEABLE);
+                        MODE_PRIVATE);
                 final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SAMPLE_RATE,
                         "0"));
                 int interval = 1;
@@ -1406,7 +1382,7 @@ public class SenseService extends Service {
 
                 // get sample rate
                 final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
-                        MODE_WORLD_WRITEABLE);
+                        MODE_PRIVATE);
                 final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SAMPLE_RATE,
                         "0"));
                 long minTime = -1;
@@ -1417,11 +1393,11 @@ public class SenseService extends Service {
                     minDistance = 0;
                     break;
                 case -1: // often
-                    minTime = 15 * 1000;
+                    minTime = 30 * 1000;
                     minDistance = 10;
                     break;
                 case 0: // normal
-                    minTime = 60 * 1000;
+                    minTime = 5 * 60 * 1000;
                     minDistance = 10;
                     break;
                 case 1: // rarely
@@ -1525,7 +1501,7 @@ public class SenseService extends Service {
 
                 // get sample rate
                 final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
-                        MODE_WORLD_WRITEABLE);
+                        MODE_PRIVATE);
                 final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SAMPLE_RATE,
                         "0"));
                 int interval = -1;
@@ -1628,7 +1604,7 @@ public class SenseService extends Service {
 
                 // get sample rate
                 final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
-                        MODE_WORLD_WRITEABLE);
+                        MODE_PRIVATE);
                 final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SAMPLE_RATE,
                         "0"));
                 int interval = -1;
@@ -1637,7 +1613,7 @@ public class SenseService extends Service {
                     interval = 1 * 1000;
                     break;
                 case -1: // often
-                    interval = 5 * 1000;
+                    interval = 10 * 1000;
                     break;
                 case 0: // normal
                     interval = 60 * 1000;

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen
-    xmlns:android="http://schemas.android.com/apk/res/android">
-    <PreferenceCategory
-        android:title="General settings">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="General Settings">
         <Preference
             android:title="Change login"
             android:key="login_placeholder" />
@@ -32,24 +30,22 @@
             android:key="sync_rate" />
         <CheckBoxPreference
             android:title="Autostart"
-            android:summary="Autostart Sense service on phone boot"
+            android:summary="Start Sense service at phone startup"
             android:defaultValue="false"
             android:key="autostart" />
     </PreferenceCategory>
 
-    <PreferenceCategory
-        android:title="Specific service settings">
+    <PreferenceCategory android:title="Specific service settings">
 
         <PreferenceScreen
             android:title="Phone status"
-            android:summary="Phone status sensing settings"
+            android:summary="Settings for battery sensor etc."
             android:enabled="false" />
 
         <PreferenceScreen
-            android:title="Location tracker"
-            android:summary="Location tracker service settings">
-            <PreferenceCategory
-                android:title="Main settings">
+            android:title="Location"
+            android:summary="Settings for location sensors">
+            <PreferenceCategory android:title="Main settings">
                 <CheckBoxPreference
                     android:title="GPS provider"
                     android:summary="Use GPS location provider"
@@ -64,11 +60,10 @@
         </PreferenceScreen>
 
         <PreferenceScreen
-            android:title="Ambience sensing"
-            android:summary="Ambience sensing settings"
+            android:title="Ambience"
+            android:summary="Settings for sound and light sensors"
             android:enabled="true">
-            <PreferenceCategory
-                android:title="Main settings">
+            <PreferenceCategory android:title="Main settings">
                 <CheckBoxPreference
                     android:title="Microphone"
                     android:defaultValue="True"
@@ -83,11 +78,10 @@
         </PreferenceScreen>
 
         <PreferenceScreen
-            android:title="Motion sensing"
-            android:summary="Motion sensing settings"
+            android:title="Motion"
+            android:summary="Settings for accelerometer and gyroscope"
             android:enabled="True">
-            <PreferenceCategory
-                android:title="Main Settings">
+            <PreferenceCategory android:title="Main settings">
                 <CheckBoxPreference
                     android:key="motion_fall_detector"
                     android:title="Fall detection"
@@ -96,17 +90,23 @@
                 <CheckBoxPreference
                     android:summary="Detects a simple free fall"
                     android:key="motion_fall_detector_demo"
-                    android:title="Fall detection demo"
+                    android:title="Fall detection for demo's"
                     android:defaultValue="False" />
+            </PreferenceCategory>
+            <PreferenceCategory android:title="Additional settings">
+                <CheckBoxPreference
+                    android:title="Unregister between samples"
+                    android:summary="Saves battery, might break screen rotation"
+                    android:defaultValue="False"
+                    android:key="motion_unregister" />
             </PreferenceCategory>
         </PreferenceScreen>
 
         <PreferenceScreen
             android:title="Neighboring devices"
             android:enabled="true"
-            android:summary="Wireless sensing settings">
-            <PreferenceCategory
-                android:title="Main settings">
+            android:summary="Settings for network context sensors">
+            <PreferenceCategory android:title="Main settings">
                 <CheckBoxPreference
                     android:summary="Use Bluetooth to find neighboring devices"
                     android:defaultValue="true"
@@ -121,9 +121,9 @@
         </PreferenceScreen>
 
         <PreferenceScreen
-            android:title="External Sensors"
+            android:title="External sensors"
             android:enabled="true"
-            android:summary="External bluetooth sensor settings">
+            android:summary="Settings for external (Bluetooth) sensors">
             <CheckBoxPreference
                 android:title="Zephyr BioHarness"
                 android:defaultValue="False"
@@ -133,8 +133,7 @@
                 android:enabled="True"
                 android:title="Zephyr BioHarness settings"
                 android:summary="Select BioHarness sensors">
-                <PreferenceCategory
-                    android:title="General sensor data">
+                <PreferenceCategory android:title="General sensor data">
                     <CheckBoxPreference
                         android:key="zephyrBioHarness_acc"
                         android:defaultValue="True"
@@ -176,8 +175,7 @@
                 android:enabled="True"
                 android:title="Zephyr HxM settings"
                 android:summary="Select HxM sensors">
-                <PreferenceCategory
-                    android:title="Main settings">
+                <PreferenceCategory android:title="Main settings">
                     <CheckBoxPreference
                         android:key="zephyrHxM_heartRate"
                         android:title="Heart Rate"
@@ -228,8 +226,7 @@
             android:summary="Periodic questionnare settings"
             android:key="popquiz_screen"
             android:enabled="false">
-            <PreferenceCategory
-                android:title="Main settings">
+            <PreferenceCategory android:title="Main settings">
                 <ListPreference
                     android:title="Popup interval"
                     android:summary="Amount of popup questions"
@@ -252,12 +249,24 @@
             </PreferenceCategory>
         </PreferenceScreen>
     </PreferenceCategory>
-    <PreferenceCategory
-        android:title="Even more settings">
-        <CheckBoxPreference
-            android:title="Development mode"
-            android:summary="Use unstable version of CommonSense"
-            android:defaultValue="false"
-            android:key="devmode" />
+
+    <PreferenceCategory android:title="Even more settings">
+
+        <PreferenceScreen
+            android:title="Advanced settings"
+            android:summary="For true Sensei"
+            android:key="advanced_screen"
+            android:enabled="true">
+            <CheckBoxPreference
+                android:title="Development server"
+                android:summary="Use unstable version of CommonSense"
+                android:defaultValue="false"
+                android:key="devmode" />
+            <CheckBoxPreference
+                android:title="Use compression"
+                android:summary="Costs more CPU, less data traffic"
+                android:defaultValue="true"
+                android:key="compression" />
+        </PreferenceScreen>
     </PreferenceCategory>
 </PreferenceScreen>

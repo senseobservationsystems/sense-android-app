@@ -27,14 +27,14 @@ public class DataTransmitter extends BroadcastReceiver {
 
         final SharedPreferences statusPrefs = context.getSharedPreferences(Constants.STATUS_PREFS,
                 Context.MODE_PRIVATE);
-        final boolean alive = statusPrefs.getBoolean(Constants.PREF_ALIVE, false);
+        final boolean alive = statusPrefs.getBoolean(Constants.PREF_STATUS_MAIN, false);
 
         // check if the service is (supposed to be) alive before scheduling next alarm
         if (true == alive) {
 
             // determine sync rate to schedule next alarm
             final SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
-                    Context.MODE_WORLD_WRITEABLE);
+                    Context.MODE_PRIVATE);
             final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SYNC_RATE, "0"));
             long nextAlarm = 0;
             switch (rate) {

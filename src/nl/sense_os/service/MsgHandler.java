@@ -130,8 +130,8 @@ public class MsgHandler extends Service {
                     return;
                 }
 
-                HashMap<String, String> response = SenseApi.sendJson(new URL(url), data, "POST",
-                        cookie);
+                HashMap<String, String> response = SenseApi.sendJson(context, new URL(url), data,
+                        "POST", cookie);
                 // Error when sending
                 if (response == null
                         || response.get("http response code").compareToIgnoreCase("201") != 0) {
@@ -545,7 +545,7 @@ public class MsgHandler extends Service {
 
             // check if we can send the data point immediately
             final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
-                    MODE_WORLD_WRITEABLE);
+                    MODE_PRIVATE);
             final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SYNC_RATE, "0"));
             boolean isMaxThreads = nrOfSendMessageThreads >= MAX_NR_OF_SEND_MSG_THREADS - 5;
             boolean isRealTimeMode = rate == -2;

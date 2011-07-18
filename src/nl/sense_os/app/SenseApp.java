@@ -692,8 +692,7 @@ public class SenseApp extends Activity {
 
         // show dialogs to handle special cases
         final SharedPreferences appPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
-                MODE_WORLD_WRITEABLE);
+        final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
         if (appPrefs.getBoolean(SenseSettings.PREF_FIRST_LOGIN, true)) {
             // show informational dialog on first run
             final Editor editor = mainPrefs.edit();

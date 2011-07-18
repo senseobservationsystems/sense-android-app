@@ -711,16 +711,16 @@ public class SenseSettings extends PreferenceActivity {
         }
         switch (Integer.parseInt(sampleRate)) {
         case -2: // real time
-            samplePref.setSummary("Current setting: Real-time");
+            samplePref.setSummary("Real-time: sample as quickly a possible");
             break;
         case -1: // often
-            samplePref.setSummary("Current setting: Often");
+            samplePref.setSummary("Often: sample every 10-20 seconds");
             break;
         case 0: // normal
-            samplePref.setSummary("Current setting: Normal");
+            samplePref.setSummary("Normal: sample every 1-5 minutes");
             break;
         case 1: // rarely
-            samplePref.setSummary("Current setting: Rarely");
+            samplePref.setSummary("Rarely: sample every 15 minutes");
             break;
         default:
             samplePref.setSummary("ERROR");
@@ -739,13 +739,13 @@ public class SenseSettings extends PreferenceActivity {
             syncPref.setSummary("Real-time connection with CommonSense");
             break;
         case -1: // often
-            syncPref.setSummary("Sync with CommonSense every minute (Often)");
+            syncPref.setSummary("Often: buffer size is 1 minute");
             break;
         case 0: // normal
-            syncPref.setSummary("Sync with CommonSense every 5 minutes (Normal)");
+            syncPref.setSummary("Normal: buffer size is 5 minutes");
             break;
         case 1: // rarely
-            syncPref.setSummary("Sync with CommonSense every 15 minutes (Eco-mode)");
+            syncPref.setSummary("Eco-mode: buffer size is 15 minutes");
             break;
         default:
             syncPref.setSummary("ERROR");

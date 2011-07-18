@@ -43,7 +43,7 @@ public class PopQuizRx extends BroadcastReceiver {
             // check whether to show the activity picker or not, depending on the silent mode
             // setting.
             final SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
-                    Context.MODE_WORLD_WRITEABLE);
+                    Context.MODE_PRIVATE);
             final boolean silentMode = mainPrefs.getBoolean(Constants.PREF_QUIZ_SILENT_MODE, false);
 
             if (false == silentMode) {

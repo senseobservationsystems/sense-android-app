@@ -5,10 +5,9 @@
  */
 package nl.sense_os.service.deviceprox;
 
+import nl.sense_os.service.Constants;
 import android.content.Context;
 import android.content.SharedPreferences;
-
-import nl.sense_os.service.Constants;
 
 public class DeviceProximity {
 
@@ -43,13 +42,13 @@ public class DeviceProximity {
         this.isScanEnabled = true;
 
         final SharedPreferences mainPrefs = this.context.getSharedPreferences(Constants.MAIN_PREFS,
-                Context.MODE_WORLD_WRITEABLE);
-        
+                Context.MODE_PRIVATE);
+
         this.isBtEnabled = mainPrefs.getBoolean(Constants.PREF_PROXIMITY_BT, true);
         if (this.isBtEnabled) {
             this.bluetoothDP.startEnvironmentScanning(interval);
         }
-        
+
         this.isWifiEnabled = mainPrefs.getBoolean(Constants.PREF_PROXIMITY_WIFI, true);
         if (this.isWifiEnabled) {
             this.wifiDP.startEnvironmentScanning(interval);

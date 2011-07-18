@@ -19,7 +19,7 @@ public class BootRx extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         SharedPreferences statusPrefs = context.getSharedPreferences(Constants.STATUS_PREFS,
-                Context.MODE_WORLD_WRITEABLE);
+                Context.MODE_PRIVATE);
         final boolean autostart = statusPrefs.getBoolean(Constants.PREF_AUTOSTART, false);
 
         // automatically start the Sense service if this is set in the preferences

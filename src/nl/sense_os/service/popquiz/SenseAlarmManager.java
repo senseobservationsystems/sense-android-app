@@ -7,6 +7,12 @@
  */
 package nl.sense_os.service.popquiz;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import nl.sense_os.service.Constants;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.ContentValues;
@@ -18,13 +24,6 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
-
-import nl.sense_os.service.Constants;
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 public class SenseAlarmManager {
     /**
@@ -232,7 +231,7 @@ public class SenseAlarmManager {
 
         // get time of last refresh from preferences
         SharedPreferences mainPrefs = this.ctx.getSharedPreferences(Constants.MAIN_PREFS,
-                Context.MODE_WORLD_WRITEABLE);
+                Context.MODE_PRIVATE);
         long lastUpdate = mainPrefs.getLong(Constants.PREF_QUIZ_SYNC_TIME, 0);
 
         // next update time 8 hours from last one
@@ -343,7 +342,7 @@ public class SenseAlarmManager {
      */
     private long getNextQuarterHour() {
         final SharedPreferences mainPrefs = ctx.getSharedPreferences(Constants.MAIN_PREFS,
-                Context.MODE_WORLD_WRITEABLE);
+                Context.MODE_PRIVATE);
         final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_QUIZ_RATE, "0"));
         long period = 0;
         switch (rate) {

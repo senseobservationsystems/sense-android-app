@@ -37,7 +37,6 @@ import android.util.Log;
 public class SenseApi {
 
     private static final String TAG = "SenseApi";
-    private static final boolean USE_COMPRESSION = true;
     private static final long CACHE_REFRESH = 1000l * 60 * 60; // 1 hour
 
     /**
@@ -81,7 +80,7 @@ public class SenseApi {
             boolean devMode = authPrefs.getBoolean(Constants.PREF_DEV_MODE, false);
             final URI uri = new URI(devMode ? Constants.URL_DEV_DEVICES : Constants.URL_DEVICES);
             String cookie = authPrefs.getString(Constants.PREF_LOGIN_COOKIE, "NO_COOKIE");
-            JSONObject response = SenseApi.getJsonObject(uri, cookie);
+            JSONObject response = SenseApi.getJsonObject(context, uri, cookie);
 
             // check if this device is in the list
             if (response != null) {
@@ -184,7 +183,7 @@ public class SenseApi {
             boolean devMode = authPrefs.getBoolean(Constants.PREF_DEV_MODE, false);
             String rawUrl = devMode ? Constants.URL_DEV_SENSORS : Constants.URL_SENSORS;
             URI uri = new URI(rawUrl.replaceAll("<id>", "" + deviceId));
-            JSONObject response = SenseApi.getJsonObject(uri, cookie);
+            JSONObject response = SenseApi.getJsonObject(context, uri, cookie);
 
             // parse response and store the list
             if (response != null) {
@@ -322,7 +321,7 @@ public class SenseApi {
             final JSONObject user = new JSONObject();
             user.put("username", username);
             user.put("password", pass);
-            final HashMap<String, String> response = sendJson(url, user, "POST", "");
+            final HashMap<String, String> response = sendJson(context, url, user, "POST", "");
             if (response == null) {
                 // request failed
                 return -1;
@@ -422,7 +421,7 @@ public class SenseApi {
             postData.put("sensor", sensor);
 
             // check if sensor was created successfully
-            HashMap<String, String> response = sendJson(url, postData, "POST", cookie);
+            HashMap<String, String> response = sendJson(context, url, postData, "POST", cookie);
             if (response == null) {
                 // failed to create the sensor
                 Log.e(TAG, "Error creating sensor. response=null");
@@ -464,7 +463,7 @@ public class SenseApi {
             device.put("uuid", imei);
             postData.put("device", device);
 
-            response = sendJson(url, postData, "POST", cookie);
+            response = sendJson(context, url, postData, "POST", cookie);
             if (response == null) {
                 // failed to add the sensor to the device
                 Log.e(TAG, "Error adding sensor to device. response=null");
@@ -525,7 +524,8 @@ public class SenseApi {
             user.put("password", pass);
             user.put("email", username);
             data.put("user", user);
-            final HashMap<String, String> response = SenseApi.sendJson(url, data, "POST", "");
+            final HashMap<String, String> response = SenseApi.sendJson(context, url, data, "POST",
+                    "");
             if (response == null) {
                 Log.e(TAG, "Error registering new user. response=null");
                 return -1;
@@ -559,11 +559,16 @@ public class SenseApi {
     /**
      * @return a JSONObject from the requested URI
      */
-    public static JSONObject getJsonObject(URI uri, String cookie) {
+    public static JSONObject getJsonObject(Context context, URI uri, String cookie) {
         try {
+
+            final SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
+                    Context.MODE_PRIVATE);
+            final boolean compress = mainPrefs.getBoolean(Constants.PREF_COMPRESSION, true);
+
             final HttpGet get = new HttpGet(uri);
             get.setHeader("Cookie", cookie);
-            if (USE_COMPRESSION)
+            if (compress)
                 get.setHeader("Accept-Encoding", "gzip");
             final HttpClient client = new DefaultHttpClient();
 
@@ -580,7 +585,7 @@ public class SenseApi {
 
             HttpEntity entity = response.getEntity();
             InputStream is = entity.getContent();
-            if (USE_COMPRESSION)
+            if (compress)
                 is = new GZIPInputStream(is);
 
             BufferedReader rd = new BufferedReader(new InputStreamReader(is), 1024);
@@ -601,8 +606,8 @@ public class SenseApi {
     /**
      * This method sends a JSON object to update or create an item it returns the HTTP-response code
      */
-    public static HashMap<String, String> sendJson(URL url, JSONObject json, String method,
-            String cookie) {
+    public static HashMap<String, String> sendJson(Context context, URL url, JSONObject json,
+            String method, String cookie) {
         HttpURLConnection urlConn = null;
         try {
             // Log.d(TAG, "Sending:" + url.toString());
@@ -633,7 +638,10 @@ public class SenseApi {
             DataOutputStream printout;
 
             // Set compression
-            if (USE_COMPRESSION) {
+            final SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
+                    Context.MODE_PRIVATE);
+            final boolean compress = mainPrefs.getBoolean(Constants.PREF_COMPRESSION, true);
+            if (compress) {
                 // Don't Set content size
                 urlConn.setRequestProperty("Transfer-Encoding", "chunked");
                 urlConn.setRequestProperty("Content-Encoding", "gzip");

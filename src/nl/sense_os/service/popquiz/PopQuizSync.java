@@ -7,14 +7,13 @@
  */
 package nl.sense_os.service.popquiz;
 
+import nl.sense_os.service.Constants;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.util.Log;
-
-import nl.sense_os.service.Constants;
 
 public class PopQuizSync extends BroadcastReceiver {
 
@@ -111,7 +110,7 @@ public class PopQuizSync extends BroadcastReceiver {
 
         // save this sync time in the preferences
         SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
-                Context.MODE_WORLD_WRITEABLE);
+                Context.MODE_PRIVATE);
         Editor editor = mainPrefs.edit();
         editor.putLong(Constants.PREF_QUIZ_SYNC_TIME, System.currentTimeMillis());
         editor.commit();
