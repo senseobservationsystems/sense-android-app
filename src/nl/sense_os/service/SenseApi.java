@@ -450,9 +450,9 @@ public class SenseApi {
             Log.v(TAG, "-------> Created sensor: \'" + sensorName + "\'");
 
             // get device properties from preferences, so it matches the properties in CommonSense
-            final String imei = ((TelephonyManager) context
+            final String device_uuid = ((TelephonyManager) context
                     .getSystemService(Context.TELEPHONY_SERVICE)).getDeviceId();
-            final String phoneType = authPrefs.getString(Constants.PREF_PHONE_TYPE, Build.MODEL);
+            final String device_type = authPrefs.getString(Constants.PREF_DEVICE_TYPE, Build.MODEL);
 
             // Add sensor to this device at CommonSense
             String rawUrl = devMode ? Constants.URL_DEV_ADD_SENSOR_TO_DEVICE
@@ -460,8 +460,8 @@ public class SenseApi {
             url = new URL(rawUrl.replaceFirst("<id>", id));
             postData = new JSONObject();
             JSONObject device = new JSONObject();
-            device.put("type", phoneType);
-            device.put("uuid", imei);
+            device.put("type", device_type);
+            device.put("uuid", device_uuid);
             postData.put("device", device);
 
             response = sendJson(context, url, postData, "POST", cookie);
