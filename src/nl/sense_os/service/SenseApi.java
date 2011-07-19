@@ -231,7 +231,8 @@ public class SenseApi {
                     JSONObject sensor = (JSONObject) sensors.get(x);
 
                     if (sensor.getString("device_type").equalsIgnoreCase(deviceType)
-                            && sensor.getString("name").equalsIgnoreCase(sensorName)) {
+                            && sensor.getString("name").equalsIgnoreCase(sensorName)
+                            && sensor.getString("data_type").equalsIgnoreCase(dataType)) {
 
                         // found the right sensor
                         if (dataType.equals(Constants.SENSOR_DATA_TYPE_FILE)) {

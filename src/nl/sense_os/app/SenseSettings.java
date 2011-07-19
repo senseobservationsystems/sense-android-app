@@ -480,8 +480,6 @@ public class SenseSettings extends PreferenceActivity {
                     service.getPrefString(Constants.PREF_SYNC_RATE, "0"));
             editor.putBoolean(Constants.PREF_AUTOSTART,
                     service.getPrefBool(Constants.PREF_AUTOSTART, false));
-            editor.putBoolean(Constants.PREF_DEV_MODE,
-                    service.getPrefBool(Constants.PREF_DEV_MODE, false));
 
             // location preferences
             editor.putBoolean(Constants.PREF_LOCATION_GPS,
@@ -500,6 +498,8 @@ public class SenseSettings extends PreferenceActivity {
                     service.getPrefBool(Constants.PREF_MOTION_FALL_DETECT, false));
             editor.putBoolean(Constants.PREF_MOTION_FALL_DETECT_DEMO,
                     service.getPrefBool(Constants.PREF_MOTION_FALL_DETECT_DEMO, false));
+            editor.putBoolean(Constants.PREF_MOTION_UNREG,
+                    service.getPrefBool(Constants.PREF_MOTION_UNREG, true));
 
             // neighboring devices
             editor.putBoolean(Constants.PREF_PROXIMITY_BT,
@@ -547,6 +547,12 @@ public class SenseSettings extends PreferenceActivity {
             // Tanita scale
             editor.putBoolean(Constants.PREF_TANITA_SCALE,
                     service.getPrefBool(Constants.PREF_TANITA_SCALE, false));
+
+            // advance settings
+            editor.putBoolean(Constants.PREF_DEV_MODE,
+                    service.getPrefBool(Constants.PREF_DEV_MODE, false));
+            editor.putBoolean(Constants.PREF_COMPRESSION,
+                    service.getPrefBool(Constants.PREF_COMPRESSION, true));
 
             editor.commit();
 

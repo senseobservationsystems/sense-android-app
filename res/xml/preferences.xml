@@ -88,16 +88,21 @@
                     android:summary="Detects a human fall"
                     android:defaultValue="False" />
                 <CheckBoxPreference
-                    android:summary="Detects a simple free fall"
                     android:key="motion_fall_detector_demo"
                     android:title="Fall detection for demo's"
+                    android:summary="Detects a simple free fall"
+                    android:defaultValue="False" />
+                <CheckBoxPreference
+                    android:key="motion_energy"
+                    android:summary="Motion energy"
+                    android:title="Measure kinetic energy"
                     android:defaultValue="False" />
             </PreferenceCategory>
             <PreferenceCategory android:title="Additional settings">
                 <CheckBoxPreference
                     android:title="Unregister between samples"
                     android:summary="Saves battery, might break screen rotation"
-                    android:defaultValue="False"
+                    android:defaultValue="True"
                     android:key="motion_unregister" />
             </PreferenceCategory>
         </PreferenceScreen>
