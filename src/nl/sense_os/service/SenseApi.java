@@ -449,10 +449,10 @@ public class SenseApi {
 
             Log.v(TAG, "-------> Created sensor: \'" + sensorName + "\'");
 
-            // / get device properties
+            // get device properties from preferences, so it matches the properties in CommonSense
             final String imei = ((TelephonyManager) context
                     .getSystemService(Context.TELEPHONY_SERVICE)).getDeviceId();
-            final String phoneType = Build.MODEL;
+            final String phoneType = authPrefs.getString(Constants.PREF_PHONE_TYPE, Build.MODEL);
 
             // Add sensor to this device at CommonSense
             String rawUrl = devMode ? Constants.URL_DEV_ADD_SENSOR_TO_DEVICE
