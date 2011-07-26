@@ -1121,7 +1121,7 @@ public class SenseService extends Service {
 
                 if (ambienceThread != null && ambienceThread.isAlive()) {
                     Log.w(TAG, "Ambience thread is already present! Quitting the thread...");
-                    ambienceThread.quit();
+                    ambienceThread.getLooper().quit();
                     ambienceThread = null;
                 }
 
@@ -1180,7 +1180,7 @@ public class SenseService extends Service {
                 }
 
                 if (ambienceThread != null && ambienceThread.isAlive()) {
-                    ambienceThread.quit();
+                    ambienceThread.getLooper().quit();
                     ambienceThread = null;
                 }
             }
@@ -1203,7 +1203,7 @@ public class SenseService extends Service {
 
                 if (deviceProxThread != null && deviceProxThread.isAlive()) {
                     Log.w(TAG, "Device proximity thread is already present! Quitting the thread...");
-                    deviceProxThread.quit();
+                    deviceProxThread.getLooper().quit();
                     deviceProxThread = null;
                 }
 
@@ -1256,7 +1256,7 @@ public class SenseService extends Service {
                 }
 
                 if (deviceProxThread != null && deviceProxThread.isAlive()) {
-                    deviceProxThread.quit();
+                    deviceProxThread.getLooper().quit();
                     deviceProxThread = null;
                 }
             }
@@ -1286,7 +1286,7 @@ public class SenseService extends Service {
 
                 if (extSensorsThread != null && extSensorsThread.isAlive()) {
                     Log.w(TAG, "Ext. sensors thread is already present! Quitting the thread...");
-                    extSensorsThread.quit();
+                    extSensorsThread.getLooper().quit();
                     extSensorsThread = null;
                 }
 
@@ -1352,7 +1352,7 @@ public class SenseService extends Service {
                 }
 
                 if (extSensorsThread != null && extSensorsThread.isAlive()) {
-                    extSensorsThread.quit();
+                    extSensorsThread.getLooper().quit();
                     extSensorsThread = null;
                 }
             }
@@ -1376,7 +1376,7 @@ public class SenseService extends Service {
 
                 if (locationThread != null && locationThread.isAlive()) {
                     Log.w(TAG, "Location thread is already present! Quitting the thread...");
-                    locationThread.quit();
+                    locationThread.getLooper().quit();
                     locationThread = null;
                 }
 
@@ -1457,7 +1457,7 @@ public class SenseService extends Service {
                 }
 
                 if (locationThread != null && locationThread.isAlive()) {
-                    locationThread.quit();
+                    locationThread.getLooper().quit();
                     locationThread = null;
                 }
             }
@@ -1495,7 +1495,7 @@ public class SenseService extends Service {
 
                 if (motionThread != null && motionThread.isAlive()) {
                     Log.w(TAG, "Motion thread is already present! Quitting the thread...");
-                    motionThread.quit();
+                    motionThread.getLooper().quit();
                     motionThread = null;
                 }
 
@@ -1553,7 +1553,7 @@ public class SenseService extends Service {
 
                 // quit thread
                 if (null != motionThread) {
-                    motionThread.quit();
+                    motionThread.getLooper().quit();
                     motionThread = null;
                 }
             }
@@ -1600,6 +1600,12 @@ public class SenseService extends Service {
                     Log.w(TAG, "phone activity sensor is already present!");
                     phoneActivitySensor.stopPhoneActivitySensing();
                     phoneActivitySensor = null;
+                }
+
+                // chekc presence of other phone state thread
+                if (phoneStateThread != null && phoneStateThread.isAlive()) {
+                    phoneStateThread.getLooper().quit();
+                    phoneStateThread = null;
                 }
 
                 // get sample rate
@@ -1675,7 +1681,7 @@ public class SenseService extends Service {
                     phoneActivitySensor = null;
                 }
                 if (phoneStateThread != null && phoneStateThread.isAlive()) {
-                    phoneStateThread.quit();
+                    phoneStateThread.getLooper().quit();
                     phoneStateThread = null;
                 }
             }
