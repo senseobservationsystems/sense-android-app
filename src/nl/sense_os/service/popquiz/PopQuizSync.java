@@ -104,7 +104,7 @@ public class PopQuizSync extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.d(TAG, "Synchronizing quiz data with CommonSense...");
+        // Log.v(TAG, "Synchronizing quiz data with CommonSense...");
 
         // this.context = context;
 

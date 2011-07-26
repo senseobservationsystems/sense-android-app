@@ -6,6 +6,8 @@
  */
 package nl.sense_os.app;
 
+import nl.sense_os.app.dialogs.LoginDialog;
+import nl.sense_os.app.dialogs.RegisterDialog;
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.ISenseService;
 import android.app.AlertDialog;
@@ -27,13 +29,7 @@ import android.preference.Preference;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import android.text.InputType;
-import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
-import android.view.ViewGroup.LayoutParams;
-import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
 public class SenseSettings extends PreferenceActivity {
@@ -89,21 +85,34 @@ public class SenseSettings extends PreferenceActivity {
                 Toast.makeText(SenseSettings.this, R.string.toast_login_ok, Toast.LENGTH_LONG)
                         .show();
 
-                // the user logged in at least once
-                final SharedPreferences appPrefs = PreferenceManager
-                        .getDefaultSharedPreferences(SenseSettings.this);
-                Editor editor = appPrefs.edit();
-                editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
-                editor.commit();
-
-                // make sure at least the phone state is sensing
-                bindToSenseService();
+                // toggle main service state
                 if (service != null) {
                     try {
-                        service.togglePhoneState(true);
+                        service.toggleMain(true);
                     } catch (RemoteException e) {
-                        Log.e(TAG, "RemoteException starting phone state sensor after login.", e);
+                        Log.e(TAG, "RemoteException starting Sense service after login.", e);
                     }
+                }
+
+                // check if this is the very first login
+                final SharedPreferences appPrefs = PreferenceManager
+                        .getDefaultSharedPreferences(SenseSettings.this);
+                if (appPrefs.getBoolean(PREF_FIRST_LOGIN, true)) {
+                    final Editor editor = appPrefs.edit();
+                    editor.putBoolean(PREF_FIRST_LOGIN, false);
+                    editor.commit();
+
+                    // toggle phone state sensors
+                    if (service != null) {
+                        try {
+                            service.togglePhoneState(true);
+                        } catch (RemoteException e) {
+                            Log.e(TAG, "RemoteException starting phone state sensor after login.",
+                                    e);
+                        }
+                    }
+                } else {
+                    // the user logged in at least once
                 }
 
                 // update login preference summary
@@ -138,12 +147,30 @@ public class SenseSettings extends PreferenceActivity {
         protected Integer doInBackground(String... params) {
             int result = -1;
 
-            String username = params[0];
-            String password = params[1];
+            String username = null;
+            String password = null;
+            String name = null;
+            String surname = null;
+            String email = null;
+            String phone = null;
+            if (params.length == 2) {
+                username = params[0];
+                password = params[1];
+            } else if (params.length == 6) {
+                username = params[0];
+                password = params[1];
+                name = params[2];
+                surname = params[3];
+                email = params[4];
+                phone = params[5];
+            } else {
+                Log.w(TAG, "Unexpected amount of parameters!");
+                return -1;
+            }
 
             if (service != null) {
                 try {
-                    result = service.register(username, password);
+                    result = service.register(username, password, name, surname, email, phone);
 
                     // start service
                     if (0 == result) {
@@ -178,21 +205,35 @@ public class SenseSettings extends PreferenceActivity {
                 Toast.makeText(SenseSettings.this, getString(R.string.toast_reg_ok),
                         Toast.LENGTH_LONG).show();
 
-                // the user logged in at least once
-                final SharedPreferences appPrefs = PreferenceManager
-                        .getDefaultSharedPreferences(SenseSettings.this);
-                final Editor editor = appPrefs.edit();
-                editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
-                editor.commit();
-
-                // make sure at least the phone state is sensing
-                bindToSenseService();
+                // toggle main service state
                 if (service != null) {
                     try {
-                        service.togglePhoneState(true);
+                        service.toggleMain(true);
                     } catch (RemoteException e) {
-                        Log.e(TAG, "RemoteException starting phone state sensor after login.", e);
+                        Log.e(TAG, "RemoteException starting Sense service after registration.", e);
                     }
+                }
+
+                // check if this is the very first login
+                final SharedPreferences appPrefs = PreferenceManager
+                        .getDefaultSharedPreferences(SenseSettings.this);
+                if (appPrefs.getBoolean(PREF_FIRST_LOGIN, true)) {
+                    final Editor editor = appPrefs.edit();
+                    editor.putBoolean(PREF_FIRST_LOGIN, false);
+                    editor.commit();
+
+                    // toggle phone state sensors
+                    if (service != null) {
+                        try {
+                            service.togglePhoneState(true);
+                        } catch (RemoteException e) {
+                            Log.e(TAG,
+                                    "RemoteException starting phone state sensor after registration.",
+                                    e);
+                        }
+                    }
+                } else {
+                    // the user logged in at least once
                 }
 
                 // update login preference summary
@@ -320,7 +361,7 @@ public class SenseSettings extends PreferenceActivity {
      */
     private void bindToSenseService() {
         // start the service if it was not running already
-        if (service == null) {
+        if (!isServiceBound) {
             final Intent serviceIntent = new Intent(ISenseService.class.getName());
             isServiceBound = bindService(serviceIntent, serviceConn, BIND_AUTO_CREATE);
         }
@@ -340,121 +381,12 @@ public class SenseSettings extends PreferenceActivity {
         return builder.create();
     }
 
-    private Dialog createDialogLogin() {
-
-        // create View with input fields for dialog content
-        final LinearLayout login = new LinearLayout(this);
-        login.setOrientation(LinearLayout.VERTICAL);
-
-        final EditText usernameField = new EditText(this);
-        usernameField.setLayoutParams(new LayoutParams(-1, -2));
-        usernameField.setHint(R.string.dialog_login_hint_mail);
-        usernameField.setInputType(InputType.TYPE_CLASS_TEXT
-                | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-        usernameField.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        login.addView(usernameField);
-
-        final EditText passField = new EditText(this);
-        passField.setLayoutParams(new LayoutParams(-1, -2));
-        passField.setHint(R.string.dialog_login_hint_pass);
-        passField.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        passField.setTransformationMethod(new PasswordTransformationMethod());
-        passField.setImeOptions(EditorInfo.IME_ACTION_DONE);
-        login.addView(passField);
-
-        // get current login email from preferences
-        try {
-            usernameField.setText(service.getPrefString(Constants.PREF_LOGIN_USERNAME, ""));
-        } catch (RemoteException e) {
-            Log.e(TAG, "Failed to get username from Sense Platform service", e);
-        }
-
-        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(R.string.dialog_login_title);
-        builder.setView(login);
-        builder.setPositiveButton(R.string.button_login, new OnClickListener() {
-
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                final String name = usernameField.getText().toString();
-                final String pass = passField.getText().toString();
-
-                // initiate Login
-                new CheckLoginTask().execute(name, pass);
-            }
-        });
-        builder.setNeutralButton(R.string.button_cancel, null);
-        return builder.create();
-    }
-
     private Dialog createDialogLoginProgress() {
         final ProgressDialog dialog = new ProgressDialog(this);
         dialog.setTitle(R.string.dialog_progress_title);
         dialog.setMessage(getString(R.string.dialog_progress_login_msg));
         dialog.setCancelable(false);
         return dialog;
-    }
-
-    private Dialog createDialogRegister() {
-
-        // create individual input fields
-        final EditText usernameField = new EditText(this);
-        usernameField.setLayoutParams(new LayoutParams(-1, -2));
-        usernameField.setHint(R.string.dialog_reg_hint_mail);
-        usernameField.setInputType(InputType.TYPE_CLASS_TEXT
-                | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-        usernameField.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-
-        final EditText passField1 = new EditText(this);
-        passField1.setLayoutParams(new LayoutParams(-1, -2));
-        passField1.setHint(R.string.dialog_reg_hint_pass);
-        passField1.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        passField1.setTransformationMethod(new PasswordTransformationMethod());
-        passField1.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-
-        final EditText passField2 = new EditText(this);
-        passField2.setLayoutParams(new LayoutParams(-1, -2));
-        passField2.setHint(R.string.dialog_reg_hint_pass2);
-        passField2.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        passField2.setTransformationMethod(new PasswordTransformationMethod());
-        passField2.setImeOptions(EditorInfo.IME_ACTION_DONE);
-
-        // create main dialog content View
-        final LinearLayout register = new LinearLayout(this);
-        register.setOrientation(LinearLayout.VERTICAL);
-        register.addView(usernameField);
-        register.addView(passField1);
-        register.addView(passField2);
-
-        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(R.string.dialog_reg_title);
-        builder.setView(register);
-        builder.setPositiveButton(R.string.button_reg, new OnClickListener() {
-
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                final String username = usernameField.getText().toString();
-                final String pass1 = passField1.getText().toString();
-                final String pass2 = passField2.getText().toString();
-
-                if (pass1.equals(pass2)) {
-
-                    // start registration
-                    new CheckRegisterTask().execute(username, pass1);
-
-                } else {
-                    Toast.makeText(SenseSettings.this, R.string.toast_reg_pass, Toast.LENGTH_SHORT)
-                            .show();
-
-                    passField1.setText("");
-                    passField2.setText("");
-                    removeDialog(DIALOG_REGISTER);
-                    showDialog(DIALOG_REGISTER);
-                }
-            }
-        });
-        builder.setNeutralButton(R.string.button_cancel, null);
-        return builder.create();
     }
 
     /**
@@ -597,10 +529,10 @@ public class SenseSettings extends PreferenceActivity {
         Dialog dialog = null;
         switch (id) {
         case DIALOG_LOGIN:
-            dialog = createDialogLogin();
+            dialog = new LoginDialog(this);
             break;
         case DIALOG_REGISTER:
-            dialog = createDialogRegister();
+            dialog = new RegisterDialog(this);
             break;
         case DIALOG_PROGRESS:
             dialog = createDialogLoginProgress();
@@ -623,6 +555,32 @@ public class SenseSettings extends PreferenceActivity {
         appPrefs.unregisterOnSharedPreferenceChangeListener(changeListener);
 
         unbindFromSenseService();
+    }
+
+    @Override
+    protected void onPrepareDialog(int id, Dialog dialog) {
+        // make sure the service is started when we try to register or log in
+        switch (id) {
+        case DIALOG_LOGIN:
+            bindToSenseService();
+
+            ((LoginDialog) dialog).setOnSubmitTask(new CheckLoginTask());
+
+            // get username preset from Sense service
+            try {
+                String usernamePreset = service.getPrefString(Constants.PREF_LOGIN_USERNAME, "");
+                ((LoginDialog) dialog).setUsername(usernamePreset);
+            } catch (RemoteException e) {
+                Log.e(TAG, "Failed to get username from Sense Platform service", e);
+            }
+            break;
+        case DIALOG_REGISTER:
+            bindToSenseService();
+            ((RegisterDialog) dialog).setOnSubmitTask(new CheckRegisterTask());
+            break;
+        default:
+            break;
+        }
     }
 
     @Override
@@ -694,7 +652,7 @@ public class SenseSettings extends PreferenceActivity {
      * Shows the summaries of the two sync/sense rate list preferences.
      */
     private void showSummaries() {
-        Log.d(TAG, "Show summaries...");
+        // Log.v(TAG, "Show summaries...");
 
         // get username from Sense Platform service
         Preference loginPref = findPreference("login_placeholder");
@@ -765,7 +723,7 @@ public class SenseSettings extends PreferenceActivity {
         if (null == name) {
             Log.w(TAG, "Failed to start Sense service");
         } else {
-            Log.d(TAG, "Started Sense service");
+            // Log.v(TAG, "Started Sense service");
         }
     }
 

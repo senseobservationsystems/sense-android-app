@@ -302,7 +302,7 @@ public class MotionSensor implements SensorEventListener {
 
         if (System.currentTimeMillis() > lastLocalSampleTimes[sensor.getType()] + localBufferTime) {
             // send the stuff
-            Log.d(TAG, "Transmit accelerodata:" + dataBuffer[sensor.getType()].length());
+            // Log.v(TAG, "Transmit accelerodata: " + dataBuffer[sensor.getType()].length());
             // pass message to the MsgHandler
             Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
             i.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_EPI);
@@ -382,7 +382,8 @@ public class MotionSensor implements SensorEventListener {
                                 : SensorManager.SENSOR_DELAY_NORMAL);
             } else if (Build.VERSION.SDK_INT >= 9 && sensor.getType() == 10) {
                 // use linear accelerometer sensor on gingerbread phones
-                Log.d(TAG, "w00t w00t! Found fancy linear acceleration sensor! pwning gravity...");
+                // Log.v(TAG,
+                // "w00t w00t! Found fancy linear acceleration sensor! pwning gravity...");
                 smgr.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
                 hasLinAccSensor = true;
             }

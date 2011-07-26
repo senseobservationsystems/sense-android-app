@@ -54,7 +54,7 @@ public class ZephyrHxM {
                         if (heartRate < 0)
                             heartRate = (heartRate + 255);
 
-                        Log.d(TAG, "Heart rate:" + heartRate);
+                        // Log.v(TAG, "Heart rate:" + heartRate);
                         Intent heartRateIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
                         heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, "heart rate");
                         heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
@@ -70,7 +70,7 @@ public class ZephyrHxM {
                         int speed = (((int) buffer[52]) | (((int) buffer[53]) << 8));
                         float speedF = (float) speed / 256f;
 
-                        Log.d(TAG, "Speed:" + speedF);
+                        // Log.v(TAG, "Speed:" + speedF);
                         Intent heartRateIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
                         heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, "speed");
                         heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
@@ -86,7 +86,7 @@ public class ZephyrHxM {
                         int distance = (((int) buffer[50]) | (((int) buffer[51]) << 8));
                         float distanceF = (float) distance / 16F;
 
-                        Log.d(TAG, "Distance:" + distanceF);
+                        // Log.v(TAG, "Distance:" + distanceF);
                         Intent heartRateIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
                         heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, "distance");
                         heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
@@ -101,7 +101,7 @@ public class ZephyrHxM {
                     if (prefs.getBoolean(Constants.PREF_HXM_BATTERY, true)) {
                         Short battery = (short) buffer[11];
 
-                        Log.d(TAG, "Battery charge:" + battery.intValue());
+                        // Log.v(TAG, "Battery charge:" + battery.intValue());
                         Intent heartRateIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
                         heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, "battery charge");
                         heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
@@ -137,7 +137,7 @@ public class ZephyrHxM {
                         mmInStream = btSocket2_1.getInputStream();
                         mmOutStream = btSocket2_1.getOutputStream();
                     } catch (Exception e) {
-                        Log.d(TAG, "Error in update thread constructor:" + e.getMessage());
+                        Log.e(TAG, "Error in update thread constructor:" + e.getMessage());
                     }
                 }
             } else {
@@ -148,7 +148,7 @@ public class ZephyrHxM {
                         mmOutStream = btSocket1_6.getOutputStream();
                     }
                 } catch (Exception e) {
-                    Log.d(TAG, "Error in update thread constructor:" + e.getMessage());
+                    Log.e(TAG, "Error in update thread constructor:" + e.getMessage());
                 }
             }
         }
@@ -192,7 +192,7 @@ public class ZephyrHxM {
         /* Call this from the main Activity to shutdown the connection */
         public void cancel() {
             try {
-                Log.d(TAG, "Stopping the HxM service");
+                Log.i(TAG, "Stopping the HxM service");
                 processZHxMMessage = null;
                 if (btSocket1_6 == null) {
                     btSocket2_1.close();
@@ -203,7 +203,7 @@ public class ZephyrHxM {
                 }
 
             } catch (Exception e) {
-                Log.d(TAG, "Error in stopping the servicve:" + e.getMessage());
+                Log.e(TAG, "Error in stopping the servicve:" + e.getMessage());
             }
         }
     }
@@ -402,7 +402,7 @@ public class ZephyrHxM {
                             // Add the name and address to an array adapter to show in a ListView
                             if (device.getName().startsWith("HXM")
                                     && device.getAddress().startsWith("00:07:80")) {
-                                Log.d(TAG, "Connecting to HxM:" + device.getName());
+                                // Log.v(TAG, "Connecting to HxM:" + device.getName());
                                 // Get a BluetoothSocket to connect with the given BluetoothDevice
                                 try {
                                     btSocket2_1 = device
@@ -413,15 +413,15 @@ public class ZephyrHxM {
                                     updateHandler.post(updateThread = new UpdateThread());
                                     foundDevice = true;
                                 } catch (Exception e) {
-                                    Log.d(TAG,
-                                            "Error in connecting to HxM device:" + e.getMessage());
+                                    // Log.e(TAG,
+                                    // "Error in connecting to HxM device:" + e.getMessage());
                                 }
                             }
                         }
                     }
 
                     if (!foundDevice) {
-                        Log.d(TAG, "No Paired HxM device found. Sleeping for 10 seconds");
+                        // Log.v(TAG, "No Paired HxM device found. Sleeping for 10 seconds");
                         connectHandler.postDelayed(hxmConnectThread2_1 = new HxMConnectThread2_1(),
                                 10000);
                     }
@@ -432,7 +432,7 @@ public class ZephyrHxM {
                             BluetoothAdapter.ACTION_STATE_CHANGED));
                 } else {
                     // ask user for permission to start bluetooth
-                    Log.d(TAG, "Asking user to start bluetooth");
+                    // Log.v(TAG, "Asking user to start bluetooth");
                     Intent startBt = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                     startBt.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(startBt);
@@ -448,7 +448,7 @@ public class ZephyrHxM {
 
         public void stop() {
             try {
-                Log.d(TAG, "Stopping the HxM service");
+                Log.i(TAG, "Stopping the HxM service");
                 updateHandler.removeCallbacks(updateThread);
                 btSocket2_1.close();
 

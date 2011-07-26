@@ -22,8 +22,7 @@ public class DataTransmitter extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-
-        Log.d(TAG, "onReceive");
+        // Log.v(TAG, "onReceive");
 
         final SharedPreferences statusPrefs = context.getSharedPreferences(Constants.STATUS_PREFS,
                 Context.MODE_PRIVATE);
@@ -62,7 +61,7 @@ public class DataTransmitter extends BroadcastReceiver {
             mgr.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + nextAlarm, operation);
 
         } else {
-            Log.d(TAG, "Sense service should not be alive!");
+            // Log.v(TAG, "Sense service should not be alive!");
         }
 
         // start send task

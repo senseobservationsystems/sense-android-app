@@ -67,7 +67,7 @@ public class BluetoothDeviceProximity {
                 }
 
                 try {
-                    Log.d(TAG, "Bluetooth devices found: " + devices.size());
+                    // Log.v(TAG, "Bluetooth devices found: " + devices.size());
 
                     // array of found devices
                     for (String address : devices) {
@@ -241,7 +241,7 @@ public class BluetoothDeviceProximity {
                     context.registerReceiver(btReceiver, new IntentFilter(
                             BluetoothAdapter.ACTION_DISCOVERY_FINISHED));
 
-                    Log.d(TAG, "Starting discovery");
+                    Log.i(TAG, "Starting Bluetooth discovery");
                     btAdapter.startDiscovery();
                 } else if (btAdapter.getState() == BluetoothAdapter.STATE_TURNING_ON) {
                     // listen for the adapter state to change to STATE_ON
@@ -249,7 +249,7 @@ public class BluetoothDeviceProximity {
                             BluetoothAdapter.ACTION_STATE_CHANGED));
                 } else {
                     // ask user for permission to start bluetooth
-                    Log.d(TAG, "Asking user to start bluetooth");
+                    // Log.v(TAG, "Asking user to start bluetooth");
                     Intent startBt = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                     startBt.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(startBt);
@@ -265,7 +265,7 @@ public class BluetoothDeviceProximity {
 
         public void stop() {
             try {
-                Log.d(TAG, "Stopping BT discovery thread");
+                Log.i(TAG, "Stopping Bluetooth discovery thread");
                 context.unregisterReceiver(btReceiver);
                 btAdapter.cancelDiscovery();
                 /*

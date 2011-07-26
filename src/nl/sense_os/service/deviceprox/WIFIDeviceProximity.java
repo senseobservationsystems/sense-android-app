@@ -5,6 +5,14 @@
  */
 package nl.sense_os.service.deviceprox;
 
+import java.util.List;
+
+import nl.sense_os.service.Constants;
+import nl.sense_os.service.MsgHandler;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -14,14 +22,6 @@ import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-
-import nl.sense_os.service.Constants;
-import nl.sense_os.service.MsgHandler;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.List;
 
 public class WIFIDeviceProximity {
 
@@ -39,11 +39,11 @@ public class WIFIDeviceProximity {
                 if (!scanEnabled)
                     return;
 
-                Log.d(TAG, "Scan complete");
+                Log.i(TAG, "Scan complete");
                 // get the results of the wifi scan
                 List<ScanResult> results = wifi.getScanResults();
                 if (results != null && results.size() > 0) {
-                    Log.d(TAG, "WiFi devices found: " + results.size());
+                    // Log.v(TAG, "WiFi devices found: " + results.size());
                     try {
 
                         for (ScanResult result : results) {
@@ -88,11 +88,11 @@ public class WIFIDeviceProximity {
             if (scanEnabled) {
                 if (!(wifiActiveFromTheStart = wifi.isWifiEnabled())) {
                     wifi.setWifiEnabled(true);
-                    Log.d(TAG, "WIFI enabled for network scan, waiting 1 sec");
+                    // Log.v(TAG, "WIFI enabled for network scan, waiting 1 sec");
                     int cnt = 0;
                     try {
                         while (!wifi.isWifiEnabled() && cnt++ < 31) {
-                            Log.d(TAG, "... waiting 1 sec");
+                            // Log.v(TAG, "... waiting 1 sec");
                             Thread.sleep(1000); // evil but necessary
                             if (cnt % 10 == 0)
                                 wifi.setWifiEnabled(true);
@@ -103,7 +103,7 @@ public class WIFIDeviceProximity {
                 }
                 context.registerReceiver(wifiReceiver, new IntentFilter(
                         WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
-                Log.d(TAG, "Starting wifi scan");
+                Log.i(TAG, "Starting Wi-Fi scan");
                 wifi.startScan();
             } else {
                 stop();
@@ -112,7 +112,7 @@ public class WIFIDeviceProximity {
 
         public void stop() {
             try {
-                Log.d(TAG, "Stopping WIFI network scan");
+                Log.i(TAG, "Stopping Wi-Fi network scan");
                 context.unregisterReceiver(wifiReceiver);
                 if (!wifiActiveFromTheStart)
                     wifi.setWifiEnabled(false);

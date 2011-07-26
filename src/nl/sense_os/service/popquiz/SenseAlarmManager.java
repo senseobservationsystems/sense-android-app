@@ -201,8 +201,8 @@ public class SenseAlarmManager {
 
         // set alarm for next quiz
         if (result > 0) {
-            Log.d(TAG, "New alarm set for quiz nr. " + quiz + " on "
-                    + new SimpleDateFormat("HH:mm").format(new Date(entryTime)));
+            // Log.v(TAG, "New alarm set for quiz nr. " + quiz + " on "
+            // + new SimpleDateFormat("HH:mm").format(new Date(entryTime)));
 
             Intent alarmIntent = new Intent("nl.sense_os.service.AlarmPeriodic");
             alarmIntent.putExtra(KEY_ENTRY_ID, entryTime);
@@ -312,7 +312,7 @@ public class SenseAlarmManager {
             final int rowId = c.getInt(c.getColumnIndex(COL_ROW_ID));
             final long entryId = c.getInt(c.getColumnIndex(COL_ENTRY_TIME));
             int deleted = this.db.delete(TABLE_ENTRY, COL_ROW_ID + "=" + rowId, null);
-            Log.d(TAG, "deleting quiz entry " + rowId + ". Result: " + deleted);
+            // Log.v(TAG, "deleting quiz entry " + rowId + ". Result: " + deleted);
 
             // remove associated alarm from system alarm manager
             if (deleted > 0) {
@@ -598,7 +598,7 @@ public class SenseAlarmManager {
             data.put("question id", qstnId);
             data.put("answer id", answId);
             data.put("date", timeString);
-            Log.d(TAG, "Pop quiz data not actually sent"); // TODO send pop quiz data
+            // Log.v(TAG, "Pop quiz data not actually sent"); // TODO send pop quiz data
             // handler.sendSensorData("pop quiz", data);
 
             // delete the answer's entry in the database
@@ -635,7 +635,7 @@ public class SenseAlarmManager {
             openDb();
         }
 
-        Log.d(TAG, "Updating... Entry " + id + ", question " + qstnId + ", answer " + answId);
+        // Log.v(TAG, "Updating... Entry " + id + ", question " + qstnId + ", answer " + answId);
         final ContentValues newContent = new ContentValues();
         newContent.put(COL_ANSW_ID, answId);
 
@@ -643,7 +643,7 @@ public class SenseAlarmManager {
         final boolean saved = this.db.update(TABLE_ENTRY, newContent, sel, null) > 0;
 
         if ((true == saved) && (answId >= 0)) {
-            Log.d(TAG, "Updating... Trying store on CommonSense");
+            // Log.v(TAG, "Updating... Trying store on CommonSense");
             storeRemote();
         }
 

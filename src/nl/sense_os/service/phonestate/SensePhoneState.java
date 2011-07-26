@@ -73,7 +73,7 @@ public class SensePhoneState extends PhoneStateListener {
                 if (null != lastIp || null != lastDataConnectionState
                         || true == msgIndicatorUpdated || null != lastServiceState
                         || null != lastSignalStrength) {
-                    Log.v(TAG, "Transmit the latest phone state...");
+                    // Log.v(TAG, "Transmit the latest phone state...");
                 }
 
                 // IP address
@@ -231,7 +231,7 @@ public class SensePhoneState extends PhoneStateListener {
 
     @Override
     public void onDataConnectionStateChanged(int state) {
-        Log.d(TAG, "Connection state changed...");
+        // Log.v(TAG, "Connection state changed...");
 
         String strState = "";
         switch (state) {
@@ -307,7 +307,7 @@ public class SensePhoneState extends PhoneStateListener {
 
     @Override
     public void onMessageWaitingIndicatorChanged(boolean unreadMsgs) {
-        Log.d(TAG, "Message waiting changed...");
+        // Log.v(TAG, "Message waiting changed...");
         lastMsgIndicatorState = unreadMsgs;
         msgIndicatorUpdated = true;
     }

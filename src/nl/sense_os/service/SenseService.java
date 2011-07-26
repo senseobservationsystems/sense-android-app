@@ -88,7 +88,7 @@ public class SenseService extends Service {
 
                         // check that we are not logged in yet before logging in
                         if (false == isLoggedIn) {
-                            Log.v(TAG, "Regained connectivity! Trying to log in...");
+                            // Log.v(TAG, "Regained connectivity! Trying to log in...");
                             login();
 
                         } else {
@@ -97,7 +97,7 @@ public class SenseService extends Service {
 
                     } else {
                         // login not possible without connection
-                        Log.v(TAG, "Lost connectivity! Updating login status...");
+                        // Log.v(TAG, "Lost connectivity! Updating login status...");
                         // onLogOut();
                     }
 
@@ -146,12 +146,13 @@ public class SenseService extends Service {
 
         @Override
         public int changeLogin(String username, String password) throws RemoteException {
+            // Log.v(TAG, "Change login");
             return SenseService.this.changeLogin(username, password);
         }
 
         @Override
         public boolean getPrefBool(String key, boolean defValue) throws RemoteException {
-            // Log.d(TAG, "Get preference: " + key);
+            // Log.v(TAG, "Get preference: " + key);
             SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             if (key.equals(Constants.PREF_STATUS_AMBIENCE)
                     || key.equals(Constants.PREF_STATUS_DEV_PROX)
@@ -177,7 +178,7 @@ public class SenseService extends Service {
 
         @Override
         public float getPrefFloat(String key, float defValue) throws RemoteException {
-            // Log.d(TAG, "Get preference: " + key);
+            // Log.v(TAG, "Get preference: " + key);
             SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             try {
                 return prefs.getFloat(key, defValue);
@@ -188,7 +189,7 @@ public class SenseService extends Service {
 
         @Override
         public int getPrefInt(String key, int defValue) throws RemoteException {
-            // Log.d(TAG, "Get preference: " + key);
+            // Log.v(TAG, "Get preference: " + key);
             SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             try {
                 return prefs.getInt(key, defValue);
@@ -199,7 +200,7 @@ public class SenseService extends Service {
 
         @Override
         public long getPrefLong(String key, long defValue) throws RemoteException {
-            // Log.d(TAG, "Get preference: " + key);
+            // Log.v(TAG, "Get preference: " + key);
             SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             if (key.equals(Constants.PREF_SENSOR_LIST_TIME)) {
                 prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
@@ -214,7 +215,7 @@ public class SenseService extends Service {
 
         @Override
         public String getPrefString(String key, String defValue) throws RemoteException {
-            // Log.d(TAG, "Get preference: " + key);
+            // Log.v(TAG, "Get preference: " + key);
             SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             if (key.equals(Constants.PREF_LOGIN_COOKIE) || key.equals(Constants.PREF_LOGIN_PASS)
                     || key.equals(Constants.PREF_LOGIN_USERNAME)
@@ -239,13 +240,14 @@ public class SenseService extends Service {
         }
 
         @Override
-        public int register(String username, String password) throws RemoteException {
-            return SenseService.this.register(username, password);
+        public int register(String username, String password, String name, String surname,
+                String email, String mobile) throws RemoteException {
+            return SenseService.this.register(username, password, name, surname, email, mobile);
         }
 
         @Override
         public void setPrefBool(String key, boolean value) throws RemoteException {
-            // Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
+            // Log.v(TAG, "Set preference: " + key + ": \'" + value + "\'");
 
             SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             if (key.equals(Constants.PREF_STATUS_AMBIENCE)
@@ -273,7 +275,7 @@ public class SenseService extends Service {
 
         @Override
         public void setPrefFloat(String key, float value) throws RemoteException {
-            // Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
+            // Log.v(TAG, "Set preference: " + key + ": \'" + value + "\'");
             SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
 
             // store value
@@ -285,7 +287,7 @@ public class SenseService extends Service {
 
         @Override
         public void setPrefInt(String key, int value) throws RemoteException {
-            // Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
+            // Log.v(TAG, "Set preference: " + key + ": \'" + value + "\'");
             SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
 
             // store value
@@ -297,7 +299,7 @@ public class SenseService extends Service {
 
         @Override
         public void setPrefLong(String key, long value) throws RemoteException {
-            // Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
+            // Log.v(TAG, "Set preference: " + key + ": \'" + value + "\'");
             SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             if (key.equals(Constants.PREF_SENSOR_LIST_TIME)) {
                 prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
@@ -312,7 +314,7 @@ public class SenseService extends Service {
 
         @Override
         public void setPrefString(String key, String value) throws RemoteException {
-            // Log.d(TAG, "Set preference: " + key + ": \'" + value + "\'");
+            // Log.v(TAG, "Set preference: " + key + ": \'" + value + "\'");
             SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
             if (key.equals(Constants.PREF_LOGIN_COOKIE) || key.equals(Constants.PREF_LOGIN_PASS)
                     || key.equals(Constants.PREF_LOGIN_USERNAME)
@@ -339,7 +341,7 @@ public class SenseService extends Service {
 
         @Override
         public void toggleAmbience(boolean active) {
-            // Log.d(TAG, "Toggle ambience: " + active);
+            // Log.v(TAG, "Toggle ambience: " + active);
             SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
             prefs.edit().putBoolean(Constants.PREF_STATUS_AMBIENCE, active).commit();
             SenseService.this.toggleAmbience(active);
@@ -347,7 +349,7 @@ public class SenseService extends Service {
 
         @Override
         public void toggleDeviceProx(boolean active) {
-            // Log.d(TAG, "Toggle neighboring devices: " + active);
+            // Log.v(TAG, "Toggle neighboring devices: " + active);
             SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
             prefs.edit().putBoolean(Constants.PREF_STATUS_DEV_PROX, active).commit();
             SenseService.this.toggleDeviceProx(active);
@@ -355,7 +357,7 @@ public class SenseService extends Service {
 
         @Override
         public void toggleExternalSensors(boolean active) {
-            // Log.d(TAG, "Toggle external sensors: " + active);
+            // Log.v(TAG, "Toggle external sensors: " + active);
             SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
             prefs.edit().putBoolean(Constants.PREF_STATUS_EXTERNAL, active).commit();
             SenseService.this.toggleExternalSensors(active);
@@ -363,7 +365,7 @@ public class SenseService extends Service {
 
         @Override
         public void toggleLocation(boolean active) {
-            // Log.d(TAG, "Toggle location: " + active);
+            // Log.v(TAG, "Toggle location: " + active);
             SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
             prefs.edit().putBoolean(Constants.PREF_STATUS_LOCATION, active).commit();
             SenseService.this.toggleLocation(active);
@@ -371,7 +373,7 @@ public class SenseService extends Service {
 
         @Override
         public void toggleMain(boolean active) {
-            // Log.d(TAG, "Toggle main: " + active);
+            // Log.v(TAG, "Toggle main: " + active);
             SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
             prefs.edit().putBoolean(Constants.PREF_STATUS_MAIN, active).commit();
             SenseService.this.toggleMain(active);
@@ -379,7 +381,7 @@ public class SenseService extends Service {
 
         @Override
         public void toggleMotion(boolean active) {
-            // Log.d(TAG, "Toggle motion: " + active);
+            // Log.v(TAG, "Toggle motion: " + active);
             SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
             prefs.edit().putBoolean(Constants.PREF_STATUS_MOTION, active).commit();
             SenseService.this.toggleMotion(active);
@@ -387,7 +389,7 @@ public class SenseService extends Service {
 
         @Override
         public void togglePhoneState(boolean active) {
-            // Log.d(TAG, "Toggle phone state: " + active);
+            // Log.v(TAG, "Toggle phone state: " + active);
             SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
             prefs.edit().putBoolean(Constants.PREF_STATUS_PHONESTATE, active).commit();
             SenseService.this.togglePhoneState(active);
@@ -395,7 +397,7 @@ public class SenseService extends Service {
 
         @Override
         public void togglePopQuiz(boolean active) {
-            // Log.d(TAG, "Toggle questionnaire: " + active);
+            // Log.v(TAG, "Toggle questionnaire: " + active);
             SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
             prefs.edit().putBoolean(Constants.PREF_STATUS_POPQUIZ, active).commit();
             SenseService.this.togglePopQuiz(active);
@@ -472,7 +474,7 @@ public class SenseService extends Service {
             }
 
             if (version.getString("message").length() > 0) {
-                Log.v(TAG, "Newer version available: " + version.toString());
+                Log.i(TAG, "Newer version available: " + version.toString());
                 showToast(version.getString("message"));
             }
 
@@ -510,7 +512,7 @@ public class SenseService extends Service {
      *         errors.
      */
     private int login() {
-        Log.v(TAG, "Log in...");
+        // Log.v(TAG, "Log in...");
 
         // show notification that we are not logged in (yet)
         showNotification(true);
@@ -538,8 +540,8 @@ public class SenseService extends Service {
             }
 
         } else {
-            // Log.d(TAG, "Cannot login: username or password unavailable... Username: " + username
-            // + ", password: " + pass);
+            Log.w(TAG, "Cannot login: username or password unavailable... Username: " + username
+                    + ", password: " + pass);
             isLoggedIn = false;
         }
 
@@ -548,7 +550,7 @@ public class SenseService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        Log.v(TAG, "onBind...");
+        // Log.v(TAG, "onBind...");
         return binder;
     }
 
@@ -558,14 +560,13 @@ public class SenseService extends Service {
      */
     @Override
     public void onCreate() {
+        // Log.v(TAG, "---------->  Sense Platform service is being created...  <----------");
         super.onCreate();
-        Log.v(TAG, "-------> Sense Platform service created... <-------");
     }
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
-        Log.v(TAG, "-------> Sense Platform service destroyed... <-------");
+        // Log.v(TAG, "----------> Sense Platform service is being destroyed... <----------");
 
         // stop listening for possibility to login
         if (null != connectivityListener) {
@@ -589,6 +590,8 @@ public class SenseService extends Service {
 
         // stop the main service
         stopForegroundCompat();
+
+        super.onDestroy();
     }
 
     /**
@@ -598,7 +601,7 @@ public class SenseService extends Service {
      * {@link SenseApi#getRegisteredSensors(Context)} is only called by one thread at a time.
      */
     private synchronized void onLogIn() {
-        Log.v(TAG, "Logged in! Starting service...");
+        Log.i(TAG, "Logged in! Starting service...");
 
         // Retrieve the online registered sensor list
         SenseApi.getRegisteredSensors(this);
@@ -624,7 +627,7 @@ public class SenseService extends Service {
     private void onLogOut() {
         // check if we were actually logged to prevent overwriting the last active state..
         if (isLoggedIn) {
-            Log.v(TAG, "Logged out...");
+            Log.i(TAG, "Logged out...");
 
             // update login status
             isLoggedIn = false;
@@ -633,14 +636,20 @@ public class SenseService extends Service {
         // stop active sensing components
         stopSensorModules();
 
-        showNotification(true);
+        // update the notification icon
+        if (isForeground) {
+            showNotification(true);
+        }
 
         stopFeedbackChecks();
         stopTransmitAlarms();
+
+        // completely stop the MsgHandler service
+        stopService(new Intent(MsgHandler.ACTION_SEND_DATA));
     }
 
     private void onSampleRateChange() {
-        Log.v(TAG, "Sample rate changed...");
+        // Log.v(TAG, "Sample rate changed...");
         if (isLoggedIn) {
             stopSensorModules();
             startSensorModules();
@@ -676,7 +685,7 @@ public class SenseService extends Service {
      *            {@link #stopSelfResult(int)}.
      */
     private void onStartCompat(final Intent intent, int flags, int startId) {
-        Log.v(TAG, "onStart...");
+        // Log.v(TAG, "onStart...");
 
         HandlerThread startThread = new HandlerThread("Start thread");
         startThread.start();
@@ -732,7 +741,7 @@ public class SenseService extends Service {
     }
 
     private void onSyncRateChange() {
-        Log.v(TAG, "Sync rate changed...");
+        // Log.v(TAG, "Sync rate changed...");
         startTransmitAlarms();
     }
 
@@ -741,10 +750,16 @@ public class SenseService extends Service {
      * updates the {@link #isLoggedIn} status accordingly. Can also be called from Activities that
      * are bound to the service.
      * 
+     * @param mobile
+     * @param email
+     * @param surname
+     * @param name
+     * 
      * @return 0 if registration completed successfully, -2 if the user already exists, and -1 for
      *         any other errors.
      */
-    private int register(String username, String password) {
+    private int register(String username, String password, String name, String surname,
+            String email, String mobile) {
 
         // log out before registering a new user
         onLogOut();
@@ -769,9 +784,10 @@ public class SenseService extends Service {
         // try to register
         int registered = -1;
         if (null != username && null != password) {
-            Log.v(TAG, "Registering... Username: " + username + ", password hash: " + hashPass);
+            // Log.v(TAG, "Registering... Username: " + username + ", password hash: " + hashPass);
 
-            registered = SenseApi.registerUser(this, username, hashPass);
+            registered = SenseApi.registerUser(this, username, hashPass, name, surname, email,
+                    mobile);
             if (registered == 0) {
                 login();
             } else {
@@ -845,7 +861,7 @@ public class SenseService extends Service {
      * immediately after sensing starts.
      */
     private void startAliveChecks() {
-        Log.d(TAG, "Start periodic checks if Sense is still alive...");
+        // Log.v(TAG, "Start periodic checks if Sense is still alive...");
 
         isStarted = true;
 
@@ -879,7 +895,7 @@ public class SenseService extends Service {
      * that the service is running, a notification is shown in the status bar.
      */
     private void startForegroundCompat() {
-        Log.v(TAG, "Enable foreground status...");
+        // Log.v(TAG, "Enable foreground status...");
 
         @SuppressWarnings("rawtypes")
         final Class[] startForegroundSignature = new Class[] { int.class, Notification.class };
@@ -975,8 +991,7 @@ public class SenseService extends Service {
      * Start periodic broadcast to trigger the MsgHandler to flush its buffer to CommonSense.
      */
     private void startTransmitAlarms() {
-
-        Log.d(TAG, "Start periodic data transmission alarms...");
+        // Log.v(TAG, "Start periodic data transmission alarms...");
 
         Intent alarm = new Intent(this, DataTransmitter.class);
         PendingIntent operation = PendingIntent.getBroadcast(this, DataTransmitter.REQID, alarm, 0);
@@ -1017,7 +1032,7 @@ public class SenseService extends Service {
      * Lowers importance of this service back to normal again.
      */
     private void stopForegroundCompat() {
-        Log.v(TAG, "Remove foreground status...");
+        // Log.v(TAG, "Remove foreground status...");
 
         stopAliveChecks();
 
@@ -1468,7 +1483,10 @@ public class SenseService extends Service {
         // Log.d(TAG, "Toggle main: " + active);
 
         if (true == active) {
-            startAliveChecks();
+            // properly start the service to start sensing
+            if (!isStarted) {
+                startService(new Intent(ISenseService.class.getName()));
+            }
         } else {
             onLogOut();
             stopForegroundCompat();

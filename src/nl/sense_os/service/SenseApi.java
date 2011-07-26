@@ -69,7 +69,7 @@ public class SenseApi {
         }
 
         // if we make it here, the device ID was not in the cache
-        Log.v(TAG, "Device ID is missing or outdated, refreshing...");
+        // Log.v(TAG, "Device ID is missing or outdated, refreshing...");
 
         // get phone IMEI, this is used as the device UUID at CommonSense
         final String imei = ((TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE))
@@ -161,7 +161,7 @@ public class SenseApi {
         }
 
         // if we make it here, the list was not in the cache
-        Log.v(TAG, "List of sensor IDs is missing or outdated, refreshing...");
+        // Log.v(TAG, "List of sensor IDs is missing or outdated, refreshing...");
 
         try {
 
@@ -355,10 +355,11 @@ public class SenseApi {
 
             // store cookie in the preferences
             String cookie = response.get("set-cookie");
-            Log.v(TAG, "CommonSense login OK!");
+            // Log.v(TAG, "CommonSense login OK!");
             authEditor.putString(Constants.PREF_LOGIN_COOKIE, cookie);
             authEditor.commit();
 
+            Log.i(TAG, "'" + username + "' logged in at CommonSense...");
             return 0;
 
         } catch (Exception e) {
@@ -447,7 +448,7 @@ public class SenseApi {
             authEditor.putString(Constants.PREF_SENSOR_LIST, sensors.toString());
             authEditor.commit();
 
-            Log.v(TAG, "-------> Created sensor: \'" + sensorName + "\'");
+            // Log.v(TAG, "Created sensor: '" + sensorName + "'");
 
             // get device properties from preferences, so it matches the properties in CommonSense
             final String device_uuid = ((TelephonyManager) context
@@ -503,7 +504,8 @@ public class SenseApi {
      * @return 0 if registration completed successfully, -2 if the user already exists, and -1
      *         otherwise.
      */
-    public static int registerUser(Context context, String username, String pass) {
+    public static int registerUser(Context context, String username, String pass, String name,
+            String surname, String email, String mobile) {
 
         // clear cached settings of the previous user
         final SharedPreferences authPrefs = context.getSharedPreferences(Constants.AUTH_PREFS,
@@ -519,12 +521,26 @@ public class SenseApi {
             final boolean devMode = authPrefs.getBoolean(Constants.PREF_DEV_MODE, false);
 
             final URL url = new URL(devMode ? Constants.URL_DEV_REG : Constants.URL_REG);
+
+            // create JSON object to POST
             final JSONObject data = new JSONObject();
             final JSONObject user = new JSONObject();
             user.put("username", username);
             user.put("password", pass);
-            user.put("email", username);
+            if (null != name) {
+                user.put("name", name);
+            }
+            if (null != surname) {
+                user.put("surname", surname);
+            }
+            if (null != email) {
+                user.put("email", email);
+            }
+            if (null != mobile) {
+                user.put("mobile", mobile);
+            }
             data.put("user", user);
+
             final HashMap<String, String> response = SenseApi.sendJson(context, url, data, "POST",
                     "");
             if (response == null) {
@@ -533,7 +549,7 @@ public class SenseApi {
             }
             String responseCode = response.get("http response code");
             if ("201".equalsIgnoreCase(responseCode)) {
-                Log.v(TAG, "CommonSense registration successful");
+                Log.i(TAG, "CommonSense registration successful for '" + username + "'");
             } else if ("409".equalsIgnoreCase(responseCode)) {
                 Log.e(TAG, "Error registering new user! User already exists");
                 return -2;

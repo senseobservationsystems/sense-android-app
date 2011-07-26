@@ -54,8 +54,8 @@ public class PopQuiz extends Activity {
             Question q = PopQuiz.this.quiz.questions.get(PopQuiz.this.tabs.getCurrentTab());
             Answer a = q.answers.get((int) id);
 
-            Log.d(TAG, "Question answered!");
-            Log.d(TAG, q.id + ") " + q.value + "\n --> " + a.id + ": " + a.value);
+            // Log.v(TAG, "Question answered!");
+            // Log.v(TAG, q.id + ") " + q.value + "\n --> " + a.id + ": " + a.value);
 
             // save selection in preferences
             SharedPreferences prefs = PopQuiz.this.getSharedPreferences(
@@ -446,7 +446,7 @@ public class PopQuiz extends Activity {
         final OnItemClickListener listener = new MyListListener();
 
         for (final Question question : this.quiz.questions) {
-            Log.d(TAG, "Displaying question " + question.id + ": " + question.value);
+            // Log.v(TAG, "Displaying question " + question.id + ": " + question.value);
 
             TabSpec spec = this.tabs.newTabSpec("q" + question.id);
             spec.setContent(new TabHost.TabContentFactory() {

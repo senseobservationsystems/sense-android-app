@@ -30,13 +30,16 @@
     \n
     No. Sense is not gathering data for its own use, you are gathering data for your own use. Your data is only accessible to you and to anybody you <i>explicitly</i> shared information with.</string>
     <string name="dialog_login_title">Enter login details:</string>
-    <string name="dialog_login_hint_mail">Email</string>
+    <string name="dialog_login_hint_username">Username</string>
     <string name="dialog_login_hint_pass">Password</string>
     <string name="dialog_reg_title">Enter new login details:</string>
-    <string name="dialog_reg_hint_mail">Email</string>
-    <string name="dialog_reg_hint_name">Username</string>
-    <string name="dialog_reg_hint_pass">Password</string>
+    <string name="dialog_reg_hint_username">Username (required)</string>
+    <string name="dialog_reg_hint_pass">Password (required)</string>
     <string name="dialog_reg_hint_pass2">Retype password</string>
+    <string name="dialog_reg_hint_name">First name</string>
+    <string name="dialog_reg_hint_surname">Last name</string>
+    <string name="dialog_reg_hint_email">Email</string>
+    <string name="dialog_reg_hint_phone">Phone</string>
     <string name="dialog_progress_title">One moment please</string>
     <string name="dialog_progress_login_msg">Checking login credentials...</string>
     <string name="dialog_update_msg">After weeks of waiting, the CommonSense web interface is finally in a presentable state. Although it is still far from finished, you can have a peek at the collected data by logging in at http://common-sense.appspot.com.

@@ -7,9 +7,6 @@
  */
 package nl.sense_os.service.popquiz;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 import nl.sense_os.service.Constants;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -28,14 +25,14 @@ public class PopQuizRx extends BroadcastReceiver {
         final SenseAlarmManager mgr = new SenseAlarmManager(context);
 
         if ((entryId < 0) || (quizId < 0)) {
-            Log.d(TAG, "Something is wrong, canceling alarms... Entry ID: " + entryId
+            Log.w(TAG, "Something is wrong, canceling alarms... Entry ID: " + entryId
                     + ", quiz ID: " + quizId);
 
             // cancel the alarms
             mgr.cancelEntry();
         } else {
-            Log.d(TAG, "Received pop quiz alarm..." + " Quiz " + quizId + ", time "
-                    + new SimpleDateFormat("HH:mm:ss").format(new Date(entryId)));
+            // Log.v(TAG, "Received pop quiz alarm..." + " Quiz " + quizId + ", time "
+            // + new SimpleDateFormat("HH:mm:ss").format(new Date(entryId)));
 
             // set the next alarm
             mgr.createEntry(0, quizId);
@@ -47,7 +44,7 @@ public class PopQuizRx extends BroadcastReceiver {
             final boolean silentMode = mainPrefs.getBoolean(Constants.PREF_QUIZ_SILENT_MODE, false);
 
             if (false == silentMode) {
-                Log.d(TAG, "Starting pop quiz activity...");
+                // Log.v(TAG, "Starting pop quiz activity...");
 
                 final Intent popQuiz = new Intent("nl.sense_os.service.DoPeriodic");
                 popQuiz.addCategory(Intent.CATEGORY_DEFAULT);
@@ -57,7 +54,7 @@ public class PopQuizRx extends BroadcastReceiver {
                 // context.startActivity(popQuiz);
             } else {
                 // ignore this alarm, silent mode is on
-                Log.d(TAG, "Ignored pop quiz alarm because of silent mode.");
+                // Log.v(TAG, "Ignored pop quiz alarm because of silent mode.");
             }
         }
     }

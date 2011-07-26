@@ -38,13 +38,13 @@ public class AliveChecker extends BroadcastReceiver {
 
         /* if it should be alive, check if it really is still alive */
         if (true == alive) {
-            Log.d(TAG, "Sense should be alive, poke...");
+            // Log.v(TAG, "Sense should be alive, poke...");
             final Intent serviceIntent = new Intent(ISenseService.class.getName());
             if (null == context.startService(serviceIntent)) {
                 Log.w(TAG, "Could not start Sense service!");
             }
         } else {
-            Log.d(TAG, "Sense service should NOT be alive. Doing nothing...");
+            // Log.v(TAG, "Sense service should NOT be alive. Doing nothing...");
         }
     }
 }

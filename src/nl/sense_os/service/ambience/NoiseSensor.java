@@ -345,7 +345,7 @@ public class NoiseSensor extends PhoneStateListener {
                 Log.w(TAG, "There was an error calculating noise power. No new data point.");
 
             } else {
-                Log.v(TAG, "Sampled noise level: " + dB);
+                // Log.v(TAG, "Sampled noise level: " + dB);
 
                 // pass message to the MsgHandler
                 Intent sensorData = new Intent(MsgHandler.ACTION_NEW_MSG);
@@ -369,7 +369,7 @@ public class NoiseSensor extends PhoneStateListener {
         double dB = 0;
         try {
             if (!isEnabled) {
-                Log.d(TAG, "Noise sensor is disabled, skipping noise power calculation...");
+                Log.w(TAG, "Noise sensor is disabled, skipping noise power calculation...");
                 return -1;
             }
 

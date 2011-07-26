@@ -104,7 +104,7 @@ public class BatterySensor {
                 }
 
                 if (gotData) {
-                    Log.d(TAG, "Transmit battery state: " + json.toString());
+                    // Log.v(TAG, "Transmit battery state: " + json.toString());
 
                     Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
                     i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
@@ -116,7 +116,7 @@ public class BatterySensor {
                 }
 
             } else {
-                Log.d(TAG, "Skipped battery state update: too soon after last transmission...");
+                // Log.v(TAG, "Skipped battery state update: too soon after last transmission...");
             }
         }
     };

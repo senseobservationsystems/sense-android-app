@@ -124,7 +124,7 @@ public class MsgHandler extends Service {
                 String url = getSensorUrl();
 
                 if (url == null) {
-                    Log.d(TAG, "Received invalid sensor URL for '" + sensorName
+                    Log.w(TAG, "Received invalid sensor URL for '" + sensorName
                             + "': requeue the message.");
                     bufferMessage(sensorName, data, dataType, deviceType);
                     return;
@@ -161,7 +161,7 @@ public class MsgHandler extends Service {
                 // Data sent successfully
                 else {
                     int bytes = data.toString().getBytes().length;
-                    Log.v(TAG, "Sent '" + sensorName + "' data! Raw data size: " + bytes + " bytes");
+                    Log.i(TAG, "Sent '" + sensorName + "' data! Raw data size: " + bytes + " bytes");
                 }
                 // Log.d(TAG, "  data: " + data);
 
@@ -228,7 +228,7 @@ public class MsgHandler extends Service {
                 String urlStr = getSensorUrl();
 
                 if (urlStr == null) {
-                    Log.d(TAG, "Received invalid sensor URL for '" + sensorName + "'. Data lost.");
+                    Log.w(TAG, "Received invalid sensor URL for '" + sensorName + "'. Data lost.");
                     return;
                 }
 
@@ -323,7 +323,7 @@ public class MsgHandler extends Service {
                                         + "' sensor file failed. Data lost. Response code:"
                                         + conn.getResponseCode());
                     } else {
-                        Log.v(TAG, "Sent file data OK!");
+                        Log.i(TAG, "Sent '" + sensorName + "' sensor value file OK!");
                     }
                 }
             } catch (Exception e) {
@@ -391,7 +391,7 @@ public class MsgHandler extends Service {
             // check if there is room in the buffer
             if (bufferCount + jsonBytes >= MAX_BUFFER) {
                 // empty buffer into database
-                Log.d(TAG, "Buffer overflow! Emptying buffer to database");
+                // Log.v(TAG, "Buffer overflow! Emptying buffer to database");
                 emptyBufferToDb();
             }
 
@@ -424,7 +424,7 @@ public class MsgHandler extends Service {
      */
     private void bufferMessage(String sensorName, JSONObject messageData, String dataType,
             String deviceType) {
-        Log.d(TAG, "Buffer sensor data from failed transmission...");
+        // Log.v(TAG, "Buffer sensor data from failed transmission...");
 
         try {
             JSONArray dataArray = messageData.getJSONArray("data");
@@ -435,7 +435,7 @@ public class MsgHandler extends Service {
                 String value = mysteryJson.getString("value");
                 String date = mysteryJson.getString("date");
                 bufferDataPoint(sensorName, value, date, dataType, deviceType);
-                Log.d(TAG, sensorName + " data buffered.");
+                // Log.v(TAG, sensorName + " data buffered.");
             }
 
         } catch (Exception e) {
@@ -454,7 +454,7 @@ public class MsgHandler extends Service {
      * Puts data from the buffer in the flash database for long-term storage
      */
     private void emptyBufferToDb() {
-        Log.v(TAG, "Emptying buffer to persistant database...");
+        // Log.v(TAG, "Emptying buffer to persistant database...");
 
         try {
             openDb();
@@ -598,17 +598,17 @@ public class MsgHandler extends Service {
 
     @Override
     public void onCreate() {
+        // Log.v(TAG, "onCreate");
         super.onCreate();
-        Log.d(TAG, "onCreate MsgHandler");
         buffer = new JSONObject();
         bufferCount = 0;
     }
 
     @Override
     public void onDestroy() {
-        // Log.d(TAG, "onDestroy");
-
+        // Log.v(TAG, "onDestroy");
         emptyBufferToDb();
+        super.onDestroy();
     }
 
     /**
@@ -672,7 +672,7 @@ public class MsgHandler extends Service {
                     i.putExtra(MsgHandler.KEY_VALUE, value);
                 }
                 context.startService(i);
-                Log.d(TAG, sensorName + " data requeued.");
+                // Log.v(TAG, sensorName + " data requeued.");
             }
 
         } catch (Exception e) {
@@ -683,7 +683,7 @@ public class MsgHandler extends Service {
     private boolean sendDataFromBuffer() {
 
         if (bufferCount > 0) {
-            Log.v(TAG, "Sending " + bufferCount + " bytes from local buffer to CommonSense");
+            // Log.v(TAG, "Sending " + bufferCount + " bytes from local buffer to CommonSense");
             try {
                 int sentCount = 0;
                 int sentIndex = 0;
@@ -750,7 +750,7 @@ public class MsgHandler extends Service {
                         limit);
 
                 if (c.getCount() > 0) {
-                    Log.v(TAG, "Sending " + c.getCount() + " values from database to CommonSense");
+                    // Log.v(TAG, "Sending " + c.getCount() + " values from DB to CommonSense");
 
                     // Send Data from each sensor
                     int sentCount = 0;
