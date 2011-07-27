@@ -1164,7 +1164,8 @@ public class SenseService extends Service {
                 }
                 final int finalInterval = interval;
 
-                ambienceThread = new HandlerThread("Ambience thread");
+                ambienceThread = new HandlerThread("Ambience thread",
+                        Process.THREAD_PRIORITY_FOREGROUND);
                 ambienceThread.start();
                 new Handler(ambienceThread.getLooper()).post(new Runnable() {
 
@@ -1249,7 +1250,8 @@ public class SenseService extends Service {
                 }
                 final int finalInterval = interval;
 
-                deviceProxThread = new HandlerThread("Device proximity thread");
+                deviceProxThread = new HandlerThread("Device proximity thread",
+                        Process.THREAD_PRIORITY_FOREGROUND);
                 deviceProxThread.start();
                 new Handler(deviceProxThread.getLooper()).post(new Runnable() {
 
@@ -1333,7 +1335,8 @@ public class SenseService extends Service {
                 }
                 final int finalInterval = interval;
 
-                extSensorsThread = new HandlerThread("Ext. sensors thread");
+                extSensorsThread = new HandlerThread("Ext. sensors thread",
+                        Process.THREAD_PRIORITY_FOREGROUND);
                 extSensorsThread.start();
                 new Handler(extSensorsThread.getLooper()).post(new Runnable() {
 
@@ -1431,7 +1434,8 @@ public class SenseService extends Service {
                 final long time = minTime;
                 final float distance = minDistance;
 
-                locationThread = new HandlerThread("Location thread");
+                locationThread = new HandlerThread("Location thread",
+                        Process.THREAD_PRIORITY_FOREGROUND);
                 locationThread.start();
                 new Handler(locationThread.getLooper()).post(new Runnable() {
                     @Override
@@ -1543,7 +1547,8 @@ public class SenseService extends Service {
                 final int finalInterval = interval;
 
                 // instantiate the sensors on the main process thread
-                motionThread = new HandlerThread("Motion thread", Process.THREAD_PRIORITY_DEFAULT);
+                motionThread = new HandlerThread("Motion thread",
+                        Process.THREAD_PRIORITY_FOREGROUND);
                 motionThread.start();
                 new Handler(motionThread.getLooper()).post(new Runnable() {
 
@@ -1653,7 +1658,8 @@ public class SenseService extends Service {
 
                 // instantiate the sensors on the main process thread
 
-                phoneStateThread = new HandlerThread("Phone state thread");
+                phoneStateThread = new HandlerThread("Phone state thread",
+                        Process.THREAD_PRIORITY_FOREGROUND);
                 phoneStateThread.start();
                 new Handler(phoneStateThread.getLooper()).post(new Runnable() {
 
