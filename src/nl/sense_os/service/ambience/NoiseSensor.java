@@ -9,8 +9,12 @@ import java.io.File;
 
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
@@ -23,6 +27,26 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 
 public class NoiseSensor extends PhoneStateListener {
+
+    /**
+     * Receiver for periodic alarm broadcast that wakes up the device and starts a noise
+     * measurement.
+     */
+    private class AlarmReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            // clear old sample jobs
+            if (noiseSampleJob != null) {
+                noiseSampleHandler.removeCallbacks(noiseSampleJob);
+            }
+
+            // start sample job
+            noiseSampleJob = new NoiseSampleJob();
+            noiseSampleHandler.post(noiseSampleJob);
+        }
+    }
 
     /**
      * Runnable that performs one noise sample. Starts the recording, reads the buffer contents,
@@ -240,6 +264,8 @@ public class NoiseSensor extends PhoneStateListener {
     private static final int BUFFER_SIZE = DEFAULT_SAMPLE_RATE * 2 * 2; // samples per second * 2
                                                                         // seconds, 2 bytes
     private static final int RECORDING_TIME_STREAM = 60000;
+    private static final int REQID = 0xF00;
+    private static final String ACTION_NOISE = "nl.sense_os.service.NoiseSample";
     private AudioRecord audioRecord;
     private boolean isEnabled = false;
     private boolean isCalling = false;
@@ -249,6 +275,7 @@ public class NoiseSensor extends PhoneStateListener {
     private SoundStreamJob soundStreamJob = null;
     private final Handler noiseSampleHandler = new Handler();
     private NoiseSampleJob noiseSampleJob = null;
+    private final AlarmReceiver alarmReceiver = new AlarmReceiver();
     private MediaRecorder recorder = null;
     private int fileCounter = 0;
     private String recordFileName = Environment.getExternalStorageDirectory().getAbsolutePath()
@@ -369,6 +396,12 @@ public class NoiseSensor extends PhoneStateListener {
                 soundStreamJob = null;
             }
 
+            try {
+                context.unregisterReceiver(alarmReceiver);
+            } catch (IllegalArgumentException e) {
+                // ignore
+            }
+
             if (noiseSampleJob != null) {
                 soundStreamHandler.removeCallbacks(noiseSampleJob);
                 noiseSampleJob = null;
@@ -408,12 +441,15 @@ public class NoiseSensor extends PhoneStateListener {
                 soundStreamJob = new SoundStreamJob();
                 soundStreamHandler.post(soundStreamJob);
             } else {
-                // start noise sampling
-                if (noiseSampleJob != null) {
-                    noiseSampleHandler.removeCallbacks(noiseSampleJob);
-                }
-                noiseSampleJob = new NoiseSampleJob();
-                noiseSampleHandler.post(noiseSampleJob);
+
+                context.registerReceiver(alarmReceiver, new IntentFilter(ACTION_NOISE));
+
+                PendingIntent sampleJob = PendingIntent.getBroadcast(context, REQID, new Intent(
+                        ACTION_NOISE), 0);
+                AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+                mgr.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
+                        listenInterval, sampleJob);
+
             }
 
         } catch (Exception e) {
