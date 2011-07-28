@@ -487,6 +487,8 @@ public class SenseSettings extends PreferenceActivity {
                     service.getPrefBool(Constants.PREF_DEV_MODE, false));
             editor.putBoolean(Constants.PREF_COMPRESSION,
                     service.getPrefBool(Constants.PREF_COMPRESSION, true));
+            editor.putBoolean(Constants.PREF_WAKELOCK,
+                    service.getPrefBool(Constants.PREF_WAKELOCK, false));
 
             editor.commit();
 

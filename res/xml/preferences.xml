@@ -277,6 +277,11 @@
                 android:summary="Costs more CPU, less data traffic"
                 android:defaultValue="true"
                 android:key="compression" />
+            <CheckBoxPreference
+                android:title="Partial wakelock"
+                android:summary="Keeps CPU on when screen is off"
+                android:defaultValue="false"
+                android:key="partial_wakelock" />
         </PreferenceScreen>
     </PreferenceCategory>
 </PreferenceScreen>
