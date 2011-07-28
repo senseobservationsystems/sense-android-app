@@ -43,8 +43,10 @@ public class NoiseSensor extends PhoneStateListener {
             }
 
             // start sample job
-            noiseSampleJob = new NoiseSampleJob();
-            noiseSampleHandler.post(noiseSampleJob);
+            if (isEnabled && listenInterval != -1) {
+                noiseSampleJob = new NoiseSampleJob();
+                noiseSampleHandler.post(noiseSampleJob);
+            }
         }
     }
 
@@ -96,9 +98,6 @@ public class NoiseSensor extends PhoneStateListener {
 
         @Override
         public void run() {
-
-            // schedule next job execution
-            scheduleNextSample();
 
             if (isEnabled && !isCalling) {
 
@@ -166,15 +165,6 @@ public class NoiseSensor extends PhoneStateListener {
 
             } else {
                 // Log.v(TAG, "Did not start recording: noise sensor is disabled...");
-            }
-        }
-
-        private void scheduleNextSample() {
-            if (isEnabled && listenInterval != -1) {
-                noiseSampleJob = new NoiseSampleJob();
-                noiseSampleHandler.postDelayed(noiseSampleJob, listenInterval);
-            } else {
-                // sampling is disabled
             }
         }
     }
