@@ -396,6 +396,8 @@ public class NoiseSensor extends PhoneStateListener {
                 soundStreamJob = null;
             }
 
+            AlarmManager alarms = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            alarms.cancel(PendingIntent.getBroadcast(context, REQID, new Intent(ACTION_NOISE), 0));
             try {
                 context.unregisterReceiver(alarmReceiver);
             } catch (IllegalArgumentException e) {
@@ -447,6 +449,7 @@ public class NoiseSensor extends PhoneStateListener {
                 PendingIntent sampleJob = PendingIntent.getBroadcast(context, REQID, new Intent(
                         ACTION_NOISE), 0);
                 AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+                mgr.cancel(sampleJob);
                 mgr.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
                         listenInterval, sampleJob);
 
