@@ -49,7 +49,6 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
-import android.os.PowerManager.WakeLock;
 import android.os.Process;
 import android.os.RemoteException;
 import android.util.Log;
@@ -432,7 +431,6 @@ public class SenseService extends Service {
     private final Handler toastHandler = new Handler(Looper.getMainLooper());
     private HandlerThread ambienceThread, motionThread, deviceProxThread, extSensorsThread,
             locationThread, phoneStateThread;
-    private WakeLock wakeLock;
 
     /**
      * Changes login of the Sense service. Removes "private" data of the previous user from the
@@ -692,7 +690,8 @@ public class SenseService extends Service {
     private void onStartCompat(final Intent intent, int flags, int startId) {
         // Log.v(TAG, "onStart...");
 
-        HandlerThread startThread = new HandlerThread("Start thread");
+        HandlerThread startThread = new HandlerThread("Start thread",
+                Process.THREAD_PRIORITY_FOREGROUND);
         startThread.start();
         new Handler(startThread.getLooper()) {
 
@@ -1170,7 +1169,7 @@ public class SenseService extends Service {
                 final int finalInterval = interval;
 
                 ambienceThread = new HandlerThread("Ambience thread",
-                        Process.THREAD_PRIORITY_FOREGROUND);
+                        Process.THREAD_PRIORITY_DEFAULT);
                 ambienceThread.start();
                 new Handler(ambienceThread.getLooper()).post(new Runnable() {
 
@@ -1256,7 +1255,7 @@ public class SenseService extends Service {
                 final int finalInterval = interval;
 
                 deviceProxThread = new HandlerThread("Device proximity thread",
-                        Process.THREAD_PRIORITY_FOREGROUND);
+                        Process.THREAD_PRIORITY_DEFAULT);
                 deviceProxThread.start();
                 new Handler(deviceProxThread.getLooper()).post(new Runnable() {
 
@@ -1341,7 +1340,7 @@ public class SenseService extends Service {
                 final int finalInterval = interval;
 
                 extSensorsThread = new HandlerThread("Ext. sensors thread",
-                        Process.THREAD_PRIORITY_FOREGROUND);
+                        Process.THREAD_PRIORITY_DEFAULT);
                 extSensorsThread.start();
                 new Handler(extSensorsThread.getLooper()).post(new Runnable() {
 
@@ -1440,7 +1439,7 @@ public class SenseService extends Service {
                 final float distance = minDistance;
 
                 locationThread = new HandlerThread("Location thread",
-                        Process.THREAD_PRIORITY_FOREGROUND);
+                        Process.THREAD_PRIORITY_DEFAULT);
                 locationThread.start();
                 new Handler(locationThread.getLooper()).post(new Runnable() {
                     @Override
@@ -1567,8 +1566,7 @@ public class SenseService extends Service {
                 final int finalInterval = interval;
 
                 // instantiate the sensors on the main process thread
-                motionThread = new HandlerThread("Motion thread",
-                        Process.THREAD_PRIORITY_FOREGROUND);
+                motionThread = new HandlerThread("Motion thread", Process.THREAD_PRIORITY_DEFAULT);
                 motionThread.start();
                 new Handler(motionThread.getLooper()).post(new Runnable() {
 
@@ -1679,7 +1677,7 @@ public class SenseService extends Service {
                 // instantiate the sensors on the main process thread
 
                 phoneStateThread = new HandlerThread("Phone state thread",
-                        Process.THREAD_PRIORITY_FOREGROUND);
+                        Process.THREAD_PRIORITY_DEFAULT);
                 phoneStateThread.start();
                 new Handler(phoneStateThread.getLooper()).post(new Runnable() {
 
