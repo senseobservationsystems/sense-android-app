@@ -432,6 +432,8 @@ public class SenseSettings extends PreferenceActivity {
                     service.getPrefBool(Constants.PREF_MOTION_FALL_DETECT_DEMO, false));
             editor.putBoolean(Constants.PREF_MOTION_UNREG,
                     service.getPrefBool(Constants.PREF_MOTION_UNREG, true));
+            editor.putBoolean(Constants.PREF_SCREENOFF_FIX,
+                    service.getPrefBool(Constants.PREF_SCREENOFF_FIX, false));
 
             // neighboring devices
             editor.putBoolean(Constants.PREF_PROXIMITY_BT,

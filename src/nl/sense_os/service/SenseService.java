@@ -49,6 +49,7 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.PowerManager.WakeLock;
 import android.os.Process;
 import android.os.RemoteException;
 import android.util.Log;
@@ -112,28 +113,31 @@ public class SenseService extends Service {
      * the screen turns off.
      */
     private class ScreenOffListener extends BroadcastReceiver {
+
         @Override
         public void onReceive(Context context, Intent intent) {
-            // // Check action just to be on the safe side.
-            // if (false == intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
-            // return;
-            // }
-            //
-            // if (isMotionActive) {
-            // // wait half a second and re-register
-            // Runnable motionThread = new Runnable() {
-            // @Override
-            // public void run() {
-            // // Unregisters the motion listener and registers it again.
-            // // Log.d(TAG, "Screen went off, re-registering the Motion sensor");
-            // toggleMotion(false);
-            // toggleMotion(true);
-            // };
-            // };
-            //
-            // Handler mtHandler = new Handler();
-            // mtHandler.postDelayed(motionThread, 500);
-            // }
+            // Check action just to be on the safe side.
+            if (false == intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
+                return;
+            }
+
+            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
+            boolean useFix = prefs.getBoolean(Constants.PREF_SCREENOFF_FIX, false);
+            if (isMotionActive && useFix) {
+                // wait half a second and re-register
+                Runnable motionThread = new Runnable() {
+
+                    @Override
+                    public void run() {
+                        // Unregisters the motion listener and registers it again.
+                        Log.v(TAG, "Screen went off, re-registering the Motion sensor");
+                        toggleMotion(false);
+                        toggleMotion(true);
+                    };
+                };
+
+                new Handler().postDelayed(motionThread, 500);
+            }
         }
     }
 
@@ -409,7 +413,7 @@ public class SenseService extends Service {
     public final static String ACTION_SERVICE_BROADCAST = "nl.sense_os.service.Broadcast";
     private static final int NOTIF_ID = 1;
     private final ISenseService.Stub binder = new SenseServiceStub();
-    public BroadcastReceiver screenOffListener = new ScreenOffListener();
+    private final BroadcastReceiver screenOffListener = new ScreenOffListener();
     private ConnectivityListener connectivityListener;
     private BatterySensor batterySensor;
     private DeviceProximity deviceProximity;
@@ -428,6 +432,7 @@ public class SenseService extends Service {
     private final Handler toastHandler = new Handler(Looper.getMainLooper());
     private HandlerThread ambienceThread, motionThread, deviceProxThread, extSensorsThread,
             locationThread, phoneStateThread;
+    private WakeLock wakeLock;
 
     /**
      * Changes login of the Sense service. Removes "private" data of the previous user from the
@@ -1487,11 +1492,26 @@ public class SenseService extends Service {
         // Log.d(TAG, "Toggle main: " + active);
 
         if (true == active) {
+
+            // if (null == wakeLock) {
+            // Log.v(TAG, "Acquire wake lock");
+            // PowerManager powerMgr = (PowerManager) getSystemService(POWER_SERVICE);
+            // wakeLock = powerMgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+            // wakeLock.acquire();
+            // }
+
             // properly start the service to start sensing
             if (!isStarted) {
                 startService(new Intent(ISenseService.class.getName()));
             }
         } else {
+
+            // if (null != wakeLock) {
+            // Log.v(TAG, "Release wake lock");
+            // wakeLock.release();
+            // wakeLock = null;
+            // }
+
             onLogOut();
             stopForegroundCompat();
         }
@@ -1505,8 +1525,8 @@ public class SenseService extends Service {
             if (true == active) {
 
                 // Register the receiver for SCREEN OFF events
-                // IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
-                // registerReceiver(screenOffListener, filter);
+                IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+                registerReceiver(screenOffListener, filter);
 
                 // check motion sensor presence
                 if (motionSensor != null) {
@@ -1562,11 +1582,11 @@ public class SenseService extends Service {
             } else {
 
                 // Unregister the receiver for SCREEN OFF events
-                // try {
-                // unregisterReceiver(screenOffListener);
-                // } catch (IllegalArgumentException e) {
-                // Log.d(TAG, "Ignoring exception when trying to unregister screen off listener");
-                // }
+                try {
+                    unregisterReceiver(screenOffListener);
+                } catch (IllegalArgumentException e) {
+                    // Log.v(TAG, "Ignoring exception when unregistering screen off listener");
+                }
 
                 // stop sensing
                 if (null != motionSensor) {

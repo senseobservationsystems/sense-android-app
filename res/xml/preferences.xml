@@ -104,6 +104,11 @@
                     android:summary="Saves battery, might break screen rotation"
                     android:defaultValue="True"
                     android:key="motion_unregister" />
+                <CheckBoxPreference
+                    android:title="Screen-off workaround"
+                    android:summary="Fixes some issues on some phones"
+                    android:defaultValue="false"
+                    android:key="screenoff_fix" />
             </PreferenceCategory>
         </PreferenceScreen>
 
