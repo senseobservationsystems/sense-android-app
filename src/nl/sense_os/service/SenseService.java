@@ -704,7 +704,7 @@ public class SenseService extends Service {
                 try {
                     final SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS,
                             MODE_PRIVATE);
-                    isStarted = prefs.getBoolean(Constants.PREF_STATUS_MAIN, false);
+                    isStarted = prefs.getBoolean(Constants.PREF_STATUS_MAIN, true);
                     if (false == isStarted) {
                         Log.w(TAG, "Sense service was started when the main status is not set!");
                         stopForegroundCompat();
@@ -956,11 +956,11 @@ public class SenseService extends Service {
         final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
                 MODE_PRIVATE);
 
-        if (statusPrefs.getBoolean(Constants.PREF_STATUS_MAIN, true)) {
+        if (statusPrefs.getBoolean(Constants.PREF_STATUS_MAIN, false)) {
 
             toggleMain(true);
 
-            if (statusPrefs.getBoolean(Constants.PREF_STATUS_PHONESTATE, true)) {
+            if (statusPrefs.getBoolean(Constants.PREF_STATUS_PHONESTATE, false)) {
                 // Log.d(TAG, "Restart phone state component...");
                 togglePhoneState(true);
             }
