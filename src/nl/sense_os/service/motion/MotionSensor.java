@@ -64,7 +64,7 @@ public class MotionSensor implements SensorEventListener {
     private SensorManager smgr;
     private long firstTimeSend = 0;
     private JSONArray[] dataBuffer = new JSONArray[10];
-    private double avgSpeed;
+    private double avgSpeedChange;
     private int avgSpeedCount;
     private float[] gravity = { 0, 0, SensorManager.GRAVITY_EARTH };
     private long lastLinAccSampleTime;
@@ -95,6 +95,77 @@ public class MotionSensor implements SensorEventListener {
         return new float[] { values[0] - gravity[0], values[1] - gravity[1], values[2] - gravity[2] };
     }
 
+    private void doEpiSample(Sensor sensor, JSONObject json) {
+
+        if (dataBuffer[sensor.getType()] == null) {
+            dataBuffer[sensor.getType()] = new JSONArray();
+        }
+        dataBuffer[sensor.getType()].put(json);
+        if (lastLocalSampleTimes[sensor.getType()] == 0) {
+            lastLocalSampleTimes[sensor.getType()] = System.currentTimeMillis();
+        }
+
+        if (System.currentTimeMillis() > lastLocalSampleTimes[sensor.getType()] + localBufferTime) {
+            // send the stuff
+            // Log.v(TAG, "Transmit accelerodata: " + dataBuffer[sensor.getType()].length());
+            // pass message to the MsgHandler
+            Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
+            i.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_EPI);
+            i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());
+            i.putExtra(
+                    MsgHandler.KEY_VALUE,
+                    "{\"interval\":"
+                            + Math.round(localBufferTime / dataBuffer[sensor.getType()].length())
+                            + ",\"data\":" + dataBuffer[sensor.getType()].toString() + "}");
+            i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON_TIME_SERIE);
+            i.putExtra(MsgHandler.KEY_TIMESTAMP, lastLocalSampleTimes[sensor.getType()]);
+            context.startService(i);
+            dataBuffer[sensor.getType()] = new JSONArray();
+            lastLocalSampleTimes[sensor.getType()] = System.currentTimeMillis();
+            if (firstTimeSend == 0) {
+                firstTimeSend = System.currentTimeMillis();
+            }
+        }
+    }
+
+    /**
+     * Measures the speed change and determines the average, for the motion energy sensor.
+     * 
+     * @param event
+     *            The sensor change event with accelerometer or linear acceleration data.
+     */
+    private void doMotionSample(SensorEvent event) {
+
+        float[] linAcc = null;
+
+        // approximate linear acceleration if we have no special sensor for it
+        if (!hasLinAccSensor && Sensor.TYPE_ACCELEROMETER == event.sensor.getType()) {
+            linAcc = calcLinAcc(event.values);
+        } else if (hasLinAccSensor && TYPE_LINEAR_ACCELERATION == event.sensor.getType()) {
+            linAcc = event.values;
+        } else {
+            // sensor is not the right type
+            return;
+        }
+
+        // calculate speed change and adjust average
+        if (null != linAcc) {
+            float timeStep = (System.currentTimeMillis() - lastLinAccSampleTime) / 1000f;
+            lastLinAccSampleTime = System.currentTimeMillis();
+            if (timeStep > 0 && timeStep < 1) {
+                float accLength = (float) Math.sqrt(Math.pow(linAcc[0], 2) + Math.pow(linAcc[1], 2)
+                        + Math.pow(linAcc[2], 2));
+
+                float speedChange = accLength * timeStep;
+                // Log.v(TAG, "Speed change: " + speedChange);
+
+                avgSpeedChange = (avgSpeedCount * avgSpeedChange + speedChange)
+                        / (avgSpeedCount + 1);
+                avgSpeedCount++;
+            }
+        }
+    }
+
     public long getSampleDelay() {
         return sampleDelay;
     }
@@ -122,29 +193,10 @@ public class MotionSensor implements SensorEventListener {
         }
 
         // if motion energy sensor is active, determine energy of every sample
-        if (isMotionEnergyMode) {
-            float[] linAcc = null;
-            // approximate linear acceleration if we have no special sensor for it
-            if (!hasLinAccSensor && Sensor.TYPE_ACCELEROMETER == sensor.getType()) {
-                linAcc = calcLinAcc(event.values);
-            } else if (hasLinAccSensor && TYPE_LINEAR_ACCELERATION == sensor.getType()) {
-                linAcc = event.values;
-            }
-
-            if (null != linAcc) {
-                float timeStep = (System.currentTimeMillis() - lastLinAccSampleTime) / 1000f;
-                lastLinAccSampleTime = System.currentTimeMillis();
-                if (timeStep > 0 && timeStep < 1) {
-                    float accLength = (float) Math.sqrt(Math.pow(linAcc[0], 2)
-                            + Math.pow(linAcc[1], 2) + Math.pow(linAcc[2], 2));
-
-                    float speedChange = accLength * timeStep;
-                    // Log.v(TAG, "Speed change: " + speedChange);
-
-                    avgSpeed = (avgSpeedCount * avgSpeed + speedChange) / (avgSpeedCount + 1);
-                    avgSpeedCount++;
-                }
-            }
+        boolean isMotionSample = !hasLinAccSensor && Sensor.TYPE_ACCELEROMETER == sensor.getType()
+                || hasLinAccSensor && TYPE_LINEAR_ACCELERATION == sensor.getType();
+        if (isMotionEnergyMode && isMotionSample) {
+            doMotionSample(event);
         }
 
         // check sensor delay
@@ -194,10 +246,10 @@ public class MotionSensor implements SensorEventListener {
                     if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
                             || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
                             || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
-                        json.put("x-axis", formatter.format(value));
+                        json.put("x-axis", Float.parseFloat(formatter.format(value)));
                     } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
                             || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                        json.put("azimuth", formatter.format(value));
+                        json.put("azimuth", Float.parseFloat(formatter.format(value)));
                     } else {
                         Log.e(TAG, "Unexpected sensor type creating JSON value");
                         return;
@@ -207,10 +259,10 @@ public class MotionSensor implements SensorEventListener {
                     if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
                             || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
                             || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
-                        json.put("y-axis", formatter.format(value));
+                        json.put("y-axis", Float.parseFloat(formatter.format(value)));
                     } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
                             || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                        json.put("pitch", formatter.format(value));
+                        json.put("pitch", Float.parseFloat(formatter.format(value)));
                     } else {
                         Log.e(TAG, "Unexpected sensor type creating JSON value");
                         return;
@@ -220,15 +272,17 @@ public class MotionSensor implements SensorEventListener {
                     if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
                             || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
                             || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
-                        json.put("z-axis", formatter.format(value));
+                        json.put("z-axis", Float.parseFloat(formatter.format(value)));
                     } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
                             || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                        json.put("roll", formatter.format(value));
+                        json.put("roll", Float.parseFloat(formatter.format(value)));
                     } else {
                         Log.e(TAG, "Unexpected sensor type creating JSON value");
                         return;
                     }
                     break;
+                default:
+                    Log.w(TAG, "Unexpected sensor value! More than three axes?!");
                 }
                 axis++;
             }
@@ -239,15 +293,13 @@ public class MotionSensor implements SensorEventListener {
 
         // add the data to the buffer if we are in Epi-mode:
         if (isEpiMode) {
-            sendEpiMessage(sensor, json);
+            doEpiSample(sensor, json);
         } else {
             sendNormalMessage(sensor, sensorName, json);
         }
 
         // send motion energy message
-        if (isMotionEnergyMode
-                && (!hasLinAccSensor && Sensor.TYPE_ACCELEROMETER == sensor.getType() || hasLinAccSensor
-                        && TYPE_LINEAR_ACCELERATION == sensor.getType())) {
+        if (isMotionEnergyMode && isMotionSample) {
             sendEnergyMessage();
         }
 
@@ -271,7 +323,7 @@ public class MotionSensor implements SensorEventListener {
      */
     private void sendEnergyMessage() {
         if (avgSpeedCount > 1) {
-            // Log.v(TAG, "Motion energy: " + avgSpeed + " (" + avgSpeedCount + " samples)");
+            // Log.v(TAG, "Motion energy: " + avgSpeedChange + " (" + avgSpeedCount + " samples)");
 
             // prepare JSON object to send to MsgHandler
             DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.ENGLISH);
@@ -280,47 +332,14 @@ public class MotionSensor implements SensorEventListener {
             Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
             i.putExtra(MsgHandler.KEY_SENSOR_NAME, TYPE_MOTION_ENERGY);
             i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, TYPE_MOTION_ENERGY);
-            i.putExtra(MsgHandler.KEY_VALUE, Float.parseFloat(formatter.format(avgSpeed)));
+            i.putExtra(MsgHandler.KEY_VALUE, Float.parseFloat(formatter.format(avgSpeedChange)));
             i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_FLOAT);
             i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
             context.startService(i);
 
         }
-        avgSpeed = 0;
+        avgSpeedChange = 0;
         avgSpeedCount = 0;
-    }
-
-    private void sendEpiMessage(Sensor sensor, JSONObject json) {
-
-        if (dataBuffer[sensor.getType()] == null) {
-            dataBuffer[sensor.getType()] = new JSONArray();
-        }
-        dataBuffer[sensor.getType()].put(json);
-        if (lastLocalSampleTimes[sensor.getType()] == 0) {
-            lastLocalSampleTimes[sensor.getType()] = System.currentTimeMillis();
-        }
-
-        if (System.currentTimeMillis() > lastLocalSampleTimes[sensor.getType()] + localBufferTime) {
-            // send the stuff
-            // Log.v(TAG, "Transmit accelerodata: " + dataBuffer[sensor.getType()].length());
-            // pass message to the MsgHandler
-            Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-            i.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_EPI);
-            i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());
-            i.putExtra(
-                    MsgHandler.KEY_VALUE,
-                    "{\"interval\":"
-                            + Math.round(localBufferTime / dataBuffer[sensor.getType()].length())
-                            + ",\"data\":" + dataBuffer[sensor.getType()].toString() + "}");
-            i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON_TIME_SERIE);
-            i.putExtra(MsgHandler.KEY_TIMESTAMP, lastLocalSampleTimes[sensor.getType()]);
-            context.startService(i);
-            dataBuffer[sensor.getType()] = new JSONArray();
-            lastLocalSampleTimes[sensor.getType()] = System.currentTimeMillis();
-            if (firstTimeSend == 0) {
-                firstTimeSend = System.currentTimeMillis();
-            }
-        }
     }
 
     private void sendFallMessage(boolean fall) {
