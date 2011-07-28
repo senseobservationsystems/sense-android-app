@@ -13,7 +13,7 @@
             android:id="@+id/reg_username"
             android:hint="@string/dialog_reg_hint_username"
             android:imeOptions="actionNext"
-            android:inputType="text" />
+            android:inputType="textEmailAddress" />
         <EditText
             android:layout_height="wrap_content"
             android:layout_width="fill_parent"
