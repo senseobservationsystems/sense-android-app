@@ -571,11 +571,14 @@ public class SenseSettings extends PreferenceActivity {
             ((LoginDialog) dialog).setOnSubmitTask(new CheckLoginTask());
 
             // get username preset from Sense service
-            try {
-                String usernamePreset = service.getPrefString(Constants.PREF_LOGIN_USERNAME, "");
-                ((LoginDialog) dialog).setUsername(usernamePreset);
-            } catch (RemoteException e) {
-                Log.e(TAG, "Failed to get username from Sense Platform service", e);
+            if (null != service) {
+                try {
+                    String usernamePreset = service
+                            .getPrefString(Constants.PREF_LOGIN_USERNAME, "");
+                    ((LoginDialog) dialog).setUsername(usernamePreset);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Failed to get username from Sense Platform service", e);
+                }
             }
             break;
         case DIALOG_REGISTER:
