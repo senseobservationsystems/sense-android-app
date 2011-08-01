@@ -280,28 +280,31 @@ public class SenseApp extends Activity {
         }
     }
 
-    public static final int COMMONSENSE_VERSION = 3;
+    private static final String TAG = "SenseApp";
+
     private static final int DIALOG_FAQ = 1;
     private static final int DIALOG_HELP = 2;
     private static final int DIALOG_LOGIN = 3;
     private static final int DIALOG_PROGRESS = 4;
     private static final int DIALOG_REGISTER = 5;
     private static final int DIALOG_UPDATE_ALERT = 6;
+
     private static final int MENU_FAQ = 1;
     private static final int MENU_LOGIN = 2;
     private static final int MENU_REGISTER = 3;
     private static final int MENU_SETTINGS = 4;
-    private static final String TAG = "SenseApp";
-    private final ISenseServiceCallback callback = new SenseCallback();
-    private boolean isServiceBound;
-    private ISenseService service;
-    private final ServiceConnection serviceConn = new SenseServiceConn();
-    private final SenseServiceListener serviceListener = new SenseServiceListener();
 
     /**
      * Key for preference for the version of CommonSense
      */
     public static final String PREF_COMMONSENSE_VERSION = "cs_version";
+    public static final int COMMONSENSE_VERSION = 3;
+
+    private final ISenseServiceCallback callback = new SenseCallback();
+    private boolean isServiceBound;
+    private ISenseService service;
+    private final ServiceConnection serviceConn = new SenseServiceConn();
+    private final SenseServiceListener serviceListener = new SenseServiceListener();
 
     /**
      * Binds to the Sense Service, creating it if necessary.
@@ -319,8 +322,8 @@ public class SenseApp extends Activity {
     }
 
     /**
-     * Calls <code>getStatus</code> on the service. This will generate a callback that updates the
-     * buttons ToggleButtons showing the service's state.
+     * Calls {@link ISenseService#getStatus(ISenseServiceCallback)} on the service. This will
+     * generate a callback that updates the buttons ToggleButtons showing the service's state.
      */
     private void checkServiceStatus() {
         // Log.v(TAG, "Checking service status..");
@@ -333,11 +336,9 @@ public class SenseApp extends Activity {
                 Log.e(TAG, "Error checking service status. ", e);
             }
         } else {
-            // service is not running
-            bindToSenseService();
+            // Log.v(TAG, "Not bound to Sense Platform service! Assume it's not running...");
 
             // invoke callback method directly to update UI anyway.
-            // Log.d(TAG, "Not bound to Sense Platform service! Assume it's not running...");
             runOnUiThread(new Runnable() {
 
                 @Override
