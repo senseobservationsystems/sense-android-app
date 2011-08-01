@@ -1486,6 +1486,7 @@ public class SenseService extends Service {
 
                             // show informational Toast
                             showToast(getString(R.string.toast_location_noprovider));
+                            return;
                         }
 
                         // start listening to GPS and/or Network location
