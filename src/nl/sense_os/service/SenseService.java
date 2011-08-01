@@ -78,8 +78,7 @@ public class SenseService extends Service {
                     final boolean isStarted = prefs.getBoolean(Constants.PREF_STATUS_MAIN, false);
 
                     if (!isStarted) {
-                        // Log.d(TAG,
-                        // "Connectivity changed, but the service should not be running anyway...");
+                        // Log.v(TAG, "Connectivity changed, but service is not activated...");
                         return;
                     }
 
@@ -94,7 +93,7 @@ public class SenseService extends Service {
                             login();
 
                         } else {
-                            // Log.d(TAG, "Still connected! Staying logged in...");
+                            // Log.v(TAG, "Still connected! Staying logged in...");
                         }
 
                     } else {
@@ -410,12 +409,28 @@ public class SenseService extends Service {
     }
 
     private static final String TAG = "Sense Service";
+
+    /**
+     * Intent action to force a re-login attempt when the service is started.
+     */
     public static final String ACTION_RELOGIN = "action_relogin";
+
+    /**
+     * Intent action for broadcasts that the service state has changed.
+     */
     public final static String ACTION_SERVICE_BROADCAST = "nl.sense_os.service.Broadcast";
+
+    /**
+     * ID for the notification in the status bar. Used to cancel the notification.
+     */
     private static final int NOTIF_ID = 1;
+
     private final ISenseService.Stub binder = new SenseServiceStub();
+
+    // broadcast receivers
     private final BroadcastReceiver screenOffListener = new ScreenOffListener();
-    private ConnectivityListener connectivityListener;
+    private final ConnectivityListener connectivityListener = new ConnectivityListener();
+
     private BatterySensor batterySensor;
     private DeviceProximity deviceProximity;
     private LightSensor lightSensor;
@@ -428,11 +443,22 @@ public class SenseService extends Service {
     private SensePhoneState phoneStateListener;
     private ZephyrBioHarness es_bioHarness;
     private ZephyrHxM es_HxM;
+
     private boolean isStarted, isForeground, isLoggedIn, isAmbienceActive, isDevProxActive,
             isExternalActive, isLocationActive, isMotionActive, isPhoneStateActive, isQuizActive;
+
+    /**
+     * Handler on main application thread to display toasts to the user.
+     */
     private final Handler toastHandler = new Handler(Looper.getMainLooper());
+
+    // separate threads for the sensing modules
     private HandlerThread ambienceThread, motionThread, deviceProxThread, extSensorsThread,
             locationThread, phoneStateThread;
+
+    /**
+     * Partial wake lock is active when not <code>null</code>.
+     */
     private WakeLock wakeLock;
 
     /**
@@ -521,7 +547,7 @@ public class SenseService extends Service {
         // Log.v(TAG, "Log in...");
 
         // show notification that we are not logged in (yet)
-        showNotification(true);
+        showNotification(false);
 
         // get login parameters from the preferences
         final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
@@ -568,6 +594,10 @@ public class SenseService extends Service {
     public void onCreate() {
         // Log.v(TAG, "---------->  Sense Platform service is being created...  <----------");
         super.onCreate();
+
+        // register broadcast receiver for login in case of Internet connection changes
+        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+        registerReceiver(connectivityListener, filter);
     }
 
     @Override
@@ -575,13 +605,10 @@ public class SenseService extends Service {
         // Log.v(TAG, "----------> Sense Platform service is being destroyed... <----------");
 
         // stop listening for possibility to login
-        if (null != connectivityListener) {
-            try {
-                unregisterReceiver(connectivityListener);
-                connectivityListener = null;
-            } catch (IllegalArgumentException e) {
-                // Log.d(TAG, "Ignoring exception when trying to unregister connectivity listener");
-            }
+        try {
+            unregisterReceiver(connectivityListener);
+        } catch (IllegalArgumentException e) {
+            // Log.d(TAG, "Ignoring exception when trying to unregister connectivity listener");
         }
 
         // stop listening to screen off receiver
@@ -622,7 +649,7 @@ public class SenseService extends Service {
         startFeedbackChecks();
 
         // show notification
-        showNotification(false);
+        showNotification(true);
     }
 
     /**
@@ -644,7 +671,7 @@ public class SenseService extends Service {
 
         // update the notification icon
         if (isForeground) {
-            showNotification(true);
+            showNotification(false);
         }
 
         stopFeedbackChecks();
@@ -732,14 +759,6 @@ public class SenseService extends Service {
                         startSensorModules();
                     }
 
-                    // register broadcast receiver for login in case of Internet connection changes
-                    if (null == connectivityListener) {
-                        connectivityListener = new ConnectivityListener();
-                        IntentFilter filter = new IntentFilter(
-                                ConnectivityManager.CONNECTIVITY_ACTION);
-                        registerReceiver(connectivityListener, filter);
-                    }
-
                 } finally {
                     this.getLooper().quit();
                 }
@@ -813,15 +832,15 @@ public class SenseService extends Service {
      * Shows a status bar notification that the Sense service is active, also displaying the
      * username if the service is logged in.
      * 
-     * @param error
-     *            set to <code>true</code> if the service is not running properly.
+     * @param loggedIn
+     *            set to <code>true</code> if the service is logged in.
      */
-    private void showNotification(boolean error) {
+    private void showNotification(boolean loggedIn) {
 
         // select the icon resource
-        int icon = R.drawable.ic_status_sense;
-        if (error) {
-            icon = R.drawable.ic_status_sense_disabled;
+        int icon = R.drawable.ic_status_sense_disabled;
+        if (loggedIn) {
+            icon = R.drawable.ic_status_sense;
         }
 
         final long when = System.currentTimeMillis();
@@ -831,7 +850,7 @@ public class SenseService extends Service {
         // extra info text is shown when the status bar is opened
         final CharSequence contentTitle = "Sense Platform";
         CharSequence contentText = "";
-        if (error) {
+        if (!loggedIn) {
             contentText = "Trying to log in...";
         } else {
             final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS,
@@ -919,14 +938,25 @@ public class SenseService extends Service {
             setForeground(true);
         } else {
             // create notification
-            final int icon = R.drawable.ic_status_sense_disabled;
+            int icon = R.drawable.ic_status_sense;
+            CharSequence contentText = "";
+            if (!isLoggedIn) {
+                icon = R.drawable.ic_status_sense_disabled;
+                contentText = "Not logged in...";
+            } else {
+                icon = R.drawable.ic_status_sense;
+                final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS,
+                        MODE_PRIVATE);
+                contentText = "Logged in as "
+                        + authPrefs.getString(Constants.PREF_LOGIN_USERNAME, "UNKNOWN");
+            }
+
             final long when = System.currentTimeMillis();
             final Notification n = new Notification(icon, null, when);
             final Intent notifIntent = new Intent("nl.sense_os.app.SenseApp");
             notifIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             final PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notifIntent, 0);
-            n.setLatestEventInfo(this, "Sense Platform", "Not logged in", contentIntent);
-
+            n.setLatestEventInfo(this, "Sense Platform", contentText, contentIntent);
             Object[] startArgs = { Integer.valueOf(NOTIF_ID), n };
             try {
                 startForeground.invoke(this, startArgs);
