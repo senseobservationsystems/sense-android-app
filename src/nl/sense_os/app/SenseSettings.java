@@ -52,11 +52,6 @@ public class SenseSettings extends PreferenceActivity {
             if (service != null) {
                 try {
                     result = service.changeLogin(username, password);
-
-                    // start service
-                    if (0 == result) {
-                        startSenseService();
-                    }
                 } catch (final RemoteException e) {
                     Log.e(TAG, "RemoteException changing login.", e);
                 }
@@ -116,7 +111,7 @@ public class SenseSettings extends PreferenceActivity {
                 }
 
                 // update login preference summary
-                setupLoginPref();
+                showSummaries();
             }
         }
 
@@ -237,7 +232,7 @@ public class SenseSettings extends PreferenceActivity {
                 }
 
                 // update login preference summary
-                setupLoginPref();
+                showSummaries();
             }
         }
 
