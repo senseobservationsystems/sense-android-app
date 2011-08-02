@@ -295,6 +295,11 @@
         android:summary="Keeps CPU on when screen is off"
         android:defaultValue="false"
         android:key="partial_wakelock" />
+      <CheckBoxPreference
+        android:title="Agostino mode"
+        android:summary="FOR SCIENCE!"
+        android:defaultValue="false"
+        android:key="agostino_mode" />
     </PreferenceScreen>
   </PreferenceCategory>
 </PreferenceScreen>

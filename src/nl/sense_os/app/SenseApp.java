@@ -675,10 +675,16 @@ public class SenseApp extends Activity {
                     default:
                         Log.e(TAG, "Unexpected commonsense rate preference.");
                     }
-                    String msg = getString(R.string.toast_toggle_ambience).replace("?",
-                            intervalString)
-                            + extraString;
-                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                    // special message for Agostino
+                    final boolean agostinoMode = service.getPrefBool("agostino_mode", false);
+                    if (agostinoMode) {
+                        Toast.makeText(this, "AGOSTINO MODE!!", Toast.LENGTH_LONG).show();
+                    } else {
+                        String msg = getString(R.string.toast_toggle_ambience).replace("?",
+                                intervalString)
+                                + extraString;
+                        Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                    }
                 }
 
             } catch (RemoteException e) {
@@ -881,9 +887,15 @@ public class SenseApp extends Activity {
                         Log.e(TAG, "Unexpected commonsense rate: " + rate);
                         break;
                     }
-                    final String msg = getString(R.string.toast_toggle_motion).replace("?",
-                            interval);
-                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                    // special message for Agostino
+                    final boolean agostinoMode = service.getPrefBool("agostino_mode", false);
+                    if (agostinoMode) {
+                        Toast.makeText(this, "AGOSTINO MODE!!", Toast.LENGTH_LONG).show();
+                    } else {
+                        final String msg = getString(R.string.toast_toggle_motion).replace("?",
+                                interval);
+                        Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                    }
                 }
 
             } catch (RemoteException e) {

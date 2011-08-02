@@ -1199,6 +1199,11 @@ public class SenseService extends Service {
                 default:
                     Log.e(TAG, "Unexpected sample rate preference.");
                 }
+                // special interval for Agostino
+                final boolean agostinoMode = mainPrefs.getBoolean("agostino_mode", false);
+                if (agostinoMode) {
+                    interval = 60 * 1000;
+                }
                 final int finalInterval = interval;
 
                 ambienceThread = new HandlerThread("Ambience thread",
@@ -1600,6 +1605,12 @@ public class SenseService extends Service {
                     Log.e(TAG, "Unexpected commonsense rate: " + rate);
                     break;
                 }
+                // special interval for Agostino
+                final boolean agostinoMode = mainPrefs.getBoolean("agostino_mode", false);
+                if (agostinoMode) {
+                    interval = 1 * 1000;
+                }
+
                 final int finalInterval = interval;
 
                 // instantiate the sensors on the main process thread

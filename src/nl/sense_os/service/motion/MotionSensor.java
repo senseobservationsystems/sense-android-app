@@ -395,14 +395,12 @@ public class MotionSensor implements SensorEventListener {
             if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
                     || sensor.getType() == Sensor.TYPE_ORIENTATION
                     || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                // Log.d(TAG, "registering for sensor " + sensor.getName());
+                // Log.v(TAG, "registering for sensor " + sensor.getName());
                 smgr.registerListener(this, sensor,
                         useFallDetector || isEpiMode ? SensorManager.SENSOR_DELAY_GAME
                                 : SensorManager.SENSOR_DELAY_NORMAL);
             } else if (Build.VERSION.SDK_INT >= 9 && sensor.getType() == 10) {
-                // use linear accelerometer sensor on gingerbread phones
-                // Log.v(TAG,
-                // "w00t w00t! Found fancy linear acceleration sensor! pwning gravity...");
+                // use linear accelerometer sensor on gingerbread+ phones
                 smgr.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
                 hasLinAccSensor = true;
             }
