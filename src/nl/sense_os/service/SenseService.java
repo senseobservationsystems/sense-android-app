@@ -1468,6 +1468,12 @@ public class SenseService extends Service {
                     Log.e(TAG, "Unexpected commonsense rate: " + rate);
                     break;
                 }
+                // special interval for Agostino
+                final boolean agostinoMode = mainPrefs.getBoolean("agostino_mode", false);
+                if (agostinoMode) {
+                    minTime = 60 * 1000;
+                    minDistance = 100;
+                }
 
                 // check if any providers are selected in the preferences
                 final boolean gps = mainPrefs.getBoolean(Constants.PREF_LOCATION_GPS, true);
