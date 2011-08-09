@@ -41,7 +41,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageInfo;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -433,7 +432,7 @@ public class SenseService extends Service {
     private BatterySensor batterySensor;
     private DeviceProximity deviceProximity;
     private LightSensor lightSensor;
-    private LocationListener locListener;
+    private LocationSensor locListener;
     private MotionSensor motionSensor;
     private NoiseSensor noiseSensor;
     private PhoneActivitySensor phoneActivitySensor;
@@ -1424,7 +1423,7 @@ public class SenseService extends Service {
                 // check location sensor presence
                 if (locListener != null) {
                     Log.w(TAG, "location listener is already present!");
-                    locMgr.removeUpdates(locListener);
+                    locListener.disable();
                     locListener = null;
                 }
 

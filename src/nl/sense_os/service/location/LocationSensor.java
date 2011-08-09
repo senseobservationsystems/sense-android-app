@@ -15,6 +15,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -25,6 +26,17 @@ public class LocationSensor implements LocationListener {
 
     public LocationSensor(Context context) {
         this.context = context;
+    }
+
+    public void enable(long interval) {
+        final LocationManager locMgr = (LocationManager) context
+                .getSystemService(Context.LOCATION_SERVICE);
+    }
+
+    public void disable() {
+        final LocationManager locMgr = (LocationManager) context
+                .getSystemService(Context.LOCATION_SERVICE);
+        locMgr.removeUpdates(this);
     }
 
     @Override
