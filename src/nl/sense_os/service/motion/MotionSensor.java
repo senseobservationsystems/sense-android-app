@@ -10,7 +10,7 @@ package nl.sense_os.service.motion;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
-import java.util.List;
+import java.util.ArrayList;
 import java.util.Locale;
 
 import nl.sense_os.service.Constants;
@@ -20,8 +20,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -29,9 +33,13 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Handler;
+import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
 import android.util.Log;
 
 public class MotionSensor implements SensorEventListener {
+
+    private static final String TAG = "Sense MotionSensor";
 
     private static final String NAME_ACCELR = "accelerometer";
     private static final String NAME_LINACC = "linear acceleration";
@@ -39,50 +47,60 @@ public class MotionSensor implements SensorEventListener {
     private static final String NAME_MAGNET = "magnetic_field";
     private static final String NAME_ORIENT = "orientation";
     private static final String NAME_EPI = "accelerometer (epi-mode)";
+    private static final String NAME_MOTION_ENERGY = "motion energy";
     /**
      * Stand-in for Sensor.TYPE_LINEAR_ACCELERATION constant for API < 9.
      */
     private static final int TYPE_LINEAR_ACCELERATION = 10;
-    private static final String TAG = "Sense MotionSensor";
-    private static final String TYPE_MOTION_ENERGY = "motion energy";
-    private FallDetector fallDetector;
-    private boolean useFallDetector;
-    private boolean isMotionEnergyMode;
-    private boolean hasLinAccSensor;
+    private final FallDetector fallDetector = new FallDetector();
+    private final Context context;
+    private boolean isFallDetectMode;
+    private boolean isEnergyMode;
     private boolean isEpiMode;
     private boolean isUnregisterWhenIdle;
     private boolean firstStart = true;
-    private Context context;
-    private long[] lastSampleTimes = new long[50];
+    private ArrayList<Sensor> sensors;
+    private final long[] lastSampleTimes = new long[50];
     private Handler motionHandler = new Handler();
     private boolean motionSensingActive = false;
     private Runnable motionThread = null;
     private long sampleDelay = 0; // in milliseconds
     private long[] lastLocalSampleTimes = new long[50];
     private long localBufferTime = 15 * 1000;
-    private List<Sensor> sensors;
-    private SensorManager smgr;
     private long firstTimeSend = 0;
     private JSONArray[] dataBuffer = new JSONArray[10];
+
+    // members for calculating the avg speed change during a time period, for motion energy sensor
+    private static final long ENERGY_SAMPLE_LENGTH = 500;
+    private long energySampleStart = 0;
+    private long prevEnergySampleTime;
     private double avgSpeedChange;
     private int avgSpeedCount;
+    private boolean hasLinAccSensor;
     private float[] gravity = { 0, 0, SensorManager.GRAVITY_EARTH };
-    private long lastLinAccSampleTime;
+
+    // members for waking up the device for sampling
+    private static final String ACTION_WAKEUP_ALARM = "nl.sense_os.service.MotionWakeUp";
+    private static final int ALARM_ID = 256;
+
+    private BroadcastReceiver wakeReceiver;
+    private WakeLock wakeLock;
+
+    private boolean isRegistered;
+    private long lastRegistered = -1;
+    private static final long DELAY_AFTER_REGISTRATION = 500;
 
     public MotionSensor(Context context) {
         this.context = context;
-        smgr = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-        sensors = smgr.getSensorList(Sensor.TYPE_ALL);
-        fallDetector = new FallDetector();
     }
 
     /**
-     * Calculates the kinetic energy of an accelerometer sample. Tries to determine the gravity
-     * component by putting the signal through a first-order low-pass filter.
+     * Calculates the linear acceleration of a raw accelerometer sample. Tries to determine the
+     * gravity component by putting the signal through a first-order low-pass filter.
      * 
      * @param values
      *            Array with accelerometer values for the three axes.
-     * @return The approximate kinetic energy of the sample.
+     * @return The approximate linear acceleration of the sample.
      */
     private float[] calcLinAcc(float[] values) {
 
@@ -93,6 +111,113 @@ public class MotionSensor implements SensorEventListener {
         gravity[2] = alpha * gravity[2] + (1 - alpha) * values[2];
 
         return new float[] { values[0] - gravity[0], values[1] - gravity[1], values[2] - gravity[2] };
+    }
+
+    private JSONObject createJsonValue(SensorEvent event) {
+
+        final Sensor sensor = event.sensor;
+        final DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.ENGLISH);
+        final NumberFormat formatter = new DecimalFormat("###.###", otherSymbols);
+        final JSONObject json = new JSONObject();
+
+        int axis = 0;
+        try {
+            for (double value : event.values) {
+                switch (axis) {
+                case 0:
+                    if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
+                            || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
+                            || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
+                        json.put("x-axis", Float.parseFloat(formatter.format(value)));
+                    } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
+                            || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+                        json.put("azimuth", Float.parseFloat(formatter.format(value)));
+                    } else {
+                        Log.e(TAG, "Unexpected sensor type creating JSON value");
+                        return null;
+                    }
+                    break;
+                case 1:
+                    if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
+                            || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
+                            || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
+                        json.put("y-axis", Float.parseFloat(formatter.format(value)));
+                    } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
+                            || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+                        json.put("pitch", Float.parseFloat(formatter.format(value)));
+                    } else {
+                        Log.e(TAG, "Unexpected sensor type creating JSON value");
+                        return null;
+                    }
+                    break;
+                case 2:
+                    if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
+                            || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
+                            || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
+                        json.put("z-axis", Float.parseFloat(formatter.format(value)));
+                    } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
+                            || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+                        json.put("roll", Float.parseFloat(formatter.format(value)));
+                    } else {
+                        Log.e(TAG, "Unexpected sensor type creating JSON value");
+                        return null;
+                    }
+                    break;
+                default:
+                    Log.w(TAG, "Unexpected sensor value! More than three axes?!");
+                }
+                axis++;
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "JSONException creating motion JSON value", e);
+            return null;
+        }
+
+        return json;
+    }
+
+    /**
+     * Measures the speed change and determines the average, for the motion energy sensor.
+     * 
+     * @param event
+     *            The sensor change event with accelerometer or linear acceleration data.
+     */
+    private void doEnergySample(SensorEvent event) {
+
+        float[] linAcc = null;
+
+        // approximate linear acceleration if we have no special sensor for it
+        if (!hasLinAccSensor && Sensor.TYPE_ACCELEROMETER == event.sensor.getType()) {
+            linAcc = calcLinAcc(event.values);
+        } else if (hasLinAccSensor && TYPE_LINEAR_ACCELERATION == event.sensor.getType()) {
+            linAcc = event.values;
+        } else {
+            // sensor is not the right type
+            return;
+        }
+
+        // calculate speed change and adjust average
+        if (null != linAcc) {
+
+            // record the start of the motion sample
+            if (avgSpeedCount == 0) {
+                energySampleStart = System.currentTimeMillis();
+            }
+
+            float timeStep = (System.currentTimeMillis() - prevEnergySampleTime) / 1000f;
+            prevEnergySampleTime = System.currentTimeMillis();
+            if (timeStep > 0 && timeStep < 1) {
+                float accLength = (float) Math.sqrt(Math.pow(linAcc[0], 2) + Math.pow(linAcc[1], 2)
+                        + Math.pow(linAcc[2], 2));
+
+                float speedChange = accLength * timeStep;
+                // Log.v(TAG, "Speed change: " + speedChange);
+
+                avgSpeedChange = (avgSpeedCount * avgSpeedChange + speedChange)
+                        / (avgSpeedCount + 1);
+                avgSpeedCount++;
+            }
+        }
     }
 
     private void doEpiSample(Sensor sensor, JSONObject json) {
@@ -128,46 +253,80 @@ public class MotionSensor implements SensorEventListener {
         }
     }
 
-    /**
-     * Measures the speed change and determines the average, for the motion energy sensor.
-     * 
-     * @param event
-     *            The sensor change event with accelerometer or linear acceleration data.
-     */
-    private void doMotionSample(SensorEvent event) {
+    private void doFallSample(SensorEvent event) {
+        double aX = event.values[1];
+        double aY = event.values[0];
+        double aZ = event.values[2];
+        float accVecSum = (float) Math.sqrt(aX * aX + aY * aY + aZ * aZ);
 
-        float[] linAcc = null;
-
-        // approximate linear acceleration if we have no special sensor for it
-        if (!hasLinAccSensor && Sensor.TYPE_ACCELEROMETER == event.sensor.getType()) {
-            linAcc = calcLinAcc(event.values);
-        } else if (hasLinAccSensor && TYPE_LINEAR_ACCELERATION == event.sensor.getType()) {
-            linAcc = event.values;
-        } else {
-            // sensor is not the right type
-            return;
-        }
-
-        // calculate speed change and adjust average
-        if (null != linAcc) {
-            float timeStep = (System.currentTimeMillis() - lastLinAccSampleTime) / 1000f;
-            lastLinAccSampleTime = System.currentTimeMillis();
-            if (timeStep > 0 && timeStep < 1) {
-                float accLength = (float) Math.sqrt(Math.pow(linAcc[0], 2) + Math.pow(linAcc[1], 2)
-                        + Math.pow(linAcc[2], 2));
-
-                float speedChange = accLength * timeStep;
-                // Log.v(TAG, "Speed change: " + speedChange);
-
-                avgSpeedChange = (avgSpeedCount * avgSpeedChange + speedChange)
-                        / (avgSpeedCount + 1);
-                avgSpeedCount++;
-            }
+        if (fallDetector.fallDetected(accVecSum)) {
+            sendFallMessage(true); // send msg
         }
     }
 
     public long getSampleDelay() {
         return sampleDelay;
+    }
+
+    /**
+     * @return Time stamp of the oldest sample, or -1 if not all sensors have sampled yet.
+     */
+    private long getOldestSampleTime() {
+
+        int count = 0;
+        long oldestSample = Long.MAX_VALUE;
+        for (long time : lastSampleTimes) {
+            if (time != 0) {
+                count++;
+                if (time < oldestSample) {
+                    oldestSample = time;
+                }
+            }
+        }
+
+        if (count < sensors.size()) {
+            return -1;
+        } else {
+            return oldestSample;
+        }
+    }
+
+    /**
+     * @return true if it is too long since the sensor was registered.
+     */
+    private boolean isTimeToRegister() {
+        return motionSensingActive
+                && !isRegistered
+                && System.currentTimeMillis() - getOldestSampleTime() + DELAY_AFTER_REGISTRATION > sampleDelay;
+    }
+
+    /**
+     * @return true if all active sensors have recently passed a data point.
+     */
+    private boolean isTimeToUnregister() {
+
+        boolean unregister = isUnregisterWhenIdle;
+
+        // only unregister if all sensors have submitted a new sample
+        long oldestSample = getOldestSampleTime();
+        if (oldestSample == -1) {
+            unregister = false;
+        } else {
+            unregister = unregister && (lastRegistered < oldestSample);
+        }
+
+        // only unregister when sample delay is large enough
+        unregister = unregister && sampleDelay > DELAY_AFTER_REGISTRATION;
+
+        // only unregister when fall detection is not active
+        unregister = unregister && !isFallDetectMode;
+
+        // only unregister when energy sample has finished
+        unregister = unregister
+                && (!isEnergyMode || (energySampleStart != 0 && System.currentTimeMillis()
+                        - energySampleStart > ENERGY_SAMPLE_LENGTH));
+
+        return unregister;
     }
 
     @Override
@@ -177,32 +336,46 @@ public class MotionSensor implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        Sensor sensor = event.sensor;
+
+        if (!motionSensingActive) {
+            Log.w(TAG, "Motion sensor value received when sensor is inactive! (Re)try stopping...");
+            stopMotionSensing();
+            return;
+        }
+
+        final Sensor sensor = event.sensor;
 
         // pass sensor value to fall detector first
-        if (useFallDetector && sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            double aX = event.values[1];
-            double aY = event.values[0];
-            double aZ = event.values[2];
-            float accVecSum = (float) Math.sqrt(aX * aX + aY * aY + aZ * aZ);
-
-            if (fallDetector.fallDetected(accVecSum)) {
-                sendFallMessage(true); // send msg
-            }
-
+        if (isFallDetectMode && sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            doFallSample(event);
         }
 
         // if motion energy sensor is active, determine energy of every sample
-        boolean isMotionSample = !hasLinAccSensor && Sensor.TYPE_ACCELEROMETER == sensor.getType()
+        boolean isEnergySample = !hasLinAccSensor && Sensor.TYPE_ACCELEROMETER == sensor.getType()
                 || hasLinAccSensor && TYPE_LINEAR_ACCELERATION == sensor.getType();
-        if (isMotionEnergyMode && isMotionSample) {
-            doMotionSample(event);
+        if (isEnergyMode && isEnergySample) {
+            doEnergySample(event);
         }
 
         // check sensor delay
         if (System.currentTimeMillis() > lastSampleTimes[sensor.getType()] + sampleDelay) {
             lastSampleTimes[sensor.getType()] = System.currentTimeMillis();
         } else {
+            // new sample is too soon
+
+            // unregister when sensor listener when we can
+            if (isTimeToUnregister()) {
+
+                // unregister the listener and start again in sampleDelay seconds
+                unregisterSensors();
+                motionHandler.postDelayed(motionThread = new Runnable() {
+
+                    @Override
+                    public void run() {
+                        registerSensors();
+                    }
+                }, sampleDelay - DELAY_AFTER_REGISTRATION);
+            }
             return;
         }
 
@@ -235,59 +408,9 @@ public class MotionSensor implements SensorEventListener {
         }
 
         // prepare JSON object to send to MsgHandler
-        DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.ENGLISH);
-        NumberFormat formatter = new DecimalFormat("###.###", otherSymbols);
-        JSONObject json = new JSONObject();
-        int axis = 0;
-        try {
-            for (double value : event.values) {
-                switch (axis) {
-                case 0:
-                    if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
-                            || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
-                            || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
-                        json.put("x-axis", Float.parseFloat(formatter.format(value)));
-                    } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
-                            || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                        json.put("azimuth", Float.parseFloat(formatter.format(value)));
-                    } else {
-                        Log.e(TAG, "Unexpected sensor type creating JSON value");
-                        return;
-                    }
-                    break;
-                case 1:
-                    if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
-                            || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
-                            || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
-                        json.put("y-axis", Float.parseFloat(formatter.format(value)));
-                    } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
-                            || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                        json.put("pitch", Float.parseFloat(formatter.format(value)));
-                    } else {
-                        Log.e(TAG, "Unexpected sensor type creating JSON value");
-                        return;
-                    }
-                    break;
-                case 2:
-                    if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
-                            || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
-                            || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
-                        json.put("z-axis", Float.parseFloat(formatter.format(value)));
-                    } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
-                            || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                        json.put("roll", Float.parseFloat(formatter.format(value)));
-                    } else {
-                        Log.e(TAG, "Unexpected sensor type creating JSON value");
-                        return;
-                    }
-                    break;
-                default:
-                    Log.w(TAG, "Unexpected sensor value! More than three axes?!");
-                }
-                axis++;
-            }
-        } catch (JSONException e) {
-            Log.e(TAG, "JSONException in onSensorChanged", e);
+        final JSONObject json = createJsonValue(event);
+        if (null == json) {
+            // error occurred creating the JSON object
             return;
         }
 
@@ -299,22 +422,32 @@ public class MotionSensor implements SensorEventListener {
         }
 
         // send motion energy message
-        if (isMotionEnergyMode && isMotionSample) {
+        if (isEnergyMode && isEnergySample) {
             sendEnergyMessage();
         }
+    }
 
-        if (isUnregisterWhenIdle && sampleDelay > 500 && motionSensingActive && !useFallDetector
-                && !isMotionEnergyMode) {
+    /**
+     * Registers for updates from the device's motion sensors.
+     */
+    private synchronized void registerSensors() {
 
-            // unregister the listener and start again in sampleDelay seconds
-            stopMotionSensing();
-            motionHandler.postDelayed(motionThread = new Runnable() {
+        if (!isRegistered) {
+            // Log.v(TAG, "Register the motion sensor for updates");
 
-                @Override
-                public void run() {
-                    startMotionSensing(sampleDelay);
-                }
-            }, sampleDelay);
+            SensorManager mgr = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+
+            int delay = isFallDetectMode || isEpiMode || isEnergyMode ? SensorManager.SENSOR_DELAY_GAME
+                    : SensorManager.SENSOR_DELAY_NORMAL;
+
+            for (Sensor sensor : sensors) {
+                mgr.registerListener(this, sensor, delay);
+            }
+
+            isRegistered = true;
+
+        } else {
+            // Log.v(TAG, "Did not register for motion sensor updates: already registered");
         }
     }
 
@@ -322,16 +455,17 @@ public class MotionSensor implements SensorEventListener {
      * Sends message with average motion energy to the MsgHandler.
      */
     private void sendEnergyMessage() {
+
         if (avgSpeedCount > 1) {
-            // Log.v(TAG, "Motion energy: " + avgSpeedChange + " (" + avgSpeedCount + " samples)");
+            // Log.v(TAG, NAME_MOTION_ENERGY + " value. Count: " + avgSpeedCount);
 
             // prepare JSON object to send to MsgHandler
             DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.ENGLISH);
             NumberFormat formatter = new DecimalFormat("###.###", otherSymbols);
 
             Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-            i.putExtra(MsgHandler.KEY_SENSOR_NAME, TYPE_MOTION_ENERGY);
-            i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, TYPE_MOTION_ENERGY);
+            i.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_MOTION_ENERGY);
+            i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, NAME_MOTION_ENERGY);
             i.putExtra(MsgHandler.KEY_VALUE, Float.parseFloat(formatter.format(avgSpeedChange)));
             i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_FLOAT);
             i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
@@ -362,8 +496,8 @@ public class MotionSensor implements SensorEventListener {
         context.startService(i);
     }
 
-    public void setSampleDelay(long _sampleDelay) {
-        sampleDelay = _sampleDelay;
+    public void setSampleDelay(long sampleDelay) {
+        this.sampleDelay = sampleDelay;
     }
 
     public void startMotionSensing(long sampleDelay) {
@@ -371,7 +505,7 @@ public class MotionSensor implements SensorEventListener {
         final SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
                 Context.MODE_PRIVATE);
         isEpiMode = mainPrefs.getBoolean(Constants.PREF_MOTION_EPIMODE, false);
-        isMotionEnergyMode = mainPrefs.getBoolean(Constants.PREF_MOTION_ENERGY, false);
+        isEnergyMode = mainPrefs.getBoolean(Constants.PREF_MOTION_ENERGY, false);
         isUnregisterWhenIdle = mainPrefs.getBoolean(Constants.PREF_MOTION_UNREG, true);
 
         if (isEpiMode) {
@@ -379,38 +513,87 @@ public class MotionSensor implements SensorEventListener {
         }
 
         // check if the fall detector is enabled
-        useFallDetector = mainPrefs.getBoolean(Constants.PREF_MOTION_FALL_DETECT, false);
+        isFallDetectMode = mainPrefs.getBoolean(Constants.PREF_MOTION_FALL_DETECT, false);
         if (fallDetector.demo = mainPrefs.getBoolean(Constants.PREF_MOTION_FALL_DETECT_DEMO, false)) {
-            useFallDetector = true;
+            isFallDetectMode = true;
         }
 
-        if (firstStart && useFallDetector) {
+        if (firstStart && isFallDetectMode) {
             sendFallMessage(false);
             firstStart = false;
         }
 
-        motionSensingActive = true;
-        setSampleDelay(sampleDelay);
-        for (Sensor sensor : sensors) {
-            if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
-                    || sensor.getType() == Sensor.TYPE_ORIENTATION
-                    || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                // Log.v(TAG, "registering for sensor " + sensor.getName());
-                smgr.registerListener(this, sensor,
-                        useFallDetector || isEpiMode ? SensorManager.SENSOR_DELAY_GAME
-                                : SensorManager.SENSOR_DELAY_NORMAL);
-            } else if (Build.VERSION.SDK_INT >= 9 && sensor.getType() == 10) {
-                // use linear accelerometer sensor on gingerbread+ phones
-                smgr.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
-                hasLinAccSensor = true;
+        SensorManager mgr = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+        sensors = new ArrayList<Sensor>();
+        sensors.addAll(mgr.getSensorList(Sensor.TYPE_ACCELEROMETER));
+        if (!isEpiMode) {
+            sensors.addAll(mgr.getSensorList(Sensor.TYPE_ORIENTATION));
+            sensors.addAll(mgr.getSensorList(Sensor.TYPE_GYROSCOPE));
+            if (Build.VERSION.SDK_INT >= 9) {
+                // only devices with gingerbread+ have linear acceleration sensors
+                sensors.addAll(mgr.getSensorList(TYPE_LINEAR_ACCELERATION));
+                hasLinAccSensor = mgr.getSensorList(TYPE_LINEAR_ACCELERATION).size() > 0;
             }
         }
+
+        motionSensingActive = true;
+        setSampleDelay(sampleDelay);
+        registerSensors();
+
+        startWakeUpAlarms();
     }
 
+    /**
+     * Sets a periodic alarm that makes sure the the device is awake for a short while for every
+     * sample.
+     */
+    private void startWakeUpAlarms() {
+
+        // register receiver for wake up alarm
+        wakeReceiver = new BroadcastReceiver() {
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                // Log.v(TAG, "Wake up! " + new SimpleDateFormat("k:mm:ss.SSS").format(new Date()));
+
+                if (null == wakeLock) {
+                    PowerManager powerMgr = (PowerManager) context
+                            .getSystemService(Context.POWER_SERVICE);
+                    wakeLock = powerMgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+                }
+                if (!wakeLock.isHeld()) {
+                    Log.i(TAG, "Acquire wake lock for 500ms");
+                    wakeLock.acquire(500);
+                } else {
+                    // Log.v(TAG, "Wake lock already held");
+                }
+
+                if (isTimeToRegister()) {
+                    // Log.v(TAG, "Time to register!");
+                    registerSensors();
+                }
+            }
+        };
+        context.registerReceiver(wakeReceiver, new IntentFilter(ACTION_WAKEUP_ALARM));
+
+        // schedule alarm to go off and wake up the receiver
+        Intent wakeUp = new Intent(ACTION_WAKEUP_ALARM);
+        PendingIntent operation = PendingIntent.getBroadcast(context, ALARM_ID, wakeUp, 0);
+        final AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        mgr.cancel(operation);
+        mgr.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, 0, sampleDelay, operation);
+    }
+
+    /**
+     * Unregisters the listener for updates from the motion sensors, and stops waking up the device
+     * for sampling.
+     */
     public void stopMotionSensing() {
+        // Log.v(TAG, "Stop motion sensor");
+
         try {
             motionSensingActive = false;
-            smgr.unregisterListener(this);
+            unregisterSensors();
 
             if (motionThread != null) {
                 motionHandler.removeCallbacks(motionThread);
@@ -421,5 +604,39 @@ public class MotionSensor implements SensorEventListener {
             Log.e(TAG, e.getMessage());
         }
 
+        stopWakeUpAlarms();
+    }
+
+    /**
+     * Stops the periodic alarm to wake up the device and take a sample.
+     */
+    private void stopWakeUpAlarms() {
+
+        // unregister wake up receiver
+        try {
+            context.unregisterReceiver(wakeReceiver);
+        } catch (IllegalArgumentException e) {
+            // do nothing
+        }
+
+        // cancel the wake up alarm
+        Intent wakeUp = new Intent(ACTION_WAKEUP_ALARM);
+        PendingIntent operation = PendingIntent.getBroadcast(context, ALARM_ID, wakeUp, 0);
+        final AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        mgr.cancel(operation);
+    }
+
+    private synchronized void unregisterSensors() {
+
+        if (isRegistered) {
+            // Log.v(TAG, "Unregister the motion sensor for updates");
+            ((SensorManager) context.getSystemService(Context.SENSOR_SERVICE))
+                    .unregisterListener(this);
+            lastRegistered = System.currentTimeMillis();
+        } else {
+            // Log.v(TAG, "Did not unregister for motion sensor updates: already unregistered");
+        }
+
+        isRegistered = false;
     }
 }
