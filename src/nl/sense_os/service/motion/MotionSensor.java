@@ -7,11 +7,8 @@
  */
 package nl.sense_os.service.motion;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.NumberFormat;
+import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Locale;
 
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
@@ -116,22 +113,23 @@ public class MotionSensor implements SensorEventListener {
     private JSONObject createJsonValue(SensorEvent event) {
 
         final Sensor sensor = event.sensor;
-        final DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.ENGLISH);
-        final NumberFormat formatter = new DecimalFormat("###.###", otherSymbols);
         final JSONObject json = new JSONObject();
 
         int axis = 0;
         try {
             for (double value : event.values) {
+                // scale to three decimal precision
+                value = BigDecimal.valueOf(value).setScale(3, 0).doubleValue();
+
                 switch (axis) {
                 case 0:
                     if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
                             || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
                             || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
-                        json.put("x-axis", Float.parseFloat(formatter.format(value)));
+                        json.put("x-axis", value);
                     } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
                             || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                        json.put("azimuth", Float.parseFloat(formatter.format(value)));
+                        json.put("azimuth", value);
                     } else {
                         Log.e(TAG, "Unexpected sensor type creating JSON value");
                         return null;
@@ -141,10 +139,10 @@ public class MotionSensor implements SensorEventListener {
                     if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
                             || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
                             || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
-                        json.put("y-axis", Float.parseFloat(formatter.format(value)));
+                        json.put("y-axis", value);
                     } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
                             || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                        json.put("pitch", Float.parseFloat(formatter.format(value)));
+                        json.put("pitch", value);
                     } else {
                         Log.e(TAG, "Unexpected sensor type creating JSON value");
                         return null;
@@ -154,10 +152,10 @@ public class MotionSensor implements SensorEventListener {
                     if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
                             || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
                             || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
-                        json.put("z-axis", Float.parseFloat(formatter.format(value)));
+                        json.put("z-axis", value);
                     } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
                             || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                        json.put("roll", Float.parseFloat(formatter.format(value)));
+                        json.put("roll", value);
                     } else {
                         Log.e(TAG, "Unexpected sensor type creating JSON value");
                         return null;
@@ -459,14 +457,14 @@ public class MotionSensor implements SensorEventListener {
         if (avgSpeedCount > 1) {
             // Log.v(TAG, NAME_MOTION_ENERGY + " value. Count: " + avgSpeedCount);
 
-            // prepare JSON object to send to MsgHandler
-            DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.ENGLISH);
-            NumberFormat formatter = new DecimalFormat("###.###", otherSymbols);
+            // round to three decimals
+            double value = BigDecimal.valueOf(avgSpeedChange).setScale(3, 0).doubleValue();
 
+            // prepare intent to send to MsgHandler
             Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
             i.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_MOTION_ENERGY);
             i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, NAME_MOTION_ENERGY);
-            i.putExtra(MsgHandler.KEY_VALUE, Float.parseFloat(formatter.format(avgSpeedChange)));
+            i.putExtra(MsgHandler.KEY_VALUE, value);
             i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_FLOAT);
             i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
             context.startService(i);
