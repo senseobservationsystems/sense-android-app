@@ -60,7 +60,7 @@ public class LocalStorage extends ContentProvider {
 
     public static final String AUTHORITY = "nl.sense_os.service.provider.LocalStorage";
     private static final String DATABASE_NAME = "local_storage.sqlite3";
-    private static final String VALUES_TABLE_NAME = "values";
+    private static final String VALUES_TABLE_NAME = "recent_values";
     private static final int DATABASE_VERSION = 1;
 
     private static final int VALUES_URI = 1;
@@ -73,9 +73,11 @@ public class LocalStorage extends ContentProvider {
         uriMatcher.addURI(AUTHORITY, VALUES_TABLE_NAME, VALUES_URI);
 
         projectionMap = new HashMap<String, String>();
-        projectionMap.put(DataBuffer.ACTIVE, DataBuffer.ACTIVE);
-        projectionMap.put(DataBuffer.JSON, DataBuffer.JSON);
-        projectionMap.put(DataBuffer.SENSOR, DataBuffer.SENSOR);
+        projectionMap.put(DataPoint.SENSOR_NAME, DataPoint.SENSOR_NAME);
+        projectionMap.put(DataPoint.SENSOR_DESCRIPTION, DataPoint.SENSOR_DESCRIPTION);
+        projectionMap.put(DataPoint.DATA_TYPE, DataPoint.DATA_TYPE);
+        projectionMap.put(DataPoint.TIMESTAMP, DataPoint.TIMESTAMP);
+        projectionMap.put(DataPoint.VALUE, DataPoint.VALUE);
     }
 
     private DbHelper dbHelper;
