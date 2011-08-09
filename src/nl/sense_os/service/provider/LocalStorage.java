@@ -65,7 +65,7 @@ public class LocalStorage extends ContentProvider {
 
     private static final int VALUES_URI = 1;
 
-    private static final long RETENTION_TIME = 1000 * 60 * 1; // 15 minutes
+    private static final long RETENTION_TIME = 1000 * 60 * 15; // 15 minutes
     private static HashMap<String, String> projectionMap;
     private static UriMatcher uriMatcher;
     static {
