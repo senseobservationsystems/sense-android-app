@@ -296,6 +296,11 @@
         android:defaultValue="false"
         android:key="partial_wakelock" />
       <CheckBoxPreference
+        android:title="Local storage"
+        android:summary="Make data available for other apps"
+        android:defaultValue="false"
+        android:key="local_storage" />
+      <CheckBoxPreference
         android:title="Agostino mode"
         android:summary="FOR SCIENCE!"
         android:defaultValue="false"

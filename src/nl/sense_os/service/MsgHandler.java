@@ -18,6 +18,9 @@ import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Locale;
 
+import nl.sense_os.service.provider.LocalStorage;
+import nl.sense_os.service.provider.SensorData.DataPoint;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -31,11 +34,14 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
 import android.util.Log;
 
 public class MsgHandler extends Service {
@@ -91,6 +97,7 @@ public class MsgHandler extends Service {
         private final String dataType;
         private final Context context;
         private final JSONObject data;
+        private WakeLock wakeLock;
 
         public SendDataThread(String cookie, JSONObject data, String sensorName, String dataType,
                 String deviceType, Context context, Looper looper) {
@@ -120,6 +127,10 @@ public class MsgHandler extends Service {
         public void handleMessage(Message msg) {
 
             try {
+                // make sure the device stays awake while transmitting
+                this.wakeLock = getWakeLock();
+                this.wakeLock.acquire();
+
                 // get sensor URL at CommonSense
                 String url = getSensorUrl();
 
@@ -182,6 +193,7 @@ public class MsgHandler extends Service {
 
         private void stopAndCleanup() {
             --nrOfSendMessageThreads;
+            this.wakeLock.release();
             getLooper().quit();
         }
     }
@@ -194,6 +206,7 @@ public class MsgHandler extends Service {
         private final String dataType;
         private final String deviceType;
         private final Context context;
+        private WakeLock wakeLock;
 
         public SendFileThread(String cookie, JSONObject data, String sensorName, String dataType,
                 String deviceType, Context context, Looper looper) {
@@ -224,6 +237,10 @@ public class MsgHandler extends Service {
         public void handleMessage(Message message) {
 
             try {
+                // make sure the device stays awake while transmitting
+                this.wakeLock = getWakeLock();
+                this.wakeLock.acquire();
+
                 // get sensor URL from CommonSense
                 String urlStr = getSensorUrl();
 
@@ -335,6 +352,7 @@ public class MsgHandler extends Service {
 
         private void stopAndCleanup() {
             --nrOfSendMessageThreads;
+            this.wakeLock.release();
             getLooper().quit();
         }
     }
@@ -358,6 +376,7 @@ public class MsgHandler extends Service {
     private DbHelper dbHelper;
     private boolean isDbOpen;
     private int nrOfSendMessageThreads = 0;
+    private WakeLock wakeLock;
 
     /**
      * Buffers a data point in the memory, for scheduled transmission later on.
@@ -441,6 +460,14 @@ public class MsgHandler extends Service {
         } catch (Exception e) {
             Log.e(TAG, "Error in buffering failed message:", e);
         }
+    }
+
+    private WakeLock getWakeLock() {
+        if (null == wakeLock) {
+            PowerManager powerMgr = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            wakeLock = powerMgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+        }
+        return wakeLock;
     }
 
     private void closeDb() {
@@ -569,9 +596,41 @@ public class MsgHandler extends Service {
                 bufferDataPoint(sensorName, sensorValue, timeInSecs, dataType, deviceType);
             }
 
+            // put the data point in the local storage
+            if (mainPrefs.getBoolean(Constants.PREF_LOCAL_STORAGE, false)) {
+                insertToLocalStorage(sensorName, deviceType, dataType,
+                        intent.getLongExtra(KEY_TIMESTAMP, System.currentTimeMillis()), sensorValue);
+            }
+
         } catch (Exception e) {
             Log.e(TAG, "Failed to handle new data point!", e);
         }
+    }
+
+    /**
+     * Inserts a data point as new row in the local storage. Removal of old points is done
+     * automatically.
+     * 
+     * @param sensorName
+     * @param sensorDescription
+     * @param dataType
+     * @param timestamp
+     * @param value
+     */
+    private void insertToLocalStorage(String sensorName, String sensorDescription, String dataType,
+            long timestamp, String value) {
+
+        Uri url = Uri.parse("content://" + LocalStorage.AUTHORITY + "/values");
+
+        // new value
+        ContentValues values = new ContentValues();
+        values.put(DataPoint.SENSOR_NAME, sensorName);
+        values.put(DataPoint.SENSOR_DESCRIPTION, sensorDescription);
+        values.put(DataPoint.DATA_TYPE, dataType);
+        values.put(DataPoint.TIMESTAMP, timestamp);
+        values.put(DataPoint.VALUE, value);
+
+        getContentResolver().insert(url, values);
     }
 
     private void handleSendIntent(Intent intent) {

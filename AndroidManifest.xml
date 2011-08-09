@@ -2,9 +2,9 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="nl.sense_os.app"
-    android:versionCode="20110801"
-    android:versionName="2.1.1b1">
-    
+    android:versionCode="20110803"
+    android:versionName="2.1.1b1 AGOSTINO">
+
     <uses-feature
         android:name="android.hardware.location.gps"
         android:required="true" />
@@ -29,36 +29,21 @@
         android:name="android.hardware.camera"
         android:required="false" />
 
-    <uses-permission
-        android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission
-        android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission
-        android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission
-        android:name="android.permission.BLUETOOTH" />
-    <uses-permission
-        android:name="android.permission.BLUETOOTH_ADMIN" />
-    <uses-permission
-        android:name="android.permission.CAMERA" />
-    <uses-permission
-        android:name="android.permission.CHANGE_WIFI_STATE" />
-    <uses-permission
-        android:name="android.permission.INTERNET" />
-    <uses-permission
-        android:name="android.permission.PROCESS_OUTGOING_CALLS" />
-    <uses-permission
-        android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission
-        android:name="android.permission.RECEIVE_BOOT_COMPLETED"></uses-permission>
-    <uses-permission
-        android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission
-        android:name="android.permission.VIBRATE" />
-    <uses-permission
-        android:name="android.permission.WAKE_LOCK" />
-    <uses-permission
-        android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"></uses-permission>
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <uses-sdk
         android:minSdkVersion="4"
@@ -83,16 +68,12 @@
             android:theme="@android:style/Theme.Light"
             android:process="nl.sense_os.app">
             <intent-filter>
-                <action
-                    android:name="android.intent.action.MAIN" />
-                <category
-                    android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter>
-                <action
-                    android:name="nl.sense_os.app.SenseApp" />
-                <category
-                    android:name="android.intent.category.DEFAULT" />
+                <action android:name="nl.sense_os.app.SenseApp" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
@@ -101,31 +82,26 @@
             android:name="SenseSettings"
             android:process="nl.sense_os.app">
             <intent-filter>
-                <action
-                    android:name="nl.sense_os.app.Settings" />
-                <category
-                    android:name="android.intent.category.DEFAULT" />
+                <action android:name="nl.sense_os.app.Settings" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
-        <activity        
+        <activity
             android:name="nl.sense_os.service.popquiz.PopQuiz"
             android:configChanges="orientation"
             android:process="nl.sense_os.service">
             <intent-filter>
-                <action
-                    android:name="nl.sense_os.service.DoPeriodic" />
-                <category
-                    android:name="android.intent.category.DEFAULT" />
+                <action android:name="nl.sense_os.service.DoPeriodic" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
-        <service            
+        <service
             android:name="nl.sense_os.service.SenseService"
             android:process="nl.sense_os.service">
             <intent-filter>
-                <action
-                    android:name="nl.sense_os.service.ISenseService" />
+                <action android:name="nl.sense_os.service.ISenseService" />
             </intent-filter>
         </service>
 
@@ -133,16 +109,12 @@
             android:name="nl.sense_os.service.MsgHandler"
             android:process="nl.sense_os.msgs">
             <intent-filter>
-                <action
-                    android:name="nl.sense_os.app.MsgHandler.NEW_MSG" />
-                <category
-                    android:name="android.intent.category.DEFAULT" />
+                <action android:name="nl.sense_os.app.MsgHandler.NEW_MSG" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action
-                    android:name="nl.sense_os.app.MsgHandler.SEND_DATA" />
-                <category
-                    android:name="android.intent.category.DEFAULT" />
+                <action android:name="nl.sense_os.app.MsgHandler.SEND_DATA" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
 
@@ -150,10 +122,8 @@
             android:name="nl.sense_os.service.feedback.FeedbackChecker"
             android:process="nl.sense_os.service">
             <intent-filter>
-                <action
-                    android:name="nl.sense_os.service.DoCheckFeedback" />
-                <category
-                    android:name="android.intent.category.DEFAULT" />
+                <action android:name="nl.sense_os.service.DoCheckFeedback" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
 
@@ -161,10 +131,8 @@
             android:name="nl.sense_os.service.popquiz.PopQuizRx"
             android:process="nl.sense_os.service">
             <intent-filter>
-                <action
-                    android:name="nl.sense_os.service.AlarmPeriodic" />
-                <category
-                    android:name="android.intent.category.DEFAULT" />
+                <action android:name="nl.sense_os.service.AlarmPeriodic" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
 
@@ -172,10 +140,8 @@
             android:name="nl.sense_os.service.popquiz.PopQuizSync"
             android:process="nl.sense_os.service">
             <intent-filter>
-                <action
-                    android:name="nl.sense_os.service.AlarmPopQuestionUpdate" />
-                <category
-                    android:name="android.intent.category.DEFAULT" />
+                <action android:name="nl.sense_os.service.AlarmPopQuestionUpdate" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
 
@@ -183,10 +149,8 @@
             android:name="nl.sense_os.service.BootRx"
             android:process="nl.sense_os.service">
             <intent-filter>
-                <action
-                    android:name="android.intent.action.BOOT_COMPLETED" />
-                <category
-                    android:name="android.intent.category.HOME" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <category android:name="android.intent.category.HOME" />
             </intent-filter>
         </receiver>
 
@@ -194,10 +158,8 @@
             android:name="nl.sense_os.service.AliveChecker"
             android:process="nl.sense_os.service.alivechecker">
             <intent-filter>
-                <action
-                    android:name="nl.sense_os.service.CheckAlive" />
-                <category
-                    android:name="android.intent.category.DEFAULT" />
+                <action android:name="nl.sense_os.service.CheckAlive" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
 
@@ -205,16 +167,19 @@
             android:name="nl.sense_os.service.feedback.FeedbackRx"
             android:process="nl.sense_os.service">
             <intent-filter>
-                <action
-                    android:name="nl.sense_os.service.CheckFeedback" />
-                <category
-                    android:name="android.intent.category.DEFAULT" />
+                <action android:name="nl.sense_os.service.CheckFeedback" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
 
         <receiver
             android:name="nl.sense_os.service.DataTransmitter"
             android:process="nl.sense_os.service.datatransmitter" />
+            
+        <provider
+            android:name="nl.sense_os.service.provider.LocalStorage"
+            android:exported="true"
+            android:authorities="nl.sense_os.service.provider.LocalStorage" />
 
     </application>
 

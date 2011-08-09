@@ -10,6 +10,7 @@ package nl.sense_os.service;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.net.URLEncoder;
 
 import nl.sense_os.app.R;
 import nl.sense_os.service.ambience.LightSensor;
@@ -49,8 +50,6 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
-import android.os.PowerManager;
-import android.os.PowerManager.WakeLock;
 import android.os.Process;
 import android.os.RemoteException;
 import android.util.Log;
@@ -457,11 +456,6 @@ public class SenseService extends Service {
             locationThread, phoneStateThread;
 
     /**
-     * Partial wake lock is active when not <code>null</code>.
-     */
-    private WakeLock wakeLock;
-
-    /**
      * Changes login of the Sense service. Removes "private" data of the previous user from the
      * preferences. Can be called by Activities that are bound to the service.
      * 
@@ -497,7 +491,7 @@ public class SenseService extends Service {
     private void checkVersion() {
         try {
             PackageInfo packageInfo = getPackageManager().getPackageInfo("nl.sense_os.app", 0);
-            String versionName = packageInfo.versionName;
+            String versionName = URLEncoder.encode(packageInfo.versionName);
             URI uri = new URI(Constants.URL_VERSION + "?version=" + versionName);
             final JSONObject version = SenseApi.getJsonObject(this, uri, "");
 
@@ -1535,29 +1529,13 @@ public class SenseService extends Service {
     public void toggleMain(boolean active) {
         // Log.d(TAG, "Toggle main: " + active);
 
-        boolean setWakeLock = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE).getBoolean(
-                Constants.PREF_WAKELOCK, false);
-
         if (true == active) {
-
-            if (setWakeLock && null == wakeLock) {
-                Log.v(TAG, "Acquire wake lock");
-                PowerManager powerMgr = (PowerManager) getSystemService(POWER_SERVICE);
-                wakeLock = powerMgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
-                wakeLock.acquire();
-            }
 
             // properly start the service to start sensing
             if (!isStarted) {
                 startService(new Intent(ISenseService.class.getName()));
             }
         } else {
-
-            if (setWakeLock && null != wakeLock) {
-                Log.v(TAG, "Release wake lock");
-                wakeLock.release();
-                wakeLock = null;
-            }
 
             onLogOut();
             stopForegroundCompat();
