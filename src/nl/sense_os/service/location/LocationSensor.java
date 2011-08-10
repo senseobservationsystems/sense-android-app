@@ -33,12 +33,65 @@ public class LocationSensor implements LocationListener {
     private static final long ALARM_INTERVAL = 1000 * 60 * 1;
 
     private Context context;
+    private LocationManager locMgr;
     private long time;
     private float distance;
-    private BroadcastReceiver alarmReceiver;
+
+    /**
+     * Receiver for periodic alarms to check on the sensor status.
+     */
+    private final BroadcastReceiver alarmReceiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            checkSensorSettings();
+        }
+    };
+
+    private boolean isGpsAllowed;
+    private boolean isNetworkAllowed;
+
+    private boolean isListeningGps;
+    private long listenGpsStart;
+    private long listenGpsStop;
+    private Location lastGpsFix;
+    private long gpsMaxDelay = 1000 * 60;
 
     public LocationSensor(Context context) {
         this.context = context;
+        locMgr = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+    }
+
+    /**
+     * Checks to see if the sensor is still doing a useful job or whether it is better if we disable
+     * it for a while. This method is a callback for a periodic alarm to check the sensor status.
+     * 
+     * @see #alarmReceiver
+     */
+    private void checkSensorSettings() {
+        Log.v(TAG, "Check location sensor settings...");
+
+        boolean isGpsUseful = isGpsUseful();
+        if (!isGpsAllowed && !isListeningGps || isListeningGps && isGpsUseful || !isListeningGps
+                && !isGpsUseful) {
+            Log.d(TAG, "Current settings are OK");
+            // current settings are OK
+
+        } else if (isListeningGps && !isGpsUseful) {
+            Log.d(TAG, "GPS listening should be turned off");
+            stopListening();
+            startListening(false);
+
+        } else if (isGpsAllowed && !isListeningGps && isGpsUseful) {
+            Log.d(TAG, "GPS listening should be turned back on");
+            stopListening();
+            startListening(true);
+
+        } else {
+            Log.w(TAG, "Unexpected situation!");
+            Log.d(TAG, "isGpsAllowed=" + isGpsAllowed + ", isListeningGps=" + isListeningGps
+                    + ", isGpsUseful=" + isGpsUseful);
+        }
     }
 
     /**
@@ -63,10 +116,99 @@ public class LocationSensor implements LocationListener {
         Log.v(TAG, "Enable location sensor");
 
         this.time = time;
+        this.gpsMaxDelay = 5 * time;
         this.distance = distance;
 
         startListening();
         startAlarms();
+        getLastKnownLocation();
+    }
+
+    private void getLastKnownLocation() {
+
+        // get the most recent location fixes
+        Location gpsFix = null;
+        Location nwFix = null;
+        if (isGpsAllowed) {
+            gpsFix = locMgr.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        }
+        if (isNetworkAllowed) {
+            nwFix = locMgr.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        }
+
+        // see which is best
+        if (null != gpsFix || null != nwFix) {
+            Log.v(TAG, "Use last known location as first sensor value");
+            Location bestFix = null;
+            if (null != gpsFix) {
+                if (System.currentTimeMillis() - 1000 * 60 * 60 * 1 < gpsFix.getTime()) {
+                    // recent GPS fix
+                    bestFix = gpsFix;
+                }
+            }
+            if (null != nwFix) {
+                if (null == bestFix) {
+                    bestFix = nwFix;
+                } else if (nwFix.getTime() < gpsFix.getTime()
+                        && nwFix.getAccuracy() < bestFix.getAccuracy() + 100) {
+                    // network fix is more recent and pretty accurate
+                    bestFix = nwFix;
+                }
+            }
+            if (null != bestFix) {
+                onLocationChanged(bestFix);
+            } else {
+                Log.v(TAG, "No usable last known location");
+            }
+        } else {
+            Log.v(TAG, "No last known location");
+        }
+    }
+
+    /**
+     * @return true if it seems useful to listen to GPS right now.
+     */
+    private boolean isGpsUseful() {
+
+        boolean useful = locMgr.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        if (isListeningGps) {
+
+            // check if any updates have been received recently from the GPS sensor
+            if (lastGpsFix != null) {
+                if (System.currentTimeMillis() - lastGpsFix.getTime() > gpsMaxDelay) {
+                    // no updates for long time
+                    Log.d(TAG, "Not useful because no updates for a long time");
+                    useful = false;
+                }
+            } else if (System.currentTimeMillis() - listenGpsStart > gpsMaxDelay) {
+                // no updates for a long time
+                Log.d(TAG, "Not useful because no updates for a long time");
+                useful = false;
+            } else {
+                Log.d(TAG, "Useful iff the GPS provider is available");
+            }
+
+        } else if (locMgr.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+
+            if (System.currentTimeMillis() - listenGpsStop > 5 * time) {
+                // GPS has been turned off for a long time, or was never even started
+                Log.d(TAG,
+                        "Useful because GPS has been turned off for a long time, or was never even started");
+                useful = true;
+            } else if (!locMgr.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                // the network provider is disabled: GPS is the only option
+                Log.d(TAG,
+                        "Useful because the network provider is disabled: GPS is the only option");
+                useful = true;
+            } else {
+                Log.d(TAG, "Not useful because we just decided to switch off GPS");
+                useful = false;
+            }
+        } else {
+            Log.d(TAG, "I don't know if GPS is useful, but this is what I returned: " + useful);
+        }
+
+        return useful;
     }
 
     @Override
@@ -76,13 +218,17 @@ public class LocationSensor implements LocationListener {
             json.put("latitude", fix.getLatitude());
             json.put("longitude", fix.getLongitude());
 
-            // always include all JSON fields, otherwise we get a problem posting data with varying
-            // data_structure
-            json.put("accuracy", fix.hasAccuracy() ? fix.getAccuracy() : -1.0f);
-            json.put("altitude", fix.hasAltitude() ? fix.getAltitude() : -1.0d);
-            json.put("speed", fix.hasSpeed() ? fix.getSpeed() : -1.0f);
-            json.put("bearing", fix.hasBearing() ? fix.getBearing() : -1.0f);
+            // always include all JSON fields, or we get problems with varying data_structure
+            json.put("accuracy", fix.hasAccuracy() ? fix.getAccuracy() : -1.0d);
+            json.put("altitude", fix.hasAltitude() ? fix.getAltitude() : -1.0);
+            json.put("speed", fix.hasSpeed() ? fix.getSpeed() : -1.0d);
+            json.put("bearing", fix.hasBearing() ? fix.getBearing() : -1.0d);
             json.put("provider", null != fix.getProvider() ? fix.getProvider() : "unknown");
+
+            if (fix.getProvider().equals(LocationManager.GPS_PROVIDER)) {
+                lastGpsFix = fix;
+            }
+
         } catch (JSONException e) {
             Log.e(TAG, "JSONException in onLocationChanged", e);
             return;
@@ -93,35 +239,23 @@ public class LocationSensor implements LocationListener {
         i.putExtra(MsgHandler.KEY_SENSOR_NAME, SENSOR_NAME);
         i.putExtra(MsgHandler.KEY_VALUE, json.toString());
         i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
-        i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+        i.putExtra(MsgHandler.KEY_TIMESTAMP, fix.getTime());
         context.startService(i);
-    }
-
-    private void onPeriodicAlarm() {
-        Log.v(TAG, "Alarm");
-        // TODO
     }
 
     @Override
     public void onProviderDisabled(String provider) {
-        // Log.v(TAG, "Provider " + provider + " disabled");
+        checkSensorSettings();
     }
 
     @Override
     public void onProviderEnabled(String provider) {
-        // Log.v(TAG, "Provider " + provider + " enabled");
+        checkSensorSettings();
     }
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
-        // switch (status) {
-        // case LocationProvider.AVAILABLE:
-        // Log.v(TAG, "Provider " + provider + " is now AVAILABLE");
-        // case LocationProvider.OUT_OF_SERVICE:
-        // Log.v(TAG, "Provider " + provider + " is now OUT OF SERVICE");
-        // case LocationProvider.TEMPORARILY_UNAVAILABLE:
-        // Log.v(TAG, "Provider " + provider + " is now TEMPORARILY UNAVAILABLE");
-        // }
+        // do nothing
     }
 
     /**
@@ -138,18 +272,12 @@ public class LocationSensor implements LocationListener {
      */
     public void setTime(long time) {
         this.time = time;
+        gpsMaxDelay = 5 * time;
     }
 
     private void startAlarms() {
 
         // register to recieve the alarm
-        alarmReceiver = new BroadcastReceiver() {
-
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                onPeriodicAlarm();
-            }
-        };
         context.registerReceiver(alarmReceiver, new IntentFilter(ALARM_ACTION));
 
         // start periodic alarm
@@ -162,20 +290,28 @@ public class LocationSensor implements LocationListener {
     }
 
     private void startListening() {
+        startListening(true);
+    }
 
-        LocationManager mgr = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+    private void startListening(boolean useGps) {
 
         SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
                 Context.MODE_PRIVATE);
-        final boolean gps = mainPrefs.getBoolean(Constants.PREF_LOCATION_GPS, true);
-        final boolean network = mainPrefs.getBoolean(Constants.PREF_LOCATION_NETWORK, true);
+        isGpsAllowed = mainPrefs.getBoolean(Constants.PREF_LOCATION_GPS, true);
+        isNetworkAllowed = mainPrefs.getBoolean(Constants.PREF_LOCATION_NETWORK, true);
 
         // start listening to GPS and/or Network location
-        if (true == gps) {
-            mgr.requestLocationUpdates(LocationManager.GPS_PROVIDER, time, distance, this);
-        }
-        if (true == network) {
-            mgr.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, time, distance, this);
+        if ((useGps || !isNetworkAllowed) && isGpsAllowed) {
+            Log.v(TAG, "Start listening to location updates from GPS");
+            Log.d(TAG, "time=" + time + ", distance=" + distance);
+            locMgr.requestLocationUpdates(LocationManager.GPS_PROVIDER, time, distance, this);
+            isListeningGps = true;
+            listenGpsStart = System.currentTimeMillis();
+        } else if (isNetworkAllowed) {
+            Log.v(TAG, "Start listening to location updates from Network");
+            locMgr.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, time, distance, this);
+        } else {
+            Log.w(TAG, "Not listening to any location provider at all!");
         }
     }
 
@@ -195,8 +331,12 @@ public class LocationSensor implements LocationListener {
     }
 
     private void stopListening() {
-        Log.v(TAG, "Stop listening");
-        LocationManager mgr = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-        mgr.removeUpdates(this);
+        Log.v(TAG, "Stop listening to location updates");
+        locMgr.removeUpdates(this);
+
+        if (isListeningGps) {
+            listenGpsStop = System.currentTimeMillis();
+            isListeningGps = false;
+        }
     }
 }
