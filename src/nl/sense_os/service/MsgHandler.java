@@ -620,7 +620,7 @@ public class MsgHandler extends Service {
     private void insertToLocalStorage(String sensorName, String sensorDescription, String dataType,
             long timestamp, String value) {
 
-        Uri url = Uri.parse("content://" + LocalStorage.AUTHORITY + "/values");
+        Uri url = Uri.parse("content://" + LocalStorage.AUTHORITY + "/recent_values");
 
         // new value
         ContentValues values = new ContentValues();
