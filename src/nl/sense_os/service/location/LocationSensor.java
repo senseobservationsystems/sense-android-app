@@ -5,6 +5,7 @@
  */
 package nl.sense_os.service.location;
 
+import nl.sense_os.app.R;
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
 
@@ -12,6 +13,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -30,7 +33,9 @@ public class LocationSensor implements LocationListener {
     private static final String SENSOR_NAME = "position";
     private static final String ALARM_ACTION = "nl.sense_os.service.LocationAlarm";
     private static final int ALARM_ID = 56;
-    private static final long ALARM_INTERVAL = 1000 * 60 * 1;
+    private static final long ALARM_INTERVAL = 1000 * 60 * 15;
+    private static final boolean SELF_AWARE_MODE = true;
+    private static final int NOTIF_ID = 764;
 
     private Context context;
     private LocationManager locMgr;
@@ -69,28 +74,31 @@ public class LocationSensor implements LocationListener {
      * @see #alarmReceiver
      */
     private void checkSensorSettings() {
-        Log.v(TAG, "Check location sensor settings...");
+        if (SELF_AWARE_MODE) {
+            Log.v(TAG, "Check location sensor settings...");
 
-        boolean isGpsUseful = isGpsUseful();
-        if (!isGpsAllowed && !isListeningGps || isListeningGps && isGpsUseful || !isListeningGps
-                && !isGpsUseful) {
-            Log.d(TAG, "Current settings are OK");
-            // current settings are OK
+            boolean isGpsUseful = isGpsUseful();
+            if (!isGpsAllowed && !isListeningGps || isListeningGps && isGpsUseful
+                    || !isListeningGps && !isGpsUseful) {
+                Log.d(TAG, "Current settings are OK");
+                // current settings are OK
 
-        } else if (isListeningGps && !isGpsUseful) {
-            Log.d(TAG, "GPS listening should be turned off");
-            stopListening();
-            startListening(false);
+            } else if (isListeningGps && !isGpsUseful) {
+                Log.d(TAG, "GPS listening should be turned off");
+                stopListening();
+                startListening(false);
+                notifyListeningStopped();
 
-        } else if (isGpsAllowed && !isListeningGps && isGpsUseful) {
-            Log.d(TAG, "GPS listening should be turned back on");
-            stopListening();
-            startListening(true);
+            } else if (isGpsAllowed && !isListeningGps && isGpsUseful) {
+                Log.d(TAG, "GPS listening should be turned back on");
+                stopListening();
+                startListening(true);
 
-        } else {
-            Log.w(TAG, "Unexpected situation!");
-            Log.d(TAG, "isGpsAllowed=" + isGpsAllowed + ", isListeningGps=" + isListeningGps
-                    + ", isGpsUseful=" + isGpsUseful);
+            } else {
+                Log.w(TAG, "Unexpected situation!");
+                Log.d(TAG, "isGpsAllowed=" + isGpsAllowed + ", isListeningGps=" + isListeningGps
+                        + ", isGpsUseful=" + isGpsUseful);
+            }
         }
     }
 
@@ -102,6 +110,21 @@ public class LocationSensor implements LocationListener {
 
         stopListening();
         stopAlarms();
+    }
+
+    private void notifyListeningStopped() {
+
+        Notification note = new Notification(R.drawable.ic_status_sense, "GPS listening stopped",
+                System.currentTimeMillis());
+        note.setLatestEventInfo(context, "Sense location sensor", "GPS listening stopped",
+                PendingIntent.getActivity(context, 0, new Intent("nl.sense_os.app.SenseApp"),
+                        Intent.FLAG_ACTIVITY_NEW_TASK));
+        note.flags = Notification.FLAG_AUTO_CANCEL;
+        note.vibrate = new long[] { 0, 300, 100, 300, 100, 300 };
+        note.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
+        NotificationManager mgr = (NotificationManager) context
+                .getSystemService(Context.NOTIFICATION_SERVICE);
+        mgr.notify(NOTIF_ID, note);
     }
 
     /**
