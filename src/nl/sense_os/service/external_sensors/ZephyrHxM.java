@@ -113,6 +113,22 @@ public class ZephyrHxM {
                         context.startService(heartRateIntent);
                     }
 
+                } else {
+                    Log.d(TAG,
+                            "Unexpected first three bytes: { "
+                                    + Integer.toHexString(buffer[0] & 0xFF) + ", "
+                                    + Integer.toHexString(buffer[1] & 0xFF) + ", "
+                                    + Integer.toHexString(buffer[2] & 0xFF) + " }");
+
+                    String totalBuffer = "";
+                    for (byte b : buffer) {
+                        String s = Integer.toHexString(b & 0xFF);
+                        if (s.length() == 1) {
+                            s = "0" + s;
+                        }
+                        totalBuffer += s + ", ";
+                    }
+                    Log.d(TAG, "Total buffer content:\n" + totalBuffer);
                 }
 
             } catch (Exception e) {
@@ -159,13 +175,18 @@ public class ZephyrHxM {
             if (hxmEnabled) {
                 try {
                     if (System.currentTimeMillis() > lastSampleTime + updateInterval) {
+                        Log.v(TAG, "Try to read from Bluetooth input stream...");
                         lastSampleTime = System.currentTimeMillis();
                         // Read from the InputStream
                         byte[] buffer = new byte[80];
                         int bytes; // bytes returned from read()
                         bytes = mmInStream.read(buffer);
-                        if (bytes > 0)
+                        if (bytes > 0) {
+                            Log.d(TAG, "Read " + bytes + " bytes from Bluetooth input stream");
                             processZHxMMessage.processMessage(buffer);
+                        } else {
+                            Log.d(TAG, "No bytes read from Bluetooth input stream");
+                        }
                         buffer = null;
                     }
 
@@ -173,9 +194,10 @@ public class ZephyrHxM {
                         updateHandler.postDelayed(updateThread = new UpdateThread(), 1000);
                     else
                         updateHandler.postDelayed(updateThread = new UpdateThread(), 1000);
+
                 } catch (Exception e) {
-                    Log.e(TAG, "Error in receiving HxM data:" + e.getMessage());
-                    e.printStackTrace();
+                    Log.e(TAG, "Error in receiving HxM data: ", e);
+
                     // re-connect
                     processZHxMMessage = null;
                     if (btSocket1_6 == null)
@@ -185,8 +207,10 @@ public class ZephyrHxM {
                     btSocket2_1 = null;
                     btSocket1_6 = null;
                 }
-            } else
+            } else {
+                Log.d(TAG, "HxM not enabled. Cancelling update thread");
                 cancel();
+            }
         }
 
         /* Call this from the main Activity to shutdown the connection */
@@ -365,6 +389,8 @@ public class ZephyrHxM {
                 String action = intent.getAction();
 
                 if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
+                    Log.v(TAG, "Bluetooth state changed");
+
                     final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
                             BluetoothAdapter.STATE_OFF);
                     if (state == BluetoothAdapter.STATE_ON) {
@@ -387,62 +413,66 @@ public class ZephyrHxM {
 
         @Override
         public void run() {
-            if (hxmEnabled) {
-                streamEnabled = false;
-                if (btAdapter.isEnabled()) {
 
-                    // check if there is a paired device with the name HxM
-                    Set<android.bluetooth.BluetoothDevice> pairedDevices = btAdapter
-                            .getBondedDevices();
-                    // If there are paired devices
-                    boolean foundDevice = false;
-                    if (pairedDevices.size() > 0) {
-                        // Loop through paired devices
-                        for (BluetoothDevice device : pairedDevices) {
-                            // Add the name and address to an array adapter to show in a ListView
-                            if (device.getName().startsWith("HXM")
-                                    && device.getAddress().startsWith("00:07:80")) {
-                                // Log.v(TAG, "Connecting to HxM:" + device.getName());
-                                // Get a BluetoothSocket to connect with the given BluetoothDevice
-                                try {
-                                    btSocket2_1 = device
-                                            .createRfcommSocketToServiceRecord(serial_uid);
-                                    btSocket2_1.connect();
-                                    processZHxMMessage = new ProcessZephyrHxMMessage(btSocket2_1
-                                            .getRemoteDevice().getName());
-                                    updateHandler.post(updateThread = new UpdateThread());
-                                    foundDevice = true;
-                                } catch (Exception e) {
-                                    // Log.e(TAG,
-                                    // "Error in connecting to HxM device:" + e.getMessage());
-                                }
+            // check is sensor is enabled
+            if (!hxmEnabled) {
+                Log.d(TAG, "Sensor is not enabled, skipping update thread.");
+                stop();
+                return;
+            }
+
+            streamEnabled = false;
+            if (btAdapter.isEnabled()) {
+
+                // check if there is a paired device with the name HxM
+                Set<android.bluetooth.BluetoothDevice> pairedDevices = btAdapter.getBondedDevices();
+                // If there are paired devices
+                boolean foundDevice = false;
+                if (pairedDevices != null) {
+                    // Loop through paired devices
+                    for (BluetoothDevice device : pairedDevices) {
+                        Log.v(TAG, "Found paired device '" + device.getName() + "'");
+
+                        // Add the name and address to an array adapter to show in a ListView
+                        if (device.getName().startsWith("HXM")
+                                && device.getAddress().startsWith("00:07:80")) {
+                            Log.v(TAG, "Connecting to device: " + device.getName());
+                            // Get a BluetoothSocket to connect with the BluetoothDevice
+                            try {
+                                btSocket2_1 = device.createRfcommSocketToServiceRecord(serial_uid);
+                                btSocket2_1.connect();
+                                processZHxMMessage = new ProcessZephyrHxMMessage(btSocket2_1
+                                        .getRemoteDevice().getName());
+                                updateHandler.post(updateThread = new UpdateThread());
+                                foundDevice = true;
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error in connecting to HxM device!", e);
                             }
                         }
                     }
-
-                    if (!foundDevice) {
-                        // Log.v(TAG, "No Paired HxM device found. Sleeping for 10 seconds");
-                        connectHandler.postDelayed(hxmConnectThread2_1 = new HxMConnectThread2_1(),
-                                10000);
-                    }
-
-                } else if (btAdapter.getState() == BluetoothAdapter.STATE_TURNING_ON) {
-                    // listen for the adapter state to change to STATE_ON
-                    context.registerReceiver(btReceiver, new IntentFilter(
-                            BluetoothAdapter.ACTION_STATE_CHANGED));
-                } else {
-                    // ask user for permission to start bluetooth
-                    // Log.v(TAG, "Asking user to start bluetooth");
-                    Intent startBt = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                    startBt.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    context.startActivity(startBt);
-
-                    // listen for the adapter state to change to STATE_ON
-                    context.registerReceiver(btReceiver, new IntentFilter(
-                            BluetoothAdapter.ACTION_STATE_CHANGED));
                 }
+
+                if (!foundDevice) {
+                    Log.v(TAG, "No paired HxM device found. Sleeping for 10 seconds");
+                    connectHandler.postDelayed(hxmConnectThread2_1 = new HxMConnectThread2_1(),
+                            10000);
+                }
+
+            } else if (btAdapter.getState() == BluetoothAdapter.STATE_TURNING_ON) {
+                // listen for the adapter state to change to STATE_ON
+                Log.v(TAG, "Bluetooth is not enabled! Wait for it to change states...");
+                context.registerReceiver(btReceiver, new IntentFilter(
+                        BluetoothAdapter.ACTION_STATE_CHANGED));
             } else {
-                stop();
+                // ask user for permission to start Bluetooth
+                Log.v(TAG, "Bluetooth is not enabled! Asking user to start Bluetooth...");
+                Intent startBt = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startBt.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(startBt);
+
+                // listen for the adapter state to change to STATE_ON
+                context.registerReceiver(btReceiver, new IntentFilter(
+                        BluetoothAdapter.ACTION_STATE_CHANGED));
             }
         }
 
@@ -487,11 +517,13 @@ public class ZephyrHxM {
         return updateInterval;
     }
 
-    public void setUpdateInterval(int scanInterval) {
-        this.updateInterval = scanInterval;
+    public void setUpdateInterval(int updateInterval) {
+        this.updateInterval = updateInterval;
     }
 
     public void startHxM(int interval) {
+        Log.v(TAG, "Start HxM...");
+
         updateInterval = interval;
         hxmEnabled = true;
 
@@ -500,9 +532,11 @@ public class ZephyrHxM {
             @Override
             public void run() {
                 // Check if the phone version, if it is lower than, 2.1 use the bluetooth lib
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.ECLAIR)
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.ECLAIR) {
+                    Log.v(TAG, "Use old Bluetooth libary");
                     connectHandler.post(hxmConnectThread1_6 = new HxMConnectThread1_6());
-                else {
+                } else {
+                    Log.v(TAG, "Use regular Bluetooth API");
                     connectHandler.post(hxmConnectThread2_1 = new HxMConnectThread2_1());
                 }
             }
@@ -511,16 +545,21 @@ public class ZephyrHxM {
     }
 
     public void stopHxM() {
+        Log.v(TAG, "Stop HxM...");
+
         hxmEnabled = false;
         try {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.ECLAIR)
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.ECLAIR) {
                 if (hxmConnectThread1_6 != null) {
                     hxmConnectThread1_6.stop();
                     connectHandler.removeCallbacks(hxmConnectThread1_6);
-                } else if (hxmConnectThread2_1 != null) {
+                }
+            } else {
+                if (hxmConnectThread2_1 != null) {
                     hxmConnectThread2_1.stop();
                     connectHandler.removeCallbacks(hxmConnectThread2_1);
                 }
+            }
 
         } catch (Exception e) {
             Log.e(TAG, "Exception in stopping Bluetooth scan thread:", e);
