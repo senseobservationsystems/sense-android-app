@@ -458,7 +458,7 @@ public class MotionSensor implements SensorEventListener {
             // Log.v(TAG, NAME_MOTION_ENERGY + " value. Count: " + avgSpeedCount);
 
             // round to three decimals
-            double value = BigDecimal.valueOf(avgSpeedChange).setScale(3, 0).doubleValue();
+            float value = BigDecimal.valueOf(avgSpeedChange).setScale(3, 0).floatValue();
 
             // prepare intent to send to MsgHandler
             Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);

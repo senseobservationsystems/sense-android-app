@@ -59,7 +59,7 @@
 
     <application
         android:label="@string/sense_app_name"
-        android:icon="@drawable/ic_launcher_sense">
+        android:icon="@drawable/ic_launcher_sense" android:debuggable="true">
 
         <activity
             android:launchMode="singleInstance"

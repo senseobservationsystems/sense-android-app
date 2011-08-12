@@ -14,9 +14,14 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Vector;
 
+import nl.sense_os.app.R;
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -25,6 +30,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.res.Resources.NotFoundException;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -38,14 +44,116 @@ public class ZephyrHxM {
     private class ProcessZephyrHxMMessage {
         private String deviceName;
         private SharedPreferences prefs = null;
+        private Vector<Byte> bufferBuffer;
+        private int gotStart = -1;
+        int msgSize = 60;
 
         public ProcessZephyrHxMMessage(String deviceName) {
+        	bufferBuffer = new Vector<Byte>();
             this.deviceName = deviceName;
             this.prefs = context.getSharedPreferences(Constants.MAIN_PREFS, Context.MODE_PRIVATE);
         }
 
-        public void processMessage(byte[] buffer) {
-            try {
+        public byte[] getMessage(byte[] buffer, boolean useBuffer)
+        {
+        	byte[] msgBuffer =  new byte[msgSize];
+        	// check if we have the start from the previous run
+        	if(gotStart > -1 && useBuffer)
+        	{   
+        		for (int i = 0; i < msgSize; i++) 
+        		{
+        			if(gotStart+i < bufferBuffer.size())
+        				msgBuffer[i] = bufferBuffer.elementAt(gotStart+i);
+        			else
+        			{
+        				if(((gotStart+i)-bufferBuffer.size()) < buffer.length)
+        					msgBuffer[i] = buffer[(gotStart+i)-bufferBuffer.size()];
+        				else        					
+        				{
+        					// msg to short store and bailout
+        					bufferBuffer.clear();
+        					for (int j = 0; j < msgBuffer.length; j++) 
+        					{        						
+        						bufferBuffer.add(msgBuffer[j]);
+        						gotStart = 0;        						
+							}
+        					return new byte[0];
+        				}
+        			}
+     			}
+        		// check for the remaining part
+        		int rest = msgSize-(bufferBuffer.size()-gotStart);
+        		if(rest < buffer.length)
+        		{
+        			bufferBuffer.clear();
+        			gotStart = -1;
+        			for (int i = rest; i < buffer.length; i++) 
+        			{        				
+						bufferBuffer.add(buffer[i]);
+						if (i > 1 && buffer[i-2] == 0x02 && buffer[i-1] == 0x26 && buffer[i] == 55 && gotStart < 0)
+        					gotStart = bufferBuffer.size()-3;
+					}
+        		}
+        		if(msgBuffer.length == 60)
+        			return msgBuffer;
+        		else
+        			return new byte[0];
+        	}
+        	else
+        	{        		
+        		if(!useBuffer)
+        			bufferBuffer.clear();
+        		        		
+        		//combine old buffer with new one
+        		for (int i = 0; i < buffer.length; i++) 
+        		{
+        			bufferBuffer.add(buffer[i]);
+				}        		
+        		// find the start in the current buffer
+        		for (int i = 0; i < bufferBuffer.size(); i++) 
+    			{           			
+        			// got the start copy the rest
+					if (i+2 < bufferBuffer.size() && bufferBuffer.get(i) == 0x02 && bufferBuffer.get(i+1) == 0x26 && bufferBuffer.get(i+2) == 55)
+					{						
+						// can it hold a message
+						if(bufferBuffer.size()-i >= 60)
+						{							
+							Vector<Byte> tempBuffer = new Vector<Byte>(); 
+							for (int j = 0; j+i < bufferBuffer.size(); j++) 
+							{								
+								if(j < 60)
+									msgBuffer[j] = bufferBuffer.get(i+j);
+								else // copy the remaining part in the temp buffer								
+								{
+									if (i+j+2 < bufferBuffer.size() && bufferBuffer.get(i+j) == 0x02 && bufferBuffer.get(i+j+1) == 0x26 && bufferBuffer.get(i+j+2) == 55 && gotStart < 0)
+										gotStart = 60-j;									
+									tempBuffer.add(bufferBuffer.get(i+j));									
+								}
+							}
+							// copy the tempbuffer in the main buffer
+							bufferBuffer.clear();
+							for (int j = 0; j < tempBuffer.size(); j++) 
+							{
+								bufferBuffer.addElement(tempBuffer.get(j));
+							}
+							return msgBuffer;
+						}
+						else
+						{
+							return new byte[0];
+						}
+					}
+				}
+        	}
+        	return new byte[0];
+        }
+        
+        public boolean processMessage(byte[] inputBuffer, boolean useBuffer) {
+            try {         
+            	byte[] buffer = getMessage(inputBuffer, useBuffer);            
+
+            	if(buffer.length == 0)
+            		return false;
                 // received general data
                 if (buffer[0] == 0x02 && buffer[1] == 0x26 && buffer[2] == 55) {
                     // send heart rate
@@ -96,7 +204,7 @@ public class ZephyrHxM {
                         heartRateIntent.putExtra(MsgHandler.KEY_TIMESTAMP,
                                 System.currentTimeMillis());
                         context.startService(heartRateIntent);
-                    }
+                    }                    
                     // send battery charge
                     if (prefs.getBoolean(Constants.PREF_HXM_BATTERY, true)) {
                         Short battery = (short) buffer[11];
@@ -110,18 +218,49 @@ public class ZephyrHxM {
                                 Constants.SENSOR_DATA_TYPE_INT);
                         heartRateIntent.putExtra(MsgHandler.KEY_TIMESTAMP,
                                 System.currentTimeMillis());
-                        context.startService(heartRateIntent);
+                        context.startService(heartRateIntent);                        
+                        if(notifyOnEmptyBattery && battery < 5 && battery != 0 && (System.currentTimeMillis()-lastEmptyBatteryNotify) > 300000)
+                        {
+                        	sendNotification("Zephyr HxM empty battery warning: "+battery+"%");
+                        	lastEmptyBatteryNotify = System.currentTimeMillis();
+                        }                       
+                        if(battery == 0 &&  (System.currentTimeMillis()-lastNoChestConnectionNofify) > 300000) // every 5 min
+                        {
+                        	sendNotification("Zephyr HxM not properly connected to the chest, make sure the strap is wet enough.");
+                        	lastNoChestConnectionNofify = System.currentTimeMillis();
+                        }
                     }
+                    // send strides count
+                    if (prefs.getBoolean(Constants.PREF_HXM_STRIDES, true)) {
+                         Short strides = (short)(0x000000FF & (int)buffer[54]);
+                         //Short strides = (short)buffer[54];
+                        
 
-                } else {
+                        // Log.v(TAG, "Battery charge:" + battery.intValue());
+                        Intent stridesIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
+                        stridesIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, "strides");
+                        stridesIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
+                        stridesIntent.putExtra(MsgHandler.KEY_VALUE, strides.intValue());
+                        stridesIntent.putExtra(MsgHandler.KEY_DATA_TYPE,
+                                Constants.SENSOR_DATA_TYPE_INT);
+                        stridesIntent.putExtra(MsgHandler.KEY_TIMESTAMP,
+                                System.currentTimeMillis());
+                        context.startService(stridesIntent);                       
+                        
+                    }
+                    return true;
+
+                } else 
+                {
+                	// find the rest of the data
                     Log.d(TAG,
                             "Unexpected first three bytes: { "
-                                    + Integer.toHexString(buffer[0] & 0xFF) + ", "
-                                    + Integer.toHexString(buffer[1] & 0xFF) + ", "
-                                    + Integer.toHexString(buffer[2] & 0xFF) + " }");
+                                    + Integer.toHexString(inputBuffer[0] & 0xFF) + ", "
+                                    + Integer.toHexString(inputBuffer[1] & 0xFF) + ", "
+                                    + Integer.toHexString(inputBuffer[2] & 0xFF) + " }");
 
                     String totalBuffer = "";
-                    for (byte b : buffer) {
+                    for (byte b : inputBuffer) {
                         String s = Integer.toHexString(b & 0xFF);
                         if (s.length() == 1) {
                             s = "0" + s;
@@ -129,11 +268,16 @@ public class ZephyrHxM {
                         totalBuffer += s + ", ";
                     }
                     Log.d(TAG, "Total buffer content:\n" + totalBuffer);
+                    
                 }
+                if(bufferBuffer.size() >= msgSize)
+                	return processMessage(new byte[0], true);
 
-            } catch (Exception e) {
+            } catch (Exception e) {            	
                 Log.e(TAG, "Error in ProcessZephyrHxMMessage:" + e.getMessage());
+                return false;
             }
+            return false;
         }
     }
 
@@ -174,16 +318,27 @@ public class ZephyrHxM {
             // Keep listening to the InputStream until an exception occurs
             if (hxmEnabled) {
                 try {
-                    if (System.currentTimeMillis() > lastSampleTime + updateInterval) {
+                    boolean firstRun = true;
+                    boolean done = false;
+                    while(!done)
+                    {
                         Log.v(TAG, "Try to read from Bluetooth input stream...");
                         lastSampleTime = System.currentTimeMillis();
                         // Read from the InputStream
-                        byte[] buffer = new byte[80];
+                        // the msg size is 60 
+                        byte[] buffer = new byte[60];
                         int bytes; // bytes returned from read()
                         bytes = mmInStream.read(buffer);
                         if (bytes > 0) {
                             Log.d(TAG, "Read " + bytes + " bytes from Bluetooth input stream");
-                            processZHxMMessage.processMessage(buffer);
+                            // copy the buffer
+                            byte[] newBuffer = new byte[bytes];
+                            for(int i = 0; i < bytes; i++)
+                            {
+                            	newBuffer[i] = buffer[i];
+                            }
+                           done =  processZHxMMessage.processMessage(newBuffer, !firstRun);
+                           firstRun = false;
                         } else {
                             Log.d(TAG, "No bytes read from Bluetooth input stream");
                         }
@@ -191,10 +346,10 @@ public class ZephyrHxM {
                     }
 
                     if (btSocket1_6 == null)
-                        updateHandler.postDelayed(updateThread = new UpdateThread(), 1000);
+                        updateHandler.postDelayed(updateThread = new UpdateThread(), updateInterval);
                     else
-                        updateHandler.postDelayed(updateThread = new UpdateThread(), 1000);
-
+                        updateHandler.postDelayed(updateThread = new UpdateThread(), updateInterval);
+                    
                 } catch (Exception e) {
                     Log.e(TAG, "Error in receiving HxM data: ", e);
 
@@ -286,7 +441,7 @@ public class ZephyrHxM {
                                 foundDevice = true;
                                 break;
                             }
-                        }
+                        }                        
                         // connect to a unpaired device
                         // if(!foundDevice)
                         // {
@@ -314,6 +469,12 @@ public class ZephyrHxM {
 
                     }
                 } catch (Exception e) {
+                	connectionErrorCount++;
+                	if(connectionErrorCount > 30) // set to 5 minutes => 30
+                	{
+                		sendNotification("Error connecting to Zephyr HxM module, please enable the device.");
+                		connectionErrorCount = 0;
+                	}
                     Log.e(TAG, "Error connecting to HxM:" + e.getMessage());
                 }
                 // wait 10 seconds for another scan
@@ -445,7 +606,14 @@ public class ZephyrHxM {
                                         .getRemoteDevice().getName());
                                 updateHandler.post(updateThread = new UpdateThread());
                                 foundDevice = true;
+                                
                             } catch (Exception e) {
+                            	connectionErrorCount++;
+                            	if(connectionErrorCount > 30) // set to 5 minutes => 30
+                            	{
+                            		sendNotification("Error connecting to Zephyr HxM module, please enable the device.");
+                            		connectionErrorCount = 0;
+                            	}
                                 Log.e(TAG, "Error in connecting to HxM device!", e);
                             }
                         }
@@ -491,6 +659,26 @@ public class ZephyrHxM {
 
     }
 
+    void sendNotification(String text)
+    {
+    	String ns = Context.NOTIFICATION_SERVICE;
+    	NotificationManager mNotificationManager = (NotificationManager) context.getSystemService(ns);
+    	int icon = R.drawable.ic_launcher_sense;
+    	CharSequence tickerText = text;
+    	long when = System.currentTimeMillis();
+
+    	Notification note = new Notification(icon, tickerText, when);
+    	note.defaults |= Notification.FLAG_ONLY_ALERT_ONCE | Notification.DEFAULT_ALL ;
+    	note.flags |=  Notification.FLAG_AUTO_CANCEL | Notification.FLAG_ONLY_ALERT_ONCE;
+    	final Intent notifIntent = new Intent("nl.sense_os.app.SenseApp");
+    	notifIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    	PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notifIntent, 0);
+    	final CharSequence contentTitle = "Sense Platform";
+    	note.setLatestEventInfo(context, contentTitle, tickerText, contentIntent);
+    	mNotificationManager.notify(2, note);    	
+    	
+    }
+    
     private static final String TAG = "Zephyr HxM";
     private BluetoothAdapter btAdapter;
     private final Context context;
@@ -508,8 +696,13 @@ public class ZephyrHxM {
     private BluetoothSocket btSocket2_1 = null;
     private it.gerdavax.android.bluetooth.BluetoothSocket btSocket1_6 = null;
     private ProcessZephyrHxMMessage processZHxMMessage = null;
+    private boolean notifyOnNoConnection = true;
+    private boolean notifyOnEmptyBattery = true;
+    private int connectionErrorCount = 0;
+    private long lastEmptyBatteryNotify = 0;
+    private long lastNoChestConnectionNofify = 0;
 
-    public ZephyrHxM(Context context) {
+     public ZephyrHxM(Context context) {
         this.context = context;
     }
 

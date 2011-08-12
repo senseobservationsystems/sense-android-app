@@ -468,6 +468,8 @@ public class SenseSettings extends PreferenceActivity {
                     service.getPrefBool(Constants.PREF_HXM_HEART_RATE, true));
             editor.putBoolean(Constants.PREF_HXM_SPEED,
                     service.getPrefBool(Constants.PREF_HXM_SPEED, true));
+            editor.putBoolean(Constants.PREF_HXM_STRIDES,
+                    service.getPrefBool(Constants.PREF_HXM_STRIDES, true));
 
             // MyGlucohealth
             editor.putBoolean(Constants.PREF_GLUCO,

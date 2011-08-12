@@ -215,7 +215,8 @@
           <CheckBoxPreference
             android:key="zephyrHxM_battery"
             android:title="Battery charge indicator"
-            android:defaultValue="True" />
+            android:defaultValue="True" /><CheckBoxPreference
+            android:defaultValue="True" android:key="zephyrHxM_strides" android:title="Strides"/>
         </PreferenceCategory>
       </PreferenceScreen>
       <CheckBoxPreference
