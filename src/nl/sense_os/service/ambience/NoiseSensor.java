@@ -73,7 +73,7 @@ public class NoiseSensor extends PhoneStateListener {
                     return -1;
                 }
 
-                if (readBytes < 0) {
+                if (readBytes <= 0) {
                     Log.e(TAG, "Error reading AudioRecord buffer: " + readBytes);
                     return -1;
                 }
@@ -133,7 +133,7 @@ public class NoiseSensor extends PhoneStateListener {
 
                         double dB = calculateDb(totalBuffer, readCount);
 
-                        if (dB < 0) {
+                        if (dB < 0 || Double.valueOf(dB).isNaN()) {
                             // there was an error calculating the noise power
                             Log.w(TAG,
                                     "There was an error calculating noise power. No new data point.");
