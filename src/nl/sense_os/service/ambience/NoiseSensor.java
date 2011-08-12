@@ -6,6 +6,7 @@
 package nl.sense_os.service.ambience;
 
 import java.io.File;
+import java.math.BigDecimal;
 
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
@@ -135,8 +136,7 @@ public class NoiseSensor extends PhoneStateListener {
 
                         if (dB < 0 || Double.valueOf(dB).isNaN()) {
                             // there was an error calculating the noise power
-                            Log.w(TAG,
-                                    "There was an error calculating noise power. No new data point.");
+                            Log.w(TAG, "Impossible noise value: " + dB + ". No new data point.");
 
                         } else {
                             // Log.v(TAG, "Sampled noise level: " + dB);
@@ -144,8 +144,8 @@ public class NoiseSensor extends PhoneStateListener {
                             // pass message to the MsgHandler
                             Intent sensorData = new Intent(MsgHandler.ACTION_NEW_MSG);
                             sensorData.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_NOISE);
-                            sensorData.putExtra(MsgHandler.KEY_VALUE, Double.valueOf(dB)
-                                    .floatValue());
+                            sensorData.putExtra(MsgHandler.KEY_VALUE, BigDecimal.valueOf(dB)
+                                    .setScale(2, 0).floatValue());
                             sensorData.putExtra(MsgHandler.KEY_DATA_TYPE,
                                     Constants.SENSOR_DATA_TYPE_FLOAT);
                             sensorData.putExtra(MsgHandler.KEY_TIMESTAMP,
