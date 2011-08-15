@@ -257,8 +257,7 @@ public class SenseSettings extends PreferenceActivity {
 
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-
-            // Log.v(TAG, "Preference " + key + " changed...");
+            // Log.v(TAG, "Preference '" + key + "' changed...");
 
             if (service == null) {
                 Log.e(TAG, "Could not send preference to Sense Platform service: service = null!");
@@ -488,6 +487,7 @@ public class SenseSettings extends PreferenceActivity {
                     service.getPrefBool(Constants.PREF_WAKELOCK, false));
             editor.putBoolean(Constants.PREF_LOCAL_STORAGE,
                     service.getPrefBool(Constants.PREF_LOCAL_STORAGE, false));
+            editor.putBoolean("agostino_mode", service.getPrefBool("agostino_mode", false));
 
             editor.commit();
 
