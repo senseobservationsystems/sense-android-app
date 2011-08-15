@@ -13,6 +13,7 @@ import java.util.TimerTask;
 
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.SensorData.SensorNames;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,13 +34,6 @@ import android.util.Log;
 
 public class SensePhoneState extends PhoneStateListener {
 
-    private static final String NAME_CALL = "call state";
-    private static final String NAME_DATA = "data connection";
-    private static final String NAME_IP = "ip address";
-    private static final String NAME_SERVICE = "service state";
-    private static final String NAME_SIGNAL = "signal strength";
-    private static final String NAME_UNREAD = "unread msg";
-    private static final String NAME_CONNECTION_TYPE = "connection type";
     private static final String TAG = "Sense PhoneStateListener";
     private final Context context;
     private final TelephonyManager telMgr;
@@ -80,7 +74,7 @@ public class SensePhoneState extends PhoneStateListener {
                 if (null != lastIp) {
                     // Log.d(TAG, "Transmit IP address...");
                     Intent ipAddress = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    ipAddress.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_IP);
+                    ipAddress.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.IP_ADDRESS);
                     ipAddress.putExtra(MsgHandler.KEY_VALUE, lastIp);
                     ipAddress.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_STRING);
                     ipAddress.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
@@ -92,7 +86,7 @@ public class SensePhoneState extends PhoneStateListener {
                 if (null != lastDataConnectionState) {
                     // Log.d(TAG, "Transmit data connection state...");
                     Intent dataConnection = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    dataConnection.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_DATA);
+                    dataConnection.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.DATA_CONN);
                     dataConnection.putExtra(MsgHandler.KEY_VALUE, lastDataConnectionState);
                     dataConnection.putExtra(MsgHandler.KEY_DATA_TYPE,
                             Constants.SENSOR_DATA_TYPE_STRING);
@@ -105,7 +99,7 @@ public class SensePhoneState extends PhoneStateListener {
                 if (msgIndicatorUpdated) {
                     // Log.d(TAG, "Transmit unread messages indicator...");
                     Intent msgIndicator = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    msgIndicator.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_UNREAD);
+                    msgIndicator.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.UNREAD_MSG);
                     msgIndicator.putExtra(MsgHandler.KEY_VALUE, lastMsgIndicatorState);
                     msgIndicator
                             .putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_BOOL);
@@ -118,7 +112,7 @@ public class SensePhoneState extends PhoneStateListener {
                 if (null != lastServiceState) {
                     // Log.d(TAG, "Transmit service state...");
                     Intent serviceState = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    serviceState.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_SERVICE);
+                    serviceState.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.SERVICE_STATE);
                     serviceState.putExtra(MsgHandler.KEY_VALUE, lastServiceState);
                     serviceState
                             .putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
@@ -131,7 +125,8 @@ public class SensePhoneState extends PhoneStateListener {
                 if (null != lastSignalStrength) {
                     // Log.d(TAG, "Transmit signal strength...");
                     Intent signalStrength = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    signalStrength.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_SIGNAL);
+                    signalStrength
+                            .putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.SIGNAL_STRENGTH);
                     signalStrength.putExtra(MsgHandler.KEY_VALUE, lastSignalStrength);
                     signalStrength.putExtra(MsgHandler.KEY_DATA_TYPE,
                             Constants.SENSOR_DATA_TYPE_JSON);
@@ -212,7 +207,7 @@ public class SensePhoneState extends PhoneStateListener {
 
         // pass message immediately to the MsgHandler
         Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-        i.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_CALL);
+        i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.CALL_STATE);
         i.putExtra(MsgHandler.KEY_VALUE, json.toString());
         i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
         i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
@@ -296,9 +291,9 @@ public class SensePhoneState extends PhoneStateListener {
 
             // pass message immediately to the MsgHandler
             Intent msg = new Intent(MsgHandler.ACTION_NEW_MSG);
-            msg.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_CONNECTION_TYPE);
+            msg.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.CONN_TYPE);
+            msg.putExtra(MsgHandler.KEY_SENSOR_DEVICE, SensorNames.CONN_TYPE);
             msg.putExtra(MsgHandler.KEY_VALUE, typeName);
-            msg.putExtra(MsgHandler.KEY_SENSOR_DEVICE, NAME_CONNECTION_TYPE);
             msg.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_STRING);
             msg.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
             context.startService(msg);

@@ -2,8 +2,8 @@ package nl.sense_os.service.provider;
 
 import java.util.HashMap;
 
-import nl.sense_os.service.provider.SensorData.BufferedData;
-import nl.sense_os.service.provider.SensorData.DataPoint;
+import nl.sense_os.service.SensorData.BufferedData;
+import nl.sense_os.service.SensorData.DataPoint;
 import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;

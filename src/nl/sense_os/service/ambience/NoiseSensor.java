@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.SensorData.SensorNames;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -143,7 +144,7 @@ public class NoiseSensor extends PhoneStateListener {
 
                             // pass message to the MsgHandler
                             Intent sensorData = new Intent(MsgHandler.ACTION_NEW_MSG);
-                            sensorData.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_NOISE);
+                            sensorData.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.NOISE);
                             sensorData.putExtra(MsgHandler.KEY_VALUE, BigDecimal.valueOf(dB)
                                     .setScale(2, 0).floatValue());
                             sensorData.putExtra(MsgHandler.KEY_DATA_TYPE,
@@ -216,7 +217,7 @@ public class NoiseSensor extends PhoneStateListener {
 
                                 // pass message to the MsgHandler
                                 Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-                                i.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_MIC);
+                                i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.MIC);
                                 i.putExtra(MsgHandler.KEY_VALUE, fileName);
                                 i.putExtra(MsgHandler.KEY_DATA_TYPE,
                                         Constants.SENSOR_DATA_TYPE_FILE);
@@ -246,8 +247,6 @@ public class NoiseSensor extends PhoneStateListener {
     }
 
     private static final String TAG = "Sense NoiseSensor";
-    private static final String NAME_NOISE = "noise_sensor";
-    private static final String NAME_MIC = "microphone";
     private static final int MAX_FILES = 60;
     private static final int DEFAULT_SAMPLE_RATE = 8000;
     private static final int RECORDING_TIME_NOISE = 2000;

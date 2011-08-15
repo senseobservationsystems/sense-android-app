@@ -18,9 +18,9 @@ import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Locale;
 
+import nl.sense_os.service.SensorData.BufferedData;
+import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.provider.LocalStorage;
-import nl.sense_os.service.provider.SensorData.BufferedData;
-import nl.sense_os.service.provider.SensorData.DataPoint;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -628,35 +628,12 @@ public class MsgHandler extends Service {
         values.put(DataPoint.VALUE, value);
 
         getContentResolver().insert(url, values);
-
-        querySensor(sensorName);
     }
 
     private void handleSendIntent(Intent intent) {
         if (isOnline()) {
             sendDataFromDb();
             sendDataFromBuffer();
-        }
-    }
-
-    private void querySensor(String sensorName) {
-        Cursor cursor = null;
-        try {
-            Uri url = Uri
-                    .parse("content://nl.sense_os.service.provider.LocalStorage/recent_values");
-            String[] projection = new String[] { "timestamp", "value" };
-            String selection = DataPoint.SENSOR_NAME + " = '" + sensorName + "'" + " AND "
-                    + DataPoint.TIMESTAMP + ">" + (System.currentTimeMillis() - 1000 * 60);
-            String[] selectionArgs = null;
-            String sortOrder = null;
-            cursor = getContentResolver().query(url, projection, selection, selectionArgs,
-                    sortOrder);
-
-            Log.d(TAG, cursor.getCount() + " '" + sensorName + "' samples in local storage");
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
         }
     }
 

@@ -9,6 +9,7 @@ import java.util.List;
 
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.SensorData.SensorNames;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -57,7 +58,7 @@ public class WIFIDeviceProximity {
 
                             // pass device data to the MsgHandler
                             Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-                            i.putExtra(MsgHandler.KEY_SENSOR_NAME, WIFI_SCAN);
+                            i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.WIFI_SCAN);
                             i.putExtra(MsgHandler.KEY_VALUE, deviceJson.toString());
                             i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
                             i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
@@ -124,7 +125,6 @@ public class WIFIDeviceProximity {
     }
 
     private static final String TAG = "WIFI DeviceProximity";
-    private static final String WIFI_SCAN = "wifi scan";
     private final Context context;
     private boolean scanEnabled = false;
     private final Handler scanHandler = new Handler(Looper.getMainLooper());

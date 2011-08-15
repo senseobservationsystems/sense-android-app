@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import nl.sense_os.service.provider.SensorData.DataPoint;
+import nl.sense_os.service.SensorData.DataPoint;
 import android.util.Log;
 
 public class ParserUtils {

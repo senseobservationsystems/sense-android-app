@@ -9,6 +9,7 @@ import java.util.List;
 
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.SensorData.SensorNames;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.Sensor;
@@ -50,7 +51,7 @@ public class LightSensor implements SensorEventListener {
 
             String sensorName = "";
             if (sensor.getType() == Sensor.TYPE_LIGHT) {
-                sensorName = "light";
+                sensorName = SensorNames.LIGHT;
             }
 
             String jsonString = "{";

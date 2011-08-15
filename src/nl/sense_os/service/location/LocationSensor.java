@@ -8,6 +8,8 @@ package nl.sense_os.service.location;
 import nl.sense_os.app.R;
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.SensorData.DataPoint;
+import nl.sense_os.service.SensorData.SensorNames;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -21,16 +23,67 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 
-public class LocationSensor implements LocationListener {
+public class LocationSensor {
+
+    private class MyLocationListener implements LocationListener {
+
+        @Override
+        public void onLocationChanged(Location fix) {
+            JSONObject json = new JSONObject();
+            try {
+                json.put("latitude", fix.getLatitude());
+                json.put("longitude", fix.getLongitude());
+
+                // always include all JSON fields, or we get problems with varying data_structure
+                json.put("accuracy", fix.hasAccuracy() ? fix.getAccuracy() : -1.0d);
+                json.put("altitude", fix.hasAltitude() ? fix.getAltitude() : -1.0);
+                json.put("speed", fix.hasSpeed() ? fix.getSpeed() : -1.0d);
+                json.put("bearing", fix.hasBearing() ? fix.getBearing() : -1.0d);
+                json.put("provider", null != fix.getProvider() ? fix.getProvider() : "unknown");
+
+                if (fix.getProvider().equals(LocationManager.GPS_PROVIDER)) {
+                    lastGpsFix = fix;
+                }
+
+            } catch (JSONException e) {
+                Log.e(TAG, "JSONException in onLocationChanged", e);
+                return;
+            }
+
+            // pass message to the MsgHandler
+            Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
+            i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.LOCATION);
+            i.putExtra(MsgHandler.KEY_VALUE, json.toString());
+            i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
+            i.putExtra(MsgHandler.KEY_TIMESTAMP, fix.getTime());
+            context.startService(i);
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+            checkSensorSettings();
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+            checkSensorSettings();
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+            // do nothing
+        }
+    }
 
     private static final String TAG = "Sense LocationSensor";
-    private static final String SENSOR_NAME = "position";
     private static final String ALARM_ACTION = "nl.sense_os.service.LocationAlarm";
     private static final int ALARM_ID = 56;
     private static final long ALARM_INTERVAL = 1000 * 60 * 15;
@@ -39,6 +92,7 @@ public class LocationSensor implements LocationListener {
 
     private Context context;
     private LocationManager locMgr;
+    private MyLocationListener listener;
     private long time;
     private float distance;
 
@@ -65,6 +119,7 @@ public class LocationSensor implements LocationListener {
     public LocationSensor(Context context) {
         this.context = context;
         locMgr = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        listener = new MyLocationListener();
     }
 
     /**
@@ -77,27 +132,42 @@ public class LocationSensor implements LocationListener {
         if (SELF_AWARE_MODE) {
             Log.v(TAG, "Check location sensor settings...");
 
-            boolean isGpsUseful = isGpsUseful();
-            if (!isGpsAllowed && !isListeningGps || isListeningGps && isGpsUseful
-                    || !isListeningGps && !isGpsUseful) {
-                Log.d(TAG, "Current settings are OK");
-                // current settings are OK
+            boolean isGpsProductive = isGpsProductive();
+            boolean isDeviceMoving = isDeviceMoving();
+            boolean isSwitchedOffTooLong = isSwitchedOffTooLong();
+            boolean switchBackOn = isDeviceMoving || isSwitchedOffTooLong;
 
-            } else if (isListeningGps && !isGpsUseful) {
-                Log.d(TAG, "GPS listening should be turned off");
+            if (!isListeningGps && !isGpsAllowed) {
+                // current settings are OK
+                Log.d(TAG, "Current settings are OK: GPS is not allowed");
+
+            } else if (!isListeningGps && !switchBackOn) {
+                // current settings are OK
+                Log.d(TAG, "Current settings are OK: not listening and not moving");
+
+            } else if (isListeningGps && isGpsProductive) {
+                // current settings are OK
+                Log.d(TAG, "Current settings are OK: GPS is being productive");
+
+            } else if (isListeningGps && !isGpsProductive) {
+                // switch GPS off: not productive
+                Log.d(TAG, "GPS listening should be turned off: GPS is not productive");
                 stopListening();
                 startListening(false);
                 notifyListeningStopped();
 
-            } else if (isGpsAllowed && !isListeningGps && isGpsUseful) {
-                Log.d(TAG, "GPS listening should be turned back on");
+            } else if (!isListeningGps && switchBackOn && isGpsAllowed) {
+                // switch GPS back on
+                if (isDeviceMoving) {
+                    Log.d(TAG, "GPS should be turned back on: " + "device is on the move");
+                } else {
+                    Log.d(TAG, "GPS should be turned back on: " + "switched off for too long");
+                }
                 stopListening();
                 startListening(true);
 
             } else {
-                Log.w(TAG, "Unexpected situation!");
-                Log.d(TAG, "isGpsAllowed=" + isGpsAllowed + ", isListeningGps=" + isListeningGps
-                        + ", isGpsUseful=" + isGpsUseful);
+                Log.w(TAG, "Unexpected location sensor state!");
             }
         }
     }
@@ -120,7 +190,7 @@ public class LocationSensor implements LocationListener {
                 PendingIntent.getActivity(context, 0, new Intent("nl.sense_os.app.SenseApp"),
                         Intent.FLAG_ACTIVITY_NEW_TASK));
         note.flags = Notification.FLAG_AUTO_CANCEL;
-        note.vibrate = new long[] { 0, 300, 100, 300, 100, 300 };
+        note.vibrate = new long[] { 0, 100, 100, 300, 100, 100, 100, 300, 100, 100, 100, 300 };
         note.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
         NotificationManager mgr = (NotificationManager) context
                 .getSystemService(Context.NOTIFICATION_SERVICE);
@@ -179,7 +249,7 @@ public class LocationSensor implements LocationListener {
                 }
             }
             if (null != bestFix) {
-                onLocationChanged(bestFix);
+                listener.onLocationChanged(bestFix);
             } else {
                 Log.v(TAG, "No usable last known location");
             }
@@ -189,96 +259,78 @@ public class LocationSensor implements LocationListener {
     }
 
     /**
-     * @return true if it seems useful to listen to GPS right now.
+     * @return true if GPS has recently produced new data points.
      */
-    private boolean isGpsUseful() {
+    private boolean isGpsProductive() {
 
-        boolean useful = locMgr.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        boolean productive = isListeningGps;
         if (isListeningGps) {
 
             // check if any updates have been received recently from the GPS sensor
             if (lastGpsFix != null) {
                 if (System.currentTimeMillis() - lastGpsFix.getTime() > gpsMaxDelay) {
                     // no updates for long time
-                    Log.d(TAG, "Not useful because no updates for a long time");
-                    useful = false;
+                    Log.d(TAG, "GPS is NOT productive: no updates for a long time");
+                    productive = false;
                 }
             } else if (System.currentTimeMillis() - listenGpsStart > gpsMaxDelay) {
                 // no updates for a long time
-                Log.d(TAG, "Not useful because no updates for a long time");
-                useful = false;
+                Log.d(TAG, "GPS is NOT productive: no updates for a long time");
+                productive = false;
             } else {
-                Log.d(TAG, "Useful iff the GPS provider is available");
+                Log.d(TAG, "GPS is productive");
             }
 
-        } else if (locMgr.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-
-            if (System.currentTimeMillis() - listenGpsStop > 5 * time) {
-                // GPS has been turned off for a long time, or was never even started
-                Log.d(TAG,
-                        "Useful because GPS has been turned off for a long time, or was never even started");
-                useful = true;
-            } else if (!locMgr.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                // the network provider is disabled: GPS is the only option
-                Log.d(TAG,
-                        "Useful because the network provider is disabled: GPS is the only option");
-                useful = true;
-            } else {
-                Log.d(TAG, "Not useful because we just decided to switch off GPS");
-                useful = false;
-            }
         } else {
-            Log.d(TAG, "I don't know if GPS is useful, but this is what I returned: " + useful);
+            Log.d(TAG, "GPS is NOT productive: the listener is disabled");
         }
 
-        return useful;
+        return productive;
     }
 
-    @Override
-    public void onLocationChanged(Location fix) {
-        JSONObject json = new JSONObject();
+    private boolean isDeviceMoving() {
+        Log.v(TAG, "Check if device is moving");
+
+        boolean moving = false;
+
+        Cursor dataPoints = null;
         try {
-            json.put("latitude", fix.getLatitude());
-            json.put("longitude", fix.getLongitude());
+            Uri uri = DataPoint.CONTENT_URI;
+            String[] projection = new String[] { DataPoint.SENSOR_NAME, DataPoint.TIMESTAMP,
+                    DataPoint.VALUE };
+            String selection = DataPoint.SENSOR_NAME + "='" + SensorNames.LIN_ACCELERATION + "'";
+            dataPoints = context.getContentResolver().query(uri, projection, selection, null, null);
 
-            // always include all JSON fields, or we get problems with varying data_structure
-            json.put("accuracy", fix.hasAccuracy() ? fix.getAccuracy() : -1.0d);
-            json.put("altitude", fix.hasAltitude() ? fix.getAltitude() : -1.0);
-            json.put("speed", fix.hasSpeed() ? fix.getSpeed() : -1.0d);
-            json.put("bearing", fix.hasBearing() ? fix.getBearing() : -1.0d);
-            json.put("provider", null != fix.getProvider() ? fix.getProvider() : "unknown");
+            Log.d(TAG, dataPoints.getCount() + " linear acceleration data points");
 
-            if (fix.getProvider().equals(LocationManager.GPS_PROVIDER)) {
-                lastGpsFix = fix;
+        } finally {
+            if (null != dataPoints) {
+                dataPoints.close();
             }
-
-        } catch (JSONException e) {
-            Log.e(TAG, "JSONException in onLocationChanged", e);
-            return;
         }
 
-        // pass message to the MsgHandler
-        Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-        i.putExtra(MsgHandler.KEY_SENSOR_NAME, SENSOR_NAME);
-        i.putExtra(MsgHandler.KEY_VALUE, json.toString());
-        i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
-        i.putExtra(MsgHandler.KEY_TIMESTAMP, fix.getTime());
-        context.startService(i);
+        return moving;
     }
 
-    @Override
-    public void onProviderDisabled(String provider) {
-        checkSensorSettings();
-    }
+    private boolean isSwitchedOffTooLong() {
 
-    @Override
-    public void onProviderEnabled(String provider) {
-        checkSensorSettings();
-    }
+        boolean tooLong = !isListeningGps;
 
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-        // do nothing
+        if (System.currentTimeMillis() - listenGpsStop > 5 * time) {
+            // GPS has been turned off for a long time, or was never even started
+            Log.d(TAG, "GPS should be turned on: "
+                    + " it has been turned off for a long time, or was never even started");
+            tooLong = true;
+        } else if (!locMgr.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            // the network provider is disabled: GPS is the only option
+            Log.d(TAG, "GPS should be turned on: " + " the network provider is disabled");
+            tooLong = true;
+        } else {
+            Log.d(TAG, "Not useful because we just decided to switch off GPS");
+            tooLong = false;
+        }
+
+        return tooLong;
     }
 
     /**
@@ -325,14 +377,15 @@ public class LocationSensor implements LocationListener {
 
         // start listening to GPS and/or Network location
         if ((useGps || !isNetworkAllowed) && isGpsAllowed) {
-            Log.v(TAG, "Start listening to location updates from GPS");
+            Log.v(TAG, "Start listening to location updates from Network and GPS");
             Log.d(TAG, "time=" + time + ", distance=" + distance);
-            locMgr.requestLocationUpdates(LocationManager.GPS_PROVIDER, time, distance, this);
+            locMgr.requestLocationUpdates(LocationManager.GPS_PROVIDER, time, distance, listener);
             isListeningGps = true;
             listenGpsStart = System.currentTimeMillis();
         } else if (isNetworkAllowed) {
             Log.v(TAG, "Start listening to location updates from Network");
-            locMgr.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, time, distance, this);
+            locMgr.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, time, distance,
+                    listener);
         } else {
             Log.w(TAG, "Not listening to any location provider at all!");
         }
@@ -355,7 +408,7 @@ public class LocationSensor implements LocationListener {
 
     private void stopListening() {
         Log.v(TAG, "Stop listening to location updates");
-        locMgr.removeUpdates(this);
+        locMgr.removeUpdates(listener);
 
         if (isListeningGps) {
             listenGpsStop = System.currentTimeMillis();

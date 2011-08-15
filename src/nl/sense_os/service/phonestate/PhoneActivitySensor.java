@@ -7,6 +7,7 @@ package nl.sense_os.service.phonestate;
 
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.SensorData.SensorNames;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -22,7 +23,6 @@ public class PhoneActivitySensor {
     private long sampleDelay = 0; // in milliseconds
     private long lastSampleTime;
     private Context context;
-    private static final String PHONE_ACTIVITY = "screen activity";
 
     public PhoneActivitySensor(Context context) {
         this.context = context;
@@ -52,7 +52,7 @@ public class PhoneActivitySensor {
                     Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
                     i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
                     i.putExtra(MsgHandler.KEY_VALUE, json.toString());
-                    i.putExtra(MsgHandler.KEY_SENSOR_NAME, PHONE_ACTIVITY);
+                    i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.SCREEN_ACTIVITY);
                     i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
                     PhoneActivitySensor.this.context.startService(i);
                     lastSampleTime = System.currentTimeMillis();

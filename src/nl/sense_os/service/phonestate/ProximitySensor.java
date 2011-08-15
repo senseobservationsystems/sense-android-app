@@ -9,6 +9,7 @@ import java.util.List;
 
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.SensorData.SensorNames;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.Sensor;
@@ -20,7 +21,6 @@ import android.util.Log;
 
 public class ProximitySensor implements SensorEventListener {
 
-    private static final String NAME = "proximity";
     private static final String TAG = "Sense Proximity Sensor";
     private long sampleDelay = 0; // in milliseconds
     private long[] lastSampleTimes = new long[50];
@@ -53,7 +53,7 @@ public class ProximitySensor implements SensorEventListener {
 
             String sensorName = "";
             if (sensor.getType() == Sensor.TYPE_PROXIMITY) {
-                sensorName = NAME;
+                sensorName = SensorNames.PROXIMITY;
             }
 
             String jsonString = "{";

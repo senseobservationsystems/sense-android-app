@@ -17,6 +17,7 @@ import java.util.UUID;
 
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.SensorData.SensorNames;
 
 import org.json.JSONObject;
 
@@ -83,7 +84,7 @@ public class ZephyrBioHarness {
                     json.put("y-axis", y);
                     json.put("z-axis", z);
                     Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    i.putExtra(MsgHandler.KEY_SENSOR_NAME, "accelerometer");
+                    i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.ACCELEROMETER);
                     i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "BioHarness " + deviceName);
                     i.putExtra(MsgHandler.KEY_VALUE, json.toString());
                     i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
@@ -99,7 +100,7 @@ public class ZephyrBioHarness {
 
                     // Log.v(TAG, "Heart rate:" + heartRate);
                     Intent heartRateIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, "heart rate");
+                    heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.HEART_RATE);
                     heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "BioHarness "
                             + deviceName);
                     heartRateIntent.putExtra(MsgHandler.KEY_VALUE, heartRate.intValue());
@@ -118,7 +119,8 @@ public class ZephyrBioHarness {
 
                     // Log.v(TAG, "Respiration rate:" + respirationRateF);
                     Intent respirationRateIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    respirationRateIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, "respiration rate");
+                    respirationRateIntent.putExtra(MsgHandler.KEY_SENSOR_NAME,
+                            SensorNames.RESPIRATION);
                     respirationRateIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "BioHarness "
                             + deviceName);
                     respirationRateIntent.putExtra(MsgHandler.KEY_VALUE, respirationRateF);
@@ -138,7 +140,8 @@ public class ZephyrBioHarness {
 
                     // Log.v(TAG, "Skin temperature:" + skinTemperatureF);
                     Intent skinTemperatureIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    skinTemperatureIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, "temperature");
+                    skinTemperatureIntent.putExtra(MsgHandler.KEY_SENSOR_NAME,
+                            SensorNames.TEMPERATURE);
                     skinTemperatureIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "BioHarness "
                             + deviceName);
                     skinTemperatureIntent.putExtra(MsgHandler.KEY_VALUE, skinTemperatureF);
@@ -154,7 +157,7 @@ public class ZephyrBioHarness {
                     int batteryLevel = buffer[54];
                     // Log.v(TAG, "Battery level:" + batteryLevel);
                     Intent batteryIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    batteryIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, "battery level");
+                    batteryIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.BATTERY_LEVEL);
                     batteryIntent
                             .putExtra(MsgHandler.KEY_SENSOR_DEVICE, "BioHarness " + deviceName);
                     batteryIntent.putExtra(MsgHandler.KEY_VALUE, batteryLevel);
@@ -174,7 +177,7 @@ public class ZephyrBioHarness {
                 //
                 // Log.d(TAG, "Blood pressure:"+bloodPressureF);
                 // Intent batteryIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                // batteryIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, "blood pressure");
+                // batteryIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.BLOOD_PRESSURE);
                 // batteryIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "BioHarness "+deviceName);
                 // batteryIntent.putExtra(MsgHandler.KEY_VALUE, bloodPressureF);
                 // batteryIntent.putExtra(MsgHandler.KEY_DATA_TYPE,
@@ -189,7 +192,7 @@ public class ZephyrBioHarness {
 
                     // Log.v(TAG, "Worn status:" + wornStatusB);
                     Intent batteryIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    batteryIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, "worn status");
+                    batteryIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.WORN_STATUS);
                     batteryIntent
                             .putExtra(MsgHandler.KEY_SENSOR_DEVICE, "BioHarness " + deviceName);
                     batteryIntent.putExtra(MsgHandler.KEY_VALUE, wornStatusB);

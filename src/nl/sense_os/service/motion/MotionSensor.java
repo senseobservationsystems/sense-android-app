@@ -12,6 +12,7 @@ import java.util.ArrayList;
 
 import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.SensorData.SensorNames;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -38,13 +39,6 @@ public class MotionSensor implements SensorEventListener {
 
     private static final String TAG = "Sense MotionSensor";
 
-    private static final String NAME_ACCELR = "accelerometer";
-    private static final String NAME_LINACC = "linear acceleration";
-    private static final String NAME_GYRO = "gyroscope";
-    private static final String NAME_MAGNET = "magnetic_field";
-    private static final String NAME_ORIENT = "orientation";
-    private static final String NAME_EPI = "accelerometer (epi-mode)";
-    private static final String NAME_MOTION_ENERGY = "motion energy";
     /**
      * Stand-in for Sensor.TYPE_LINEAR_ACCELERATION constant for API < 9.
      */
@@ -233,7 +227,7 @@ public class MotionSensor implements SensorEventListener {
             // Log.v(TAG, "Transmit accelerodata: " + dataBuffer[sensor.getType()].length());
             // pass message to the MsgHandler
             Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-            i.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_EPI);
+            i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.ACCELEROMETER_EPI);
             i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());
             i.putExtra(
                     MsgHandler.KEY_VALUE,
@@ -386,19 +380,19 @@ public class MotionSensor implements SensorEventListener {
         String sensorName = "";
         switch (sensor.getType()) {
         case Sensor.TYPE_ACCELEROMETER:
-            sensorName = NAME_ACCELR;
+            sensorName = SensorNames.ACCELEROMETER;
             break;
         case Sensor.TYPE_ORIENTATION:
-            sensorName = NAME_ORIENT;
+            sensorName = SensorNames.ORIENT;
             break;
         case Sensor.TYPE_MAGNETIC_FIELD:
-            sensorName = NAME_MAGNET;
+            sensorName = SensorNames.MAGNET_FIELD;
             break;
         case Sensor.TYPE_GYROSCOPE:
-            sensorName = NAME_GYRO;
+            sensorName = SensorNames.GYRO;
             break;
         case TYPE_LINEAR_ACCELERATION:
-            sensorName = NAME_LINACC;
+            sensorName = SensorNames.LIN_ACCELERATION;
             break;
         default:
             Log.w(TAG, "Unexpected sensor type: " + sensor.getType());
@@ -462,8 +456,8 @@ public class MotionSensor implements SensorEventListener {
 
             // prepare intent to send to MsgHandler
             Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-            i.putExtra(MsgHandler.KEY_SENSOR_NAME, NAME_MOTION_ENERGY);
-            i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, NAME_MOTION_ENERGY);
+            i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.MOTION_ENERGY);
+            i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, SensorNames.MOTION_ENERGY);
             i.putExtra(MsgHandler.KEY_VALUE, value);
             i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_FLOAT);
             i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
