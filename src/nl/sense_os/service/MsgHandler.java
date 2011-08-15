@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Locale;
 
 import nl.sense_os.service.provider.LocalStorage;
+import nl.sense_os.service.provider.SensorData.BufferedData;
 import nl.sense_os.service.provider.SensorData.DataPoint;
 
 import org.json.JSONArray;
@@ -56,10 +57,6 @@ public class MsgHandler extends Service {
      */
     private static class DbHelper extends SQLiteOpenHelper {
 
-        protected static final String COL_ACTIVE = "active";
-        protected static final String COL_JSON = "json";
-        protected static final String COL_SENSOR = "sensor";
-        protected static final String COL_ROWID = "_id";
         protected static final String DATABASE_NAME = "tx_buffer.sqlite3";
         protected static final int DATABASE_VERSION = 4;
         protected static final String TABLE_NAME = "sensor_data";
@@ -71,10 +68,10 @@ public class MsgHandler extends Service {
         @Override
         public void onCreate(SQLiteDatabase db) {
             final StringBuilder sb = new StringBuilder("CREATE TABLE " + TABLE_NAME + "(");
-            sb.append(COL_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT");
-            sb.append(", " + COL_JSON + " STRING");
-            sb.append(", " + COL_SENSOR + " STRING");
-            sb.append(", " + COL_ACTIVE + " INTEGER");
+            sb.append(BufferedData._ID + " INTEGER PRIMARY KEY AUTOINCREMENT");
+            sb.append(", " + BufferedData.JSON + " STRING");
+            sb.append(", " + BufferedData.SENSOR + " STRING");
+            sb.append(", " + BufferedData.ACTIVE + " INTEGER");
             sb.append(");");
             db.execSQL(sb.toString());
         }
@@ -494,9 +491,9 @@ public class MsgHandler extends Service {
 
                 for (int x = 0; x < sensorArray.length(); x++) {
                     ContentValues values = new ContentValues();
-                    values.put(DbHelper.COL_JSON, ((JSONObject) sensorArray.get(x)).toString());
-                    values.put(DbHelper.COL_SENSOR, names.getString(i));
-                    values.put(DbHelper.COL_ACTIVE, false);
+                    values.put(BufferedData.JSON, ((JSONObject) sensorArray.get(x)).toString());
+                    values.put(BufferedData.SENSOR, names.getString(i));
+                    values.put(BufferedData.ACTIVE, false);
                     db.insert(DbHelper.TABLE_NAME, null, values);
                 }
             }
@@ -631,12 +628,35 @@ public class MsgHandler extends Service {
         values.put(DataPoint.VALUE, value);
 
         getContentResolver().insert(url, values);
+
+        querySensor(sensorName);
     }
 
     private void handleSendIntent(Intent intent) {
         if (isOnline()) {
             sendDataFromDb();
             sendDataFromBuffer();
+        }
+    }
+
+    private void querySensor(String sensorName) {
+        Cursor cursor = null;
+        try {
+            Uri url = Uri
+                    .parse("content://nl.sense_os.service.provider.LocalStorage/recent_values");
+            String[] projection = new String[] { "timestamp", "value" };
+            String selection = DataPoint.SENSOR_NAME + " = '" + sensorName + "'" + " AND "
+                    + DataPoint.TIMESTAMP + ">" + (System.currentTimeMillis() - 1000 * 60);
+            String[] selectionArgs = null;
+            String sortOrder = null;
+            cursor = getContentResolver().query(url, projection, selection, selectionArgs,
+                    sortOrder);
+
+            Log.d(TAG, cursor.getCount() + " '" + sensorName + "' samples in local storage");
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
         }
     }
 
@@ -802,10 +822,10 @@ public class MsgHandler extends Service {
         try {
             // query the database
             openDb();
-            String[] cols = { DbHelper.COL_ROWID, DbHelper.COL_JSON, DbHelper.COL_SENSOR };
-            String sel = DbHelper.COL_ACTIVE + "!=\'true\'";
+            String[] cols = { BufferedData._ID, BufferedData.JSON, BufferedData.SENSOR };
+            String sel = BufferedData.ACTIVE + "!=\'true\'";
             while (!emptyDataBase) {
-                c = db.query(DbHelper.TABLE_NAME, cols, sel, null, null, null, DbHelper.COL_SENSOR,
+                c = db.query(DbHelper.TABLE_NAME, cols, sel, null, null, null, BufferedData.SENSOR,
                         limit);
 
                 if (c.getCount() > 0) {
@@ -861,8 +881,8 @@ public class MsgHandler extends Service {
                     // remove data from database
                     c.moveToFirst();
                     while (false == c.isAfterLast()) {
-                        int id = c.getInt(c.getColumnIndex(DbHelper.COL_ROWID));
-                        String where = DbHelper.COL_ROWID + "=?";
+                        int id = c.getInt(c.getColumnIndex(BufferedData._ID));
+                        String where = BufferedData._ID + "=?";
                         String[] whereArgs = { "" + id };
                         db.delete(DbHelper.TABLE_NAME, where, whereArgs);
                         c.moveToNext();

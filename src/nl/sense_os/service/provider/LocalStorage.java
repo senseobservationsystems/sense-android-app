@@ -1,105 +1,64 @@
 package nl.sense_os.service.provider;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import nl.sense_os.service.provider.SensorData.DataBuffer;
+import nl.sense_os.service.provider.SensorData.BufferedData;
 import nl.sense_os.service.provider.SensorData.DataPoint;
 import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.UriMatcher;
 import android.database.Cursor;
-import android.database.SQLException;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
-import android.database.sqlite.SQLiteQueryBuilder;
+import android.database.MatrixCursor;
 import android.net.Uri;
+import android.os.Debug;
 import android.util.Log;
 
+/**
+ * ContentProvider that encapsulates recent sensor data. The data is stored in the devices RAM
+ * memory, so this implementation is more energy efficient than storing everything in flash. This
+ * does mean that parsing the selection queries is quite a challenge. Only a very limited set of
+ * queries will work:
+ * <ul>
+ * <li>sensor_name = 'foo'</li>
+ * <li>sensor_name != 'foo'</li>
+ * <li>timestamp = foo</li>
+ * <li>timestamp != foo</li>
+ * <li>timestamp > foo</li>
+ * <li>timestamp >= foo</li>
+ * <li>timestamp < foo</li>
+ * <li>timestamp <= foo</li>
+ * <li>combinations of a sensor_name and a timestamp selection</li>
+ * </ul>
+ * 
+ * @see ParserUtils
+ * @see DataPoint
+ */
 public class LocalStorage extends ContentProvider {
-
-    /**
-     * Inner class that handles the creation of the SQLite3 database with the desired tables and
-     * columns.
-     * 
-     * To view the Sqlite3 database in a terminal: $ adb shell # sqlite3
-     * /data/data/nl.sense_os.dji/databases/data.sqlite3 sqlite> .headers ON sqlite> select * from
-     * testTbl;
-     */
-    private static class DbHelper extends SQLiteOpenHelper {
-
-        DbHelper(Context context) {
-            super(context, DATABASE_NAME, null, DATABASE_VERSION);
-        }
-
-        @Override
-        public void onCreate(SQLiteDatabase db) {
-            final StringBuilder sb = new StringBuilder("CREATE TABLE " + VALUES_TABLE_NAME + "(");
-            sb.append(DataPoint._ID + " INTEGER PRIMARY KEY AUTOINCREMENT");
-            sb.append(", " + DataPoint.SENSOR_NAME + " STRING");
-            sb.append(", " + DataPoint.SENSOR_DESCRIPTION + " STRING");
-            sb.append(", " + DataPoint.DATA_TYPE + " STRING");
-            sb.append(", " + DataPoint.VALUE + " STRING");
-            sb.append(", " + DataPoint.TIMESTAMP + " INTEGER");
-            sb.append(");");
-            db.execSQL(sb.toString());
-        }
-
-        @Override
-        public void onUpgrade(SQLiteDatabase db, int oldVers, int newVers) {
-            Log.w(TAG, "Upgrading database from version " + oldVers + " to " + newVers
-                    + ", which will destroy all old data");
-
-            db.execSQL("DROP TABLE IF EXISTS " + VALUES_TABLE_NAME);
-            onCreate(db);
-        }
-    }
 
     private static final String TAG = "Sense LocalStorage";
 
     public static final String AUTHORITY = "nl.sense_os.service.provider.LocalStorage";
-    private static final String DATABASE_NAME = "local_storage.sqlite3";
     private static final String VALUES_TABLE_NAME = "recent_values";
-    private static final int DATABASE_VERSION = 1;
-
     private static final int VALUES_URI = 1;
 
-    private static final long RETENTION_TIME = 1000 * 60 * 15; // 15 minutes
-    private static HashMap<String, String> projectionMap;
+    private static final long RETENTION_TIME = 1000 * 60 * 90; // 90 minutes
+
     private static UriMatcher uriMatcher;
+    private final Map<String, List<ContentValues>> storage = new HashMap<String, List<ContentValues>>();
     static {
+        // set up URI matcher
         uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
         uriMatcher.addURI(AUTHORITY, VALUES_TABLE_NAME, VALUES_URI);
-
-        projectionMap = new HashMap<String, String>();
-        projectionMap.put(DataPoint.SENSOR_NAME, DataPoint.SENSOR_NAME);
-        projectionMap.put(DataPoint.SENSOR_DESCRIPTION, DataPoint.SENSOR_DESCRIPTION);
-        projectionMap.put(DataPoint.DATA_TYPE, DataPoint.DATA_TYPE);
-        projectionMap.put(DataPoint.TIMESTAMP, DataPoint.TIMESTAMP);
-        projectionMap.put(DataPoint.VALUE, DataPoint.VALUE);
     }
-
-    private DbHelper dbHelper;
 
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
-        // Log.v(TAG, "Delete row(s) in local storage...");
-
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        int count;
-        switch (uriMatcher.match(uri)) {
-        case VALUES_URI:
-            count = db.delete(VALUES_TABLE_NAME, selection, selectionArgs);
-            // Log.v(TAG, count + " rows deleted");
-            break;
-
-        default:
-            throw new IllegalArgumentException("Unknown URI " + uri);
-        }
-
-        getContext().getContentResolver().notifyChange(uri, null);
-        return count;
+        throw new IllegalArgumentException("Deleting rows is not possible");
     }
 
     @Override
@@ -108,7 +67,7 @@ public class LocalStorage extends ContentProvider {
 
         switch (uriMatcher.match(uri)) {
         case VALUES_URI:
-            return DataBuffer.CONTENT_TYPE;
+            return BufferedData.CONTENT_TYPE;
 
         default:
             throw new IllegalArgumentException("Unknown URI " + uri);
@@ -119,32 +78,43 @@ public class LocalStorage extends ContentProvider {
     public Uri insert(Uri uri, ContentValues values) {
         // Log.v(TAG, "Insert row in local storage...");
 
+        // check URI
         if (uriMatcher.match(uri) != VALUES_URI) {
             throw new IllegalArgumentException("Unknown URI " + uri);
         }
 
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-
-        // remove older data points by this sensor
-        String removeWhere = DataPoint.SENSOR_NAME + "=?" + " AND " + DataPoint.TIMESTAMP + "<?";
-        String[] removeArgs = new String[] { values.getAsString(DataPoint.SENSOR_NAME),
-                "" + (System.currentTimeMillis() - RETENTION_TIME) };
-        delete(uri, removeWhere, removeArgs);
-
-        long rowId = db.insert(VALUES_TABLE_NAME, DataBuffer.ACTIVE, values);
-        if (rowId > 0) {
-            Uri rowUri = ContentUris.withAppendedId(DataBuffer.CONTENT_URI, rowId);
-            getContext().getContentResolver().notifyChange(rowUri, null);
-            return rowUri;
+        // get currently stored values from the storage map
+        String sensorName = values.getAsString(DataPoint.SENSOR_NAME);
+        List<ContentValues> storedValues = storage.get(sensorName);
+        if (null == storedValues) {
+            storedValues = new ArrayList<ContentValues>();
         }
 
-        throw new SQLException("Failed to insert row into " + uri);
+        // add the new data point
+        storedValues.add(values);
+
+        // remove the oldest points from the storage
+        List<ContentValues> tooOld = new ArrayList<ContentValues>();
+        for (ContentValues storedValue : storedValues) {
+            long ts = storedValue.getAsLong(DataPoint.TIMESTAMP);
+            if (ts < System.currentTimeMillis() - RETENTION_TIME) {
+                tooOld.add(storedValue);
+            }
+        }
+        storedValues.removeAll(tooOld);
+
+        storage.put(sensorName, storedValues);
+
+        // notify any listeners (does this work properly?)
+        Uri rowUri = ContentUris.withAppendedId(DataPoint.CONTENT_URI, 0);
+        getContext().getContentResolver().notifyChange(rowUri, null);
+
+        return rowUri;
     }
 
     @Override
     public boolean onCreate() {
         Log.v(TAG, "Create local storage...");
-        dbHelper = new DbHelper(getContext());
         return true;
     }
 
@@ -153,41 +123,63 @@ public class LocalStorage extends ContentProvider {
             String sortOrder) {
         Log.v(TAG, "Query local storage...");
 
-        SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
-
+        // check URI
         switch (uriMatcher.match(uri)) {
         case VALUES_URI:
-            qb.setTables(VALUES_TABLE_NAME);
-            qb.setProjectionMap(projectionMap);
             break;
-
         default:
             throw new IllegalArgumentException("Unknown URI " + uri);
         }
 
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor c = qb.query(db, projection, selection, selectionArgs, null, null, sortOrder);
+        // try to parse the selection criteria
+        List<String> sensorNames = ParserUtils.getSelectedSensors(storage.keySet(), selection,
+                selectionArgs);
+        long[] timeRange = ParserUtils.getSelectedTimeRange(selection, selectionArgs);
 
-        c.setNotificationUri(getContext().getContentResolver(), uri);
-        return c;
+        // create new cursor with the query result
+        MatrixCursor result = new MatrixCursor(projection);
+
+        for (String sensorName : sensorNames) {
+            // return the sensor
+            List<ContentValues> selectedValues = storage.get(sensorName);
+            if (null != selectedValues) {
+                for (ContentValues rowValues : selectedValues) {
+                    long timestamp = rowValues.getAsLong(DataPoint.TIMESTAMP);
+                    if (timestamp > timeRange[0] && timestamp < timeRange[1]) {
+                        Object[] row = new Object[projection.length];
+                        for (int i = 0; i < projection.length; i++) {
+                            row[i] = rowValues.get(projection[i]);
+                        }
+                        result.addRow(row);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Shows a summary of the current memory usage in the logs. Not used because it is not clear
+     * what the information really tells us. The heap size keeps changing and the GCs keep
+     * collecting garbage.
+     */
+    @SuppressWarnings("unused")
+    private void showMemoryInfo() {
+        long nativeFree = Debug.getNativeHeapFreeSize();
+        long nativeTotal = Debug.getNativeHeapSize();
+        double nativePct = BigDecimal.valueOf(nativeFree * 100d / nativeTotal).setScale(2, 0)
+                .doubleValue();
+
+        Debug.MemoryInfo info = new Debug.MemoryInfo();
+        Debug.getMemoryInfo(info);
+
+        Log.d(TAG, "Memory info:\n" + "Native heap: " + nativeFree + " / " + nativeTotal
+                + " free (" + nativePct + "%)" + "\n" + "");
     }
 
     @Override
     public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
-        // Log.v(TAG, "Update row(s) in local storage...");
-
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        int count;
-        switch (uriMatcher.match(uri)) {
-        case VALUES_URI:
-            count = db.update(VALUES_TABLE_NAME, values, selection, selectionArgs);
-            break;
-
-        default:
-            throw new IllegalArgumentException("Unknown URI " + uri);
-        }
-
-        getContext().getContentResolver().notifyChange(uri, null);
-        return count;
+        throw new IllegalArgumentException("Updating rows is not possible");
     }
 }
