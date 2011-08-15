@@ -86,7 +86,7 @@ public class LocationSensor {
     private static final String TAG = "Sense LocationSensor";
     private static final String ALARM_ACTION = "nl.sense_os.service.LocationAlarm";
     private static final int ALARM_ID = 56;
-    private static final long ALARM_INTERVAL = 1000 * 60 * 15;
+    private static final long ALARM_INTERVAL = 1000 * 60 * 1;
     private static final boolean SELF_AWARE_MODE = true;
     private static final int NOTIF_ID = 764;
 
@@ -114,7 +114,6 @@ public class LocationSensor {
     private long listenGpsStart;
     private long listenGpsStop;
     private Location lastGpsFix;
-    private long gpsMaxDelay = 1000 * 60;
 
     public LocationSensor(Context context) {
         this.context = context;
@@ -165,6 +164,7 @@ public class LocationSensor {
                 }
                 stopListening();
                 startListening(true);
+                notifyListeningRestarted();
 
             } else {
                 Log.w(TAG, "Unexpected location sensor state!");
@@ -187,8 +187,21 @@ public class LocationSensor {
         Notification note = new Notification(R.drawable.ic_status_sense, "GPS listening stopped",
                 System.currentTimeMillis());
         note.setLatestEventInfo(context, "Sense location sensor", "GPS listening stopped",
-                PendingIntent.getActivity(context, 0, new Intent("nl.sense_os.app.SenseApp"),
-                        Intent.FLAG_ACTIVITY_NEW_TASK));
+                PendingIntent.getBroadcast(context, 0, new Intent(), 0));
+        note.flags = Notification.FLAG_AUTO_CANCEL;
+        note.vibrate = new long[] { 0, 100, 100, 300, 100, 100, 100, 300, 100, 100, 100, 300 };
+        note.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
+        NotificationManager mgr = (NotificationManager) context
+                .getSystemService(Context.NOTIFICATION_SERVICE);
+        mgr.notify(NOTIF_ID, note);
+    }
+
+    private void notifyListeningRestarted() {
+
+        Notification note = new Notification(R.drawable.ic_status_sense, "GPS listening restarted",
+                System.currentTimeMillis());
+        note.setLatestEventInfo(context, "Sense location sensor", "GPS listening restarted",
+                PendingIntent.getBroadcast(context, 0, new Intent(), 0));
         note.flags = Notification.FLAG_AUTO_CANCEL;
         note.vibrate = new long[] { 0, 100, 100, 300, 100, 100, 100, 300, 100, 100, 100, 300 };
         note.defaults = Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND;
@@ -208,8 +221,7 @@ public class LocationSensor {
     public void enable(long time, float distance) {
         Log.v(TAG, "Enable location sensor");
 
-        this.time = time;
-        this.gpsMaxDelay = 5 * time;
+        setTime(time);
         this.distance = distance;
 
         startListening();
@@ -264,16 +276,17 @@ public class LocationSensor {
     private boolean isGpsProductive() {
 
         boolean productive = isListeningGps;
+        long maxDelay = 5 * time;
         if (isListeningGps) {
 
             // check if any updates have been received recently from the GPS sensor
             if (lastGpsFix != null) {
-                if (System.currentTimeMillis() - lastGpsFix.getTime() > gpsMaxDelay) {
+                if (System.currentTimeMillis() - lastGpsFix.getTime() > maxDelay) {
                     // no updates for long time
                     Log.d(TAG, "GPS is NOT productive: no updates for a long time");
                     productive = false;
                 }
-            } else if (System.currentTimeMillis() - listenGpsStart > gpsMaxDelay) {
+            } else if (System.currentTimeMillis() - listenGpsStart > maxDelay) {
                 // no updates for a long time
                 Log.d(TAG, "GPS is NOT productive: no updates for a long time");
                 productive = false;
@@ -289,23 +302,53 @@ public class LocationSensor {
     }
 
     private boolean isDeviceMoving() {
-        Log.v(TAG, "Check if device is moving");
+        // Log.v(TAG, "Check if device is moving");
 
-        boolean moving = false;
+        boolean moving = true;
 
-        Cursor dataPoints = null;
+        Cursor data = null;
         try {
             Uri uri = DataPoint.CONTENT_URI;
             String[] projection = new String[] { DataPoint.SENSOR_NAME, DataPoint.TIMESTAMP,
                     DataPoint.VALUE };
-            String selection = DataPoint.SENSOR_NAME + "='" + SensorNames.LIN_ACCELERATION + "'";
-            dataPoints = context.getContentResolver().query(uri, projection, selection, null, null);
+            String selection = DataPoint.SENSOR_NAME + "='" + SensorNames.LIN_ACCELERATION + "'"
+                    + " AND " + DataPoint.TIMESTAMP + ">" + (System.currentTimeMillis() - time);
+            data = context.getContentResolver().query(uri, projection, selection, null, null);
 
-            Log.d(TAG, dataPoints.getCount() + " linear acceleration data points");
+            if (null == data || data.getCount() == 0) {
+                // no movement measurements: assume the device is moving
+                Log.d(TAG, "No movement measurements: assume the device is moving");
+                return true;
+            }
 
+            // find the largest motion measurement
+            data.moveToFirst();
+            double maxMotion = 0;
+            while (!data.isAfterLast()) {
+                String value = data.getString(data.getColumnIndex(DataPoint.VALUE));
+                JSONObject json = new JSONObject(value);
+                double x = json.getDouble("x-axis");
+                double y = json.getDouble("y-axis");
+                double z = json.getDouble("z-axis");
+                double motion = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2));
+                maxMotion = maxMotion > motion ? maxMotion : motion;
+                data.moveToNext();
+            }
+
+            if (maxMotion > 2) {
+                Log.d(TAG, "Device is moving! Max motion: " + maxMotion);
+                moving = true;
+            } else {
+                Log.d(TAG, "Device is not moving. Max motion: " + maxMotion);
+                moving = false;
+            }
+
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception parsing linear acceleration data: ", e);
+            moving = true;
         } finally {
-            if (null != dataPoints) {
-                dataPoints.close();
+            if (null != data) {
+                data.close();
             }
         }
 
@@ -315,18 +358,19 @@ public class LocationSensor {
     private boolean isSwitchedOffTooLong() {
 
         boolean tooLong = !isListeningGps;
+        long maxDelay = 1000 * 60 * 60;
 
-        if (System.currentTimeMillis() - listenGpsStop > 5 * time) {
+        if (System.currentTimeMillis() - listenGpsStop > maxDelay) {
             // GPS has been turned off for a long time, or was never even started
             Log.d(TAG, "GPS should be turned on: "
-                    + " it has been turned off for a long time, or was never even started");
+                    + "it has been turned off for a long time, or was never even started");
             tooLong = true;
         } else if (!locMgr.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
             // the network provider is disabled: GPS is the only option
-            Log.d(TAG, "GPS should be turned on: " + " the network provider is disabled");
+            Log.d(TAG, "GPS should be turned on: " + "the network provider is disabled");
             tooLong = true;
         } else {
-            Log.d(TAG, "Not useful because we just decided to switch off GPS");
+            Log.d(TAG, "GPS should NOT be turned on: only recently switched it off");
             tooLong = false;
         }
 
@@ -347,7 +391,6 @@ public class LocationSensor {
      */
     public void setTime(long time) {
         this.time = time;
-        gpsMaxDelay = 5 * time;
     }
 
     private void startAlarms() {
