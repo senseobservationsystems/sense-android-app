@@ -2,8 +2,8 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="nl.sense_os.app"
-    android:versionCode="20110803"
-    android:versionName="2.1.1b1 AGOSTINO">
+    android:versionCode="20110830"
+    android:versionName="2.1.1b2">
 
     <uses-feature
         android:name="android.hardware.location.gps"

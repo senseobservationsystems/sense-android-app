@@ -594,7 +594,7 @@ public class MsgHandler extends Service {
             }
 
             // put the data point in the local storage
-            if (mainPrefs.getBoolean(Constants.PREF_LOCAL_STORAGE, false)) {
+            if (mainPrefs.getBoolean(Constants.PREF_LOCAL_STORAGE, true)) {
                 insertToLocalStorage(sensorName, deviceType, dataType,
                         intent.getLongExtra(KEY_TIMESTAMP, System.currentTimeMillis()), sensorValue);
             }

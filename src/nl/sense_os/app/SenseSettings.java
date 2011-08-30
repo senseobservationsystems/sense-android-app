@@ -412,6 +412,8 @@ public class SenseSettings extends PreferenceActivity {
                     service.getPrefBool(Constants.PREF_LOCATION_GPS, true));
             editor.putBoolean(Constants.PREF_LOCATION_NETWORK,
                     service.getPrefBool(Constants.PREF_LOCATION_NETWORK, true));
+            editor.putBoolean(Constants.PREF_LOCATION_AUTO_GPS,
+                    service.getPrefBool(Constants.PREF_LOCATION_AUTO_GPS, true));
 
             // ambience preferences
             editor.putBoolean(Constants.PREF_AMBIENCE_LIGHT,
@@ -483,8 +485,6 @@ public class SenseSettings extends PreferenceActivity {
                     service.getPrefBool(Constants.PREF_DEV_MODE, false));
             editor.putBoolean(Constants.PREF_COMPRESSION,
                     service.getPrefBool(Constants.PREF_COMPRESSION, true));
-            editor.putBoolean(Constants.PREF_WAKELOCK,
-                    service.getPrefBool(Constants.PREF_WAKELOCK, false));
             editor.putBoolean(Constants.PREF_LOCAL_STORAGE,
                     service.getPrefBool(Constants.PREF_LOCAL_STORAGE, false));
             editor.putBoolean("agostino_mode", service.getPrefBool("agostino_mode", false));
