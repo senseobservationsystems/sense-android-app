@@ -998,11 +998,11 @@ public class SenseApp extends Activity {
     private void updateUi(int status) {
 
         final boolean running = (status & Constants.STATUSCODE_RUNNING) > 0;
-        // Log.v(TAG, "'running' status: " + running);
+        Log.v(TAG, "'running' status: " + running);
         ((CheckBox) findViewById(R.id.main_cb)).setChecked(running);
 
         final boolean connected = (status & Constants.STATUSCODE_CONNECTED) > 0;
-        // Log.v(TAG, "'connected' status: " + connected);
+        Log.v(TAG, "'connected' status: " + connected);
 
         // show connection status in main service field
         TextView mainFirstLine = (TextView) findViewById(R.id.main_firstline);
@@ -1026,11 +1026,11 @@ public class SenseApp extends Activity {
         CheckBox button = (CheckBox) findViewById(R.id.phonestate_cb);
         final boolean callstate = (status & Constants.STATUSCODE_PHONESTATE) > 0;
         button.setChecked(callstate);
-        button.setEnabled(connected);
+        button.setEnabled(running);
         View text1 = findViewById(R.id.phonestate_firstline);
         View text2 = findViewById(R.id.phonestate_secondLine);
-        text1.setEnabled(connected);
-        text2.setEnabled(connected);
+        text1.setEnabled(running);
+        text2.setEnabled(running);
         if (callstate) {
             // Log.v(TAG, "'phone state' enabled");
         }
@@ -1039,12 +1039,12 @@ public class SenseApp extends Activity {
         button = (CheckBox) findViewById(R.id.location_cb);
         final boolean location = (status & Constants.STATUSCODE_LOCATION) > 0;
         button.setChecked(location);
-        button.setEnabled(connected);
+        button.setEnabled(running);
         button = (CheckBox) findViewById(R.id.ambience_cb);
         text1 = findViewById(R.id.location_firstline);
         text2 = findViewById(R.id.location_secondLine);
-        text1.setEnabled(connected);
-        text2.setEnabled(connected);
+        text1.setEnabled(running);
+        text2.setEnabled(running);
         if (location) {
             // Log.v(TAG, "'location' enabled");
         }
@@ -1053,11 +1053,11 @@ public class SenseApp extends Activity {
         button = (CheckBox) findViewById(R.id.motion_cb);
         final boolean motion = (status & Constants.STATUSCODE_MOTION) > 0;
         button.setChecked(motion);
-        button.setEnabled(connected);
+        button.setEnabled(running);
         text1 = findViewById(R.id.motion_firstline);
         text2 = findViewById(R.id.motion_secondLine);
-        text1.setEnabled(connected);
-        text2.setEnabled(connected);
+        text1.setEnabled(running);
+        text2.setEnabled(running);
         if (motion) {
             // Log.v(TAG, "'motion' enabled");
         }
@@ -1066,12 +1066,12 @@ public class SenseApp extends Activity {
         button = (CheckBox) findViewById(R.id.ambience_cb);
         final boolean ambience = (status & Constants.STATUSCODE_AMBIENCE) > 0;
         button.setChecked(ambience);
-        button.setEnabled(connected);
+        button.setEnabled(running);
         button = (CheckBox) findViewById(R.id.ambience_cb);
         text1 = findViewById(R.id.ambience_firstline);
         text2 = findViewById(R.id.ambience_secondLine);
-        text1.setEnabled(connected);
-        text2.setEnabled(connected);
+        text1.setEnabled(running);
+        text2.setEnabled(running);
         if (ambience) {
             // Log.v(TAG, "'ambience' enabled");
         }
@@ -1080,11 +1080,11 @@ public class SenseApp extends Activity {
         button = (CheckBox) findViewById(R.id.device_prox_cb);
         final boolean deviceProx = (status & Constants.STATUSCODE_DEVICE_PROX) > 0;
         button.setChecked(deviceProx);
-        button.setEnabled(connected);
+        button.setEnabled(running);
         text1 = findViewById(R.id.device_prox_firstline);
         text2 = findViewById(R.id.device_prox_secondLine);
-        text1.setEnabled(connected);
-        text2.setEnabled(connected);
+        text1.setEnabled(running);
+        text2.setEnabled(running);
         if (deviceProx) {
             // Log.v(TAG, "'neighboring devices' enabled");
         }
@@ -1093,11 +1093,11 @@ public class SenseApp extends Activity {
         button = (CheckBox) findViewById(R.id.external_sensor_cb);
         final boolean external_sensors = (status & Constants.STATUSCODE_EXTERNAL) > 0;
         button.setChecked(external_sensors);
-        button.setEnabled(connected);
+        button.setEnabled(running);
         text1 = findViewById(R.id.external_sensor_firstline);
         text2 = findViewById(R.id.external_sensor_secondLine);
-        text1.setEnabled(connected);
-        text2.setEnabled(connected);
+        text1.setEnabled(running);
+        text2.setEnabled(running);
         if (external_sensors) {
             // Log.v(TAG, "'external sensors' enabled");
         }

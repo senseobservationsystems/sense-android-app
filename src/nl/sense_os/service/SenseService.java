@@ -99,7 +99,7 @@ public class SenseService extends Service {
                         // onLogOut();
                     }
 
-                    this.getLooper().quit();
+                    getLooper().quit();
                 }
             }.sendEmptyMessage(0);
         }
@@ -235,6 +235,7 @@ public class SenseService extends Service {
             }
         }
 
+        @Override
         public String getSessionId(String appSecret) throws RemoteException {
             try {
                 return SenseApi.getSessionId(SenseService.this, appSecret);
@@ -472,6 +473,9 @@ public class SenseService extends Service {
         // log out before changing to a new user
         onLogOut();
 
+        // stop active sensing components
+        stopSensorModules();
+
         // clear cached settings of the previous user (i.e. device id)
         final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
         final Editor editor = authPrefs.edit();
@@ -547,7 +551,7 @@ public class SenseService extends Service {
         // Log.v(TAG, "Log in...");
 
         // show notification that we are not logged in (yet)
-        showNotification(false);
+        showNotification();
 
         // get login parameters from the preferences
         final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
@@ -619,6 +623,9 @@ public class SenseService extends Service {
         }
 
         // stop active sensing components
+        stopSensorModules();
+
+        // update login status
         onLogOut();
 
         // stop the main service
@@ -629,33 +636,28 @@ public class SenseService extends Service {
 
     /**
      * Performs tasks after successful login: gets list of registered sensors; starts the sensing
-     * modules in the same state as before logout; starts periodic alarms for data transmission and
-     * feedback checking. Method is synchronized to make sure
-     * {@link SenseApi#getRegisteredSensors(Context)} is only called by one thread at a time.
+     * modules in the same state as before logout; starts periodic alarms for data transmission.
+     * Method is synchronized to make sure {@link SenseApi#getRegisteredSensors(Context)} is only
+     * called by one thread at a time.
      */
     private synchronized void onLogIn() {
-        Log.i(TAG, "Logged in! Starting service...");
+        Log.i(TAG, "Logged in!");
 
         // Retrieve the online registered sensor list
         SenseApi.getRegisteredSensors(this);
 
-        // restart individual sensing components
-        startSensorModules();
-
         // start database leeglepelaar
         startTransmitAlarms();
 
-        // start the periodic checks of the feedback sensor
-        startFeedbackChecks();
-
         // show notification
-        showNotification(true);
+        showNotification();
+
+        checkVersion();
     }
 
     /**
      * Performs cleanup tasks when the service is logged out: stops any running sensing modules;
-     * updates the status bar notification; stops the periodic alarms for foorback and data
-     * transmission.
+     * updates the status bar notification; stops the periodic alarms for data transmission.
      */
     private void onLogOut() {
         // check if we were actually logged to prevent overwriting the last active state..
@@ -666,15 +668,11 @@ public class SenseService extends Service {
             isLoggedIn = false;
         }
 
-        // stop active sensing components
-        stopSensorModules();
-
         // update the notification icon
         if (isForeground) {
-            showNotification(false);
+            showNotification();
         }
 
-        stopFeedbackChecks();
         stopTransmitAlarms();
 
         // completely stop the MsgHandler service
@@ -718,7 +716,7 @@ public class SenseService extends Service {
      *            {@link #stopSelfResult(int)}.
      */
     private void onStartCompat(final Intent intent, int flags, int startId) {
-        // Log.v(TAG, "onStart...");
+        Log.v(TAG, "onStart...");
 
         HandlerThread startThread = new HandlerThread("Start thread",
                 Process.THREAD_PRIORITY_FOREGROUND);
@@ -751,16 +749,18 @@ public class SenseService extends Service {
 
                     // try to login immediately
                     if (false == isLoggedIn || relogin) {
+                        showNotification();
                         login();
                     } else {
                         checkVersion();
-
-                        // restart the individual modules
-                        startSensorModules();
                     }
 
+                    // restart the individual modules
+                    startSensorModules();
+                    showNotification();
+
                 } finally {
-                    this.getLooper().quit();
+                    getLooper().quit();
                 }
             };
         }.sendEmptyMessage(0);
@@ -789,6 +789,9 @@ public class SenseService extends Service {
 
         // log out before registering a new user
         onLogOut();
+
+        // stop active sensing components
+        stopSensorModules();
 
         String hashPass = SenseApi.hashPassword(password);
 
@@ -835,12 +838,33 @@ public class SenseService extends Service {
      * @param loggedIn
      *            set to <code>true</code> if the service is logged in.
      */
-    private void showNotification(boolean loggedIn) {
+    private void showNotification() {
 
         // select the icon resource
-        int icon = R.drawable.ic_status_sense_disabled;
-        if (loggedIn) {
-            icon = R.drawable.ic_status_sense;
+        int icon = -1;
+        CharSequence contentText = null;
+        if (isStarted) {
+            if (isLoggedIn) {
+                icon = R.drawable.ic_status_sense;
+                final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS,
+                        MODE_PRIVATE);
+                String username = authPrefs.getString(Constants.PREF_LOGIN_USERNAME, "UNKNOWN");
+                contentText = "Active, logged in as '" + username + "'";
+            } else {
+                icon = R.drawable.ic_status_sense_alert;
+                contentText = "Active, not logged in (local mode only)";
+            }
+        } else {
+            if (isLoggedIn) {
+                icon = R.drawable.ic_status_sense_disabled;
+                final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS,
+                        MODE_PRIVATE);
+                String username = authPrefs.getString(Constants.PREF_LOGIN_USERNAME, "UNKNOWN");
+                contentText = "Inactive, logged in as '" + username + "'";
+            } else {
+                icon = R.drawable.ic_status_sense_disabled;
+                contentText = "Inactive, not logged in";
+            }
         }
 
         final long when = System.currentTimeMillis();
@@ -849,15 +873,7 @@ public class SenseService extends Service {
 
         // extra info text is shown when the status bar is opened
         final CharSequence contentTitle = "Sense Platform";
-        CharSequence contentText = "";
-        if (!loggedIn) {
-            contentText = "Trying to log in...";
-        } else {
-            final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS,
-                    MODE_PRIVATE);
-            contentText = "Logged in as "
-                    + authPrefs.getString(Constants.PREF_LOGIN_USERNAME, "UNKNOWN");
-        }
+
         final Intent notifIntent = new Intent("nl.sense_os.app.SenseApp");
         notifIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         final PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notifIntent, 0);
@@ -899,21 +915,6 @@ public class SenseService extends Service {
         final AlarmManager mgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         mgr.cancel(alarmOp);
         mgr.set(AlarmManager.RTC_WAKEUP, alarmTime, alarmOp);
-    }
-
-    /**
-     * Starts the checks that periodically check if CommonSense needs feedback. Should be started
-     * after successful login.
-     */
-    private void startFeedbackChecks() {
-        // feedback checking does not have to be active by default
-        /*
-         * final Intent alarmIntent = new Intent(FeedbackRx.ACTION_CHECK_FEEDBACK); final
-         * PendingIntent alarmOp = PendingIntent.getBroadcast(this, FeedbackRx.REQ_CHECK_FEEDBACK,
-         * alarmIntent, 0); final long alarmTime = System.currentTimeMillis() + 1000 * 10; final
-         * AlarmManager mgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-         * mgr.cancel(alarmOp); mgr.set(AlarmManager.RTC_WAKEUP, alarmTime, alarmOp);
-         */
     }
 
     /**
@@ -1050,19 +1051,6 @@ public class SenseService extends Service {
                 AliveChecker.REQ_CHECK_ALIVE, alarmIntent, 0);
         final AlarmManager mgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         mgr.cancel(alarmOp);
-    }
-
-    /**
-     * Stops the periodic checks for feedback from CommonSense.
-     */
-    private void stopFeedbackChecks() {
-        // feedback checking does not have to be active by default
-        /*
-         * final Intent alarmIntent = new Intent(FeedbackRx.ACTION_CHECK_FEEDBACK); final
-         * PendingIntent alarmOp = PendingIntent.getBroadcast(this, FeedbackRx.REQ_CHECK_FEEDBACK,
-         * alarmIntent, 0); final AlarmManager mgr = (AlarmManager)
-         * getSystemService(Context.ALARM_SERVICE); mgr.cancel(alarmOp);
-         */
     }
 
     /**
@@ -1508,17 +1496,22 @@ public class SenseService extends Service {
     }
 
     private void toggleMain(boolean active) {
-        // Log.d(TAG, "Toggle main: " + active);
+        Log.v(TAG, "Toggle main: " + active);
 
         if (true == active) {
 
             // properly start the service to start sensing
             if (!isStarted) {
+                Log.i(TAG, "Start service...");
                 startService(new Intent(ISenseService.class.getName()));
             }
-        } else {
 
+        } else {
+            if (isStarted) {
+                Log.i(TAG, "Stop service...");
+            }
             onLogOut();
+            stopSensorModules();
             stopForegroundCompat();
         }
     }

@@ -91,6 +91,7 @@ public class LocalStorage extends ContentProvider {
         }
 
         // add the new data point
+        Log.v(TAG, "Insert '" + sensorName + "' value in local storage...");
         storedValues.add(values);
 
         // remove the oldest points from the storage
