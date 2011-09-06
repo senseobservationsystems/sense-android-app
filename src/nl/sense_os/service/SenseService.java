@@ -235,6 +235,14 @@ public class SenseService extends Service {
             }
         }
 
+        public String getSessionId(String appSecret) throws RemoteException {
+            try {
+                return SenseApi.getSessionId(SenseService.this, appSecret);
+            } catch (IllegalAccessException e) {
+                throw new RemoteException();
+            }
+        }
+
         @Override
         public void getStatus(ISenseServiceCallback callback) throws RemoteException {
             callback.statusReport(SenseService.this.getStatus());
