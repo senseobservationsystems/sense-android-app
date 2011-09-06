@@ -8,8 +8,20 @@ package nl.sense_os.app;
 
 import nl.sense_os.app.dialogs.LoginDialog;
 import nl.sense_os.app.dialogs.RegisterDialog;
-import nl.sense_os.service.Constants;
 import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.SensePrefs;
+import nl.sense_os.service.SensePrefs.Auth;
+import nl.sense_os.service.SensePrefs.Main.Advanced;
+import nl.sense_os.service.SensePrefs.Main.Ambience;
+import nl.sense_os.service.SensePrefs.Main.DevProx;
+import nl.sense_os.service.SensePrefs.Main.External.MyGlucoHealth;
+import nl.sense_os.service.SensePrefs.Main.External.TanitaScale;
+import nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness;
+import nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM;
+import nl.sense_os.service.SensePrefs.Main.Location;
+import nl.sense_os.service.SensePrefs.Main.Motion;
+import nl.sense_os.service.SensePrefs.Main.Quiz;
+import nl.sense_os.service.SensePrefs.Status;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -400,93 +412,94 @@ public class SenseSettings extends PreferenceActivity {
 
         try {
             // general preferences
-            editor.putString(Constants.PREF_SAMPLE_RATE,
-                    service.getPrefString(Constants.PREF_SAMPLE_RATE, "0"));
-            editor.putString(Constants.PREF_SYNC_RATE,
-                    service.getPrefString(Constants.PREF_SYNC_RATE, "0"));
-            editor.putBoolean(Constants.PREF_AUTOSTART,
-                    service.getPrefBool(Constants.PREF_AUTOSTART, false));
+            editor.putString(SensePrefs.Main.SAMPLE_RATE,
+                    service.getPrefString(SensePrefs.Main.SAMPLE_RATE, "0"));
+            editor.putString(SensePrefs.Main.SYNC_RATE,
+                    service.getPrefString(SensePrefs.Main.SYNC_RATE, "0"));
+            editor.putBoolean(Status.AUTOSTART,
+                    service.getPrefBool(Status.AUTOSTART, false));
 
             // location preferences
-            editor.putBoolean(Constants.PREF_LOCATION_GPS,
-                    service.getPrefBool(Constants.PREF_LOCATION_GPS, true));
-            editor.putBoolean(Constants.PREF_LOCATION_NETWORK,
-                    service.getPrefBool(Constants.PREF_LOCATION_NETWORK, true));
-            editor.putBoolean(Constants.PREF_LOCATION_AUTO_GPS,
-                    service.getPrefBool(Constants.PREF_LOCATION_AUTO_GPS, true));
+            editor.putBoolean(Location.GPS,
+                    service.getPrefBool(Location.GPS, true));
+            editor.putBoolean(Location.NETWORK,
+                    service.getPrefBool(Location.NETWORK, true));
+            editor.putBoolean(Location.AUTO_GPS,
+                    service.getPrefBool(Location.AUTO_GPS, true));
 
             // ambience preferences
-            editor.putBoolean(Constants.PREF_AMBIENCE_LIGHT,
-                    service.getPrefBool(Constants.PREF_AMBIENCE_LIGHT, true));
-            editor.putBoolean(Constants.PREF_AMBIENCE_MIC,
-                    service.getPrefBool(Constants.PREF_AMBIENCE_MIC, true));
+            editor.putBoolean(Ambience.LIGHT,
+                    service.getPrefBool(Ambience.LIGHT, true));
+            editor.putBoolean(Ambience.MIC,
+                    service.getPrefBool(Ambience.MIC, true));
 
             // motion preferences
-            editor.putBoolean(Constants.PREF_MOTION_FALL_DETECT,
-                    service.getPrefBool(Constants.PREF_MOTION_FALL_DETECT, false));
-            editor.putBoolean(Constants.PREF_MOTION_FALL_DETECT_DEMO,
-                    service.getPrefBool(Constants.PREF_MOTION_FALL_DETECT_DEMO, false));
-            editor.putBoolean(Constants.PREF_MOTION_UNREG,
-                    service.getPrefBool(Constants.PREF_MOTION_UNREG, true));
-            editor.putBoolean(Constants.PREF_SCREENOFF_FIX,
-                    service.getPrefBool(Constants.PREF_SCREENOFF_FIX, false));
+            editor.putBoolean(Motion.FALL_DETECT,
+                    service.getPrefBool(Motion.FALL_DETECT, false));
+            editor.putBoolean(Motion.FALL_DETECT_DEMO,
+                    service.getPrefBool(Motion.FALL_DETECT_DEMO, false));
+            editor.putBoolean(Motion.UNREG,
+                    service.getPrefBool(Motion.UNREG, true));
+            editor.putBoolean(Motion.SCREENOFF_FIX,
+                    service.getPrefBool(Motion.SCREENOFF_FIX, false));
 
             // neighboring devices
-            editor.putBoolean(Constants.PREF_PROXIMITY_BT,
-                    service.getPrefBool(Constants.PREF_PROXIMITY_BT, true));
-            editor.putBoolean(Constants.PREF_PROXIMITY_WIFI,
-                    service.getPrefBool(Constants.PREF_PROXIMITY_WIFI, true));
+            editor.putBoolean(DevProx.BLUETOOTH,
+                    service.getPrefBool(DevProx.BLUETOOTH, true));
+            editor.putBoolean(DevProx.WIFI,
+                    service.getPrefBool(DevProx.WIFI, true));
 
             // pop quiz preferences
-            editor.putString(Constants.PREF_QUIZ_RATE,
-                    service.getPrefString(Constants.PREF_QUIZ_RATE, "0"));
-            editor.putBoolean(Constants.PREF_QUIZ_SILENT_MODE,
-                    service.getPrefBool(Constants.PREF_QUIZ_SILENT_MODE, false));
+            editor.putString(Quiz.RATE,
+                    service.getPrefString(Quiz.RATE, "0"));
+            editor.putBoolean(Quiz.SILENT_MODE,
+                    service.getPrefBool(Quiz.SILENT_MODE, false));
 
             // Zephir BioHarness preferences
-            editor.putBoolean(Constants.PREF_BIOHARNESS,
-                    service.getPrefBool(Constants.PREF_BIOHARNESS, false));
-            editor.putBoolean(Constants.PREF_BIOHARNESS_ACC,
-                    service.getPrefBool(Constants.PREF_BIOHARNESS_ACC, true));
-            editor.putBoolean(Constants.PREF_BIOHARNESS_BATTERY,
-                    service.getPrefBool(Constants.PREF_BIOHARNESS_BATTERY, true));
-            editor.putBoolean(Constants.PREF_BIOHARNESS_HEART_RATE,
-                    service.getPrefBool(Constants.PREF_BIOHARNESS_HEART_RATE, true));
-            editor.putBoolean(Constants.PREF_BIOHARNESS_RESP,
-                    service.getPrefBool(Constants.PREF_BIOHARNESS_RESP, true));
-            editor.putBoolean(Constants.PREF_BIOHARNESS_TEMP,
-                    service.getPrefBool(Constants.PREF_BIOHARNESS_TEMP, true));
-            editor.putBoolean(Constants.PREF_BIOHARNESS_WORN_STATUS,
-                    service.getPrefBool(Constants.PREF_BIOHARNESS_WORN_STATUS, true));
+            editor.putBoolean(ZephyrBioHarness.MAIN,
+                    service.getPrefBool(ZephyrBioHarness.MAIN, false));
+            editor.putBoolean(ZephyrBioHarness.ACC,
+                    service.getPrefBool(ZephyrBioHarness.ACC, true));
+            editor.putBoolean(ZephyrBioHarness.BATTERY,
+                    service.getPrefBool(ZephyrBioHarness.BATTERY, true));
+            editor.putBoolean(ZephyrBioHarness.HEART_RATE,
+                    service.getPrefBool(ZephyrBioHarness.HEART_RATE, true));
+            editor.putBoolean(ZephyrBioHarness.RESP,
+                    service.getPrefBool(ZephyrBioHarness.RESP, true));
+            editor.putBoolean(ZephyrBioHarness.TEMP,
+                    service.getPrefBool(ZephyrBioHarness.TEMP, true));
+            editor.putBoolean(ZephyrBioHarness.WORN_STATUS,
+                    service.getPrefBool(ZephyrBioHarness.WORN_STATUS, true));
 
             // Zephir HxM preferences
-            editor.putBoolean(Constants.PREF_HXM, service.getPrefBool(Constants.PREF_HXM, false));
-            editor.putBoolean(Constants.PREF_HXM_BATTERY,
-                    service.getPrefBool(Constants.PREF_HXM_BATTERY, true));
-            editor.putBoolean(Constants.PREF_HXM_DISTANCE,
-                    service.getPrefBool(Constants.PREF_HXM_DISTANCE, true));
-            editor.putBoolean(Constants.PREF_HXM_HEART_RATE,
-                    service.getPrefBool(Constants.PREF_HXM_HEART_RATE, true));
-            editor.putBoolean(Constants.PREF_HXM_SPEED,
-                    service.getPrefBool(Constants.PREF_HXM_SPEED, true));
-            editor.putBoolean(Constants.PREF_HXM_STRIDES,
-                    service.getPrefBool(Constants.PREF_HXM_STRIDES, true));
+            editor.putBoolean(ZephyrHxM.MAIN,
+                    service.getPrefBool(ZephyrHxM.MAIN, false));
+            editor.putBoolean(ZephyrHxM.BATTERY,
+                    service.getPrefBool(ZephyrHxM.BATTERY, true));
+            editor.putBoolean(ZephyrHxM.DISTANCE,
+                    service.getPrefBool(ZephyrHxM.DISTANCE, true));
+            editor.putBoolean(ZephyrHxM.HEART_RATE,
+                    service.getPrefBool(ZephyrHxM.HEART_RATE, true));
+            editor.putBoolean(ZephyrHxM.SPEED,
+                    service.getPrefBool(ZephyrHxM.SPEED, true));
+            editor.putBoolean(ZephyrHxM.STRIDES,
+                    service.getPrefBool(ZephyrHxM.STRIDES, true));
 
             // MyGlucohealth
-            editor.putBoolean(Constants.PREF_GLUCO,
-                    service.getPrefBool(Constants.PREF_GLUCO, false));
+            editor.putBoolean(MyGlucoHealth.MAIN,
+                    service.getPrefBool(MyGlucoHealth.MAIN, false));
 
             // Tanita scale
-            editor.putBoolean(Constants.PREF_TANITA_SCALE,
-                    service.getPrefBool(Constants.PREF_TANITA_SCALE, false));
+            editor.putBoolean(TanitaScale.MAIN,
+                    service.getPrefBool(TanitaScale.MAIN, false));
 
             // advance settings
-            editor.putBoolean(Constants.PREF_DEV_MODE,
-                    service.getPrefBool(Constants.PREF_DEV_MODE, false));
-            editor.putBoolean(Constants.PREF_COMPRESSION,
-                    service.getPrefBool(Constants.PREF_COMPRESSION, true));
-            editor.putBoolean(Constants.PREF_LOCAL_STORAGE,
-                    service.getPrefBool(Constants.PREF_LOCAL_STORAGE, false));
+            editor.putBoolean(Auth.DEV_MODE,
+                    service.getPrefBool(Auth.DEV_MODE, false));
+            editor.putBoolean(Advanced.COMPRESS,
+                    service.getPrefBool(Advanced.COMPRESS, true));
+            editor.putBoolean(Advanced.LOCAL_STORAGE,
+                    service.getPrefBool(Advanced.LOCAL_STORAGE, false));
             editor.putBoolean("agostino_mode", service.getPrefBool("agostino_mode", false));
 
             editor.commit();
@@ -510,14 +523,14 @@ public class SenseSettings extends PreferenceActivity {
         setupRegisterPref();
         setupQuizPref();
 
-        final Preference devMode = findPreference(Constants.PREF_DEV_MODE);
+        final Preference devMode = findPreference(Auth.DEV_MODE);
         devMode.setOnPreferenceClickListener(new OnPreferenceClickListener() {
 
             @Override
             public boolean onPreferenceClick(Preference preference) {
                 SharedPreferences prefs = PreferenceManager
                         .getDefaultSharedPreferences(SenseSettings.this);
-                if (prefs.getBoolean(Constants.PREF_DEV_MODE, false)) {
+                if (prefs.getBoolean(Auth.DEV_MODE, false)) {
                     showDialog(DIALOG_DEV_MODE);
                     return true;
                 } else {
@@ -531,21 +544,21 @@ public class SenseSettings extends PreferenceActivity {
     protected Dialog onCreateDialog(int id) {
         Dialog dialog = null;
         switch (id) {
-        case DIALOG_LOGIN:
-            dialog = new LoginDialog(this);
-            break;
-        case DIALOG_REGISTER:
-            dialog = new RegisterDialog(this);
-            break;
-        case DIALOG_PROGRESS:
-            dialog = createDialogLoginProgress();
-            break;
-        case DIALOG_DEV_MODE:
-            dialog = createDialogDevMode();
-            break;
-        default:
-            dialog = super.onCreateDialog(id);
-            break;
+            case DIALOG_LOGIN :
+                dialog = new LoginDialog(this);
+                break;
+            case DIALOG_REGISTER :
+                dialog = new RegisterDialog(this);
+                break;
+            case DIALOG_PROGRESS :
+                dialog = createDialogLoginProgress();
+                break;
+            case DIALOG_DEV_MODE :
+                dialog = createDialogDevMode();
+                break;
+            default :
+                dialog = super.onCreateDialog(id);
+                break;
         }
         return dialog;
     }
@@ -564,28 +577,28 @@ public class SenseSettings extends PreferenceActivity {
     protected void onPrepareDialog(int id, Dialog dialog) {
         // make sure the service is started when we try to register or log in
         switch (id) {
-        case DIALOG_LOGIN:
-            bindToSenseService();
+            case DIALOG_LOGIN :
+                bindToSenseService();
 
-            ((LoginDialog) dialog).setOnSubmitTask(new CheckLoginTask());
+                ((LoginDialog) dialog).setOnSubmitTask(new CheckLoginTask());
 
-            // get username preset from Sense service
-            if (null != service) {
-                try {
-                    String usernamePreset = service
-                            .getPrefString(Constants.PREF_LOGIN_USERNAME, "");
-                    ((LoginDialog) dialog).setUsername(usernamePreset);
-                } catch (RemoteException e) {
-                    Log.e(TAG, "Failed to get username from Sense Platform service", e);
+                // get username preset from Sense service
+                if (null != service) {
+                    try {
+                        String usernamePreset = service.getPrefString(
+                                Auth.LOGIN_USERNAME, "");
+                        ((LoginDialog) dialog).setUsername(usernamePreset);
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "Failed to get username from Sense Platform service", e);
+                    }
                 }
-            }
-            break;
-        case DIALOG_REGISTER:
-            bindToSenseService();
-            ((RegisterDialog) dialog).setOnSubmitTask(new CheckRegisterTask());
-            break;
-        default:
-            break;
+                break;
+            case DIALOG_REGISTER :
+                bindToSenseService();
+                ((RegisterDialog) dialog).setOnSubmitTask(new CheckRegisterTask());
+                break;
+            default :
+                break;
         }
     }
 
@@ -611,7 +624,7 @@ public class SenseSettings extends PreferenceActivity {
     }
 
     private void setupQuizPref() {
-        final Preference popQuizRefresh = findPreference(Constants.PREF_QUIZ_SYNC);
+        final Preference popQuizRefresh = findPreference(Quiz.SYNC);
         popQuizRefresh.setOnPreferenceClickListener(new OnPreferenceClickListener() {
 
             @Override
@@ -664,7 +677,7 @@ public class SenseSettings extends PreferenceActivity {
         Preference loginPref = findPreference("login_placeholder");
         String username = "";
         try {
-            username = service.getPrefString(Constants.PREF_LOGIN_USERNAME, "");
+            username = service.getPrefString(Auth.LOGIN_USERNAME, "");
         } catch (RemoteException e) {
             Log.e(TAG, "Failed to get username from Sense Platform service", e);
         }
@@ -672,53 +685,53 @@ public class SenseSettings extends PreferenceActivity {
         loginPref.setSummary(summary);
 
         // get sample rate preference setting
-        final Preference samplePref = findPreference(Constants.PREF_SAMPLE_RATE);
+        final Preference samplePref = findPreference(SensePrefs.Main.SAMPLE_RATE);
         String sampleRate = "0";
         try {
-            sampleRate = service.getPrefString(Constants.PREF_SAMPLE_RATE, "0");
+            sampleRate = service.getPrefString(SensePrefs.Main.SAMPLE_RATE, "0");
         } catch (RemoteException e) {
             Log.e(TAG, "Failed to get username from Sense Platform service", e);
         }
         switch (Integer.parseInt(sampleRate)) {
-        case -2: // real time
-            samplePref.setSummary("Real-time: sample as quickly a possible");
-            break;
-        case -1: // often
-            samplePref.setSummary("Often: sample every 10-20 seconds");
-            break;
-        case 0: // normal
-            samplePref.setSummary("Normal: sample every 1-5 minutes");
-            break;
-        case 1: // rarely
-            samplePref.setSummary("Rarely: sample every 15 minutes");
-            break;
-        default:
-            samplePref.setSummary("ERROR");
+            case -2 : // real time
+                samplePref.setSummary("Real-time: sample as quickly a possible");
+                break;
+            case -1 : // often
+                samplePref.setSummary("Often: sample every 10-20 seconds");
+                break;
+            case 0 : // normal
+                samplePref.setSummary("Normal: sample every 1-5 minutes");
+                break;
+            case 1 : // rarely
+                samplePref.setSummary("Rarely: sample every 15 minutes");
+                break;
+            default :
+                samplePref.setSummary("ERROR");
         }
 
         // get sync rate preference setting
-        final Preference syncPref = findPreference(Constants.PREF_SYNC_RATE);
+        final Preference syncPref = findPreference(SensePrefs.Main.SYNC_RATE);
         String syncRate = "0";
         try {
-            syncRate = service.getPrefString(Constants.PREF_SYNC_RATE, "0");
+            syncRate = service.getPrefString(SensePrefs.Main.SYNC_RATE, "0");
         } catch (RemoteException e) {
             Log.e(TAG, "Failed to get username from Sense Platform service", e);
         }
         switch (Integer.parseInt(syncRate)) {
-        case -2: // real time
-            syncPref.setSummary("Real-time connection with CommonSense");
-            break;
-        case -1: // often
-            syncPref.setSummary("Often: buffer size is 1 minute");
-            break;
-        case 0: // normal
-            syncPref.setSummary("Normal: buffer size is 5 minutes");
-            break;
-        case 1: // rarely
-            syncPref.setSummary("Eco-mode: buffer size is 15 minutes");
-            break;
-        default:
-            syncPref.setSummary("ERROR");
+            case -2 : // real time
+                syncPref.setSummary("Real-time connection with CommonSense");
+                break;
+            case -1 : // often
+                syncPref.setSummary("Often: buffer size is 1 minute");
+                break;
+            case 0 : // normal
+                syncPref.setSummary("Normal: buffer size is 5 minutes");
+                break;
+            case 1 : // rarely
+                syncPref.setSummary("Eco-mode: buffer size is 15 minutes");
+                break;
+            default :
+                syncPref.setSummary("ERROR");
         }
     }
 

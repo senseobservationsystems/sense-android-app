@@ -8,8 +8,8 @@ package nl.sense_os.service.ambience;
 import java.io.File;
 import java.math.BigDecimal;
 
-import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensorData.SensorNames;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -147,8 +147,7 @@ public class NoiseSensor extends PhoneStateListener {
                             sensorData.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.NOISE);
                             sensorData.putExtra(MsgHandler.KEY_VALUE, BigDecimal.valueOf(dB)
                                     .setScale(2, 0).floatValue());
-                            sensorData.putExtra(MsgHandler.KEY_DATA_TYPE,
-                                    Constants.SENSOR_DATA_TYPE_FLOAT);
+                            sensorData.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.FLOAT);
                             sensorData.putExtra(MsgHandler.KEY_TIMESTAMP,
                                     System.currentTimeMillis());
                             context.startService(sensorData);
@@ -219,8 +218,7 @@ public class NoiseSensor extends PhoneStateListener {
                                 Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
                                 i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.MIC);
                                 i.putExtra(MsgHandler.KEY_VALUE, fileName);
-                                i.putExtra(MsgHandler.KEY_DATA_TYPE,
-                                        Constants.SENSOR_DATA_TYPE_FILE);
+                                i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.FILE);
                                 i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
                                 context.startService(i);
 

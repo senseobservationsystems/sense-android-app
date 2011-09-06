@@ -18,6 +18,8 @@ import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Locale;
 
+import nl.sense_os.service.SensePrefs.Auth;
+import nl.sense_os.service.SensePrefs.Main.Advanced;
 import nl.sense_os.service.SensorData.BufferedData;
 import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.provider.LocalStorage;
@@ -553,24 +555,25 @@ public class MsgHandler extends Service {
 
             // convert sensor value to String
             String sensorValue = "";
-            if (dataType.equals(Constants.SENSOR_DATA_TYPE_BOOL)) {
+            if (dataType.equals(SenseDataTypes.BOOL)) {
                 sensorValue += intent.getBooleanExtra(KEY_VALUE, false);
-            } else if (dataType.equals(Constants.SENSOR_DATA_TYPE_FLOAT)) {
+            } else if (dataType.equals(SenseDataTypes.FLOAT)) {
                 sensorValue += intent.getFloatExtra(KEY_VALUE, Float.MIN_VALUE);
-            } else if (dataType.equals(Constants.SENSOR_DATA_TYPE_INT)) {
+            } else if (dataType.equals(SenseDataTypes.INT)) {
                 sensorValue += intent.getIntExtra(KEY_VALUE, Integer.MIN_VALUE);
-            } else if (dataType.equals(Constants.SENSOR_DATA_TYPE_JSON)
-                    || dataType.equals(Constants.SENSOR_DATA_TYPE_JSON_TIME_SERIE)) {
+            } else if (dataType.equals(SenseDataTypes.JSON)
+                    || dataType.equals(SenseDataTypes.JSON_TIME_SERIE)) {
                 sensorValue += new JSONObject(intent.getStringExtra(KEY_VALUE)).toString();
-            } else if (dataType.equals(Constants.SENSOR_DATA_TYPE_STRING)
-                    || dataType.equals(Constants.SENSOR_DATA_TYPE_FILE)) {
+            } else if (dataType.equals(SenseDataTypes.STRING)
+                    || dataType.equals(SenseDataTypes.FILE)) {
                 sensorValue += intent.getStringExtra(KEY_VALUE);
             }
 
             // check if we can send the data point immediately
-            final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+            final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
                     MODE_PRIVATE);
-            final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SYNC_RATE, "0"));
+            final int rate = Integer.parseInt(mainPrefs.getString(SensePrefs.Main.SYNC_RATE,
+                    "0"));
             boolean isMaxThreads = nrOfSendMessageThreads >= MAX_NR_OF_SEND_MSG_THREADS - 5;
             boolean isRealTimeMode = rate == -2;
             if (isOnline() && isRealTimeMode && !isMaxThreads) {
@@ -594,7 +597,7 @@ public class MsgHandler extends Service {
             }
 
             // put the data point in the local storage
-            if (mainPrefs.getBoolean(Constants.PREF_LOCAL_STORAGE, true)) {
+            if (mainPrefs.getBoolean(Advanced.LOCAL_STORAGE, true)) {
                 insertToLocalStorage(sensorName, deviceType, dataType,
                         intent.getLongExtra(KEY_TIMESTAMP, System.currentTimeMillis()), sensorValue);
             }
@@ -718,11 +721,11 @@ public class MsgHandler extends Service {
                 i.putExtra(MsgHandler.KEY_TIMESTAMP, (long) ((float) Double.parseDouble(dataArray
                         .getJSONObject(index).getString("date")) * 1000f));
                 String value = dataArray.getJSONObject(index).getString("value");
-                if (dataType.equals(Constants.SENSOR_DATA_TYPE_BOOL)) {
+                if (dataType.equals(SenseDataTypes.BOOL)) {
                     i.putExtra(MsgHandler.KEY_VALUE, Boolean.getBoolean(value));
-                } else if (dataType.equals(Constants.SENSOR_DATA_TYPE_FLOAT)) {
+                } else if (dataType.equals(SenseDataTypes.FLOAT)) {
                     i.putExtra(MsgHandler.KEY_VALUE, Float.parseFloat(value));
-                } else if (dataType.equals(Constants.SENSOR_DATA_TYPE_INT)) {
+                } else if (dataType.equals(SenseDataTypes.INT)) {
                     i.putExtra(MsgHandler.KEY_VALUE, Integer.parseInt(value));
                 } else {
                     i.putExtra(MsgHandler.KEY_VALUE, value);
@@ -750,7 +753,7 @@ public class MsgHandler extends Service {
                     JSONObject sensorData = new JSONObject();
                     JSONArray dataArray = new JSONArray();
                     if (((JSONObject) sensorArray.get(0)).getString("type").equalsIgnoreCase(
-                            Constants.SENSOR_DATA_TYPE_JSON_TIME_SERIE)) {
+                            SenseDataTypes.JSON_TIME_SERIE)) {
                         max_post_sensor_data = MAX_POST_DATA_TIME_SERIE;
                     }
                     for (int x = sentIndex; x < sensorArray.length()
@@ -799,7 +802,7 @@ public class MsgHandler extends Service {
         try {
             // query the database
             openDb();
-            String[] cols = { BufferedData._ID, BufferedData.JSON, BufferedData.SENSOR };
+            String[] cols = {BufferedData._ID, BufferedData.JSON, BufferedData.SENSOR};
             String sel = BufferedData.ACTIVE + "!=\'true\'";
             while (!emptyDataBase) {
                 c = db.query(DbHelper.TABLE_NAME, cols, sel, null, null, null, BufferedData.SENSOR,
@@ -819,7 +822,7 @@ public class MsgHandler extends Service {
                     c.moveToFirst();
                     int max_post_sensor_data = MAX_POST_DATA;
                     while (false == c.isAfterLast()) {
-                        if (sensorType.equalsIgnoreCase(Constants.SENSOR_DATA_TYPE_JSON_TIME_SERIE)) {
+                        if (sensorType.equalsIgnoreCase(SenseDataTypes.JSON_TIME_SERIE)) {
                             max_post_sensor_data = MAX_POST_DATA_TIME_SERIE;
                         }
                         if (c.getString(2).compareToIgnoreCase(sensorKey) != 0
@@ -860,7 +863,7 @@ public class MsgHandler extends Service {
                     while (false == c.isAfterLast()) {
                         int id = c.getInt(c.getColumnIndex(BufferedData._ID));
                         String where = BufferedData._ID + "=?";
-                        String[] whereArgs = { "" + id };
+                        String[] whereArgs = {"" + id};
                         db.delete(DbHelper.TABLE_NAME, where, whereArgs);
                         c.moveToNext();
                     }
@@ -891,12 +894,12 @@ public class MsgHandler extends Service {
                 requeueMessage(sensorName, sensorData, dataType, deviceType, this);
 
             } else {
-                final SharedPreferences prefs = getSharedPreferences(Constants.AUTH_PREFS,
+                final SharedPreferences prefs = getSharedPreferences(SensePrefs.AUTH_PREFS,
                         Context.MODE_PRIVATE);
-                String cookie = prefs.getString(Constants.PREF_LOGIN_COOKIE, "");
+                String cookie = prefs.getString(Auth.LOGIN_COOKIE, "");
 
                 // check for sending a file
-                if (dataType.equals(Constants.SENSOR_DATA_TYPE_FILE)) {
+                if (dataType.equals(SenseDataTypes.FILE)) {
                     if (nrOfSendMessageThreads < MAX_NR_OF_SEND_MSG_THREADS) {
                         ++nrOfSendMessageThreads;
 

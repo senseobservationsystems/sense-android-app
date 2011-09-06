@@ -7,7 +7,8 @@
  */
 package nl.sense_os.service.popquiz;
 
-import nl.sense_os.service.Constants;
+import nl.sense_os.service.SensePrefs;
+import nl.sense_os.service.SensePrefs.Main.Quiz;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -39,9 +40,10 @@ public class PopQuizRx extends BroadcastReceiver {
 
             // check whether to show the activity picker or not, depending on the silent mode
             // setting.
-            final SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
+            final SharedPreferences mainPrefs = context.getSharedPreferences(SensePrefs.MAIN_PREFS,
                     Context.MODE_PRIVATE);
-            final boolean silentMode = mainPrefs.getBoolean(Constants.PREF_QUIZ_SILENT_MODE, false);
+            final boolean silentMode = mainPrefs.getBoolean(Quiz.SILENT_MODE,
+                    false);
 
             if (false == silentMode) {
                 // Log.v(TAG, "Starting pop quiz activity...");

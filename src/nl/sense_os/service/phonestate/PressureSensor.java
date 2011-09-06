@@ -7,8 +7,8 @@ package nl.sense_os.service.phonestate;
 
 import java.util.List;
 
-import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensorData.SensorNames;
 import android.content.Context;
 import android.content.Intent;
@@ -67,7 +67,7 @@ public class PressureSensor implements SensorEventListener {
 
             // send msg to MsgHandler
             Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-            i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
+            i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
             i.putExtra(MsgHandler.KEY_VALUE, jsonString);
             i.putExtra(MsgHandler.KEY_SENSOR_NAME, sensorName);
             i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());

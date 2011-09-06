@@ -10,8 +10,10 @@ package nl.sense_os.service.motion;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 
-import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.SenseDataTypes;
+import nl.sense_os.service.SensePrefs;
+import nl.sense_os.service.SensePrefs.Main.Motion;
 import nl.sense_os.service.SensorData.SensorNames;
 
 import org.json.JSONArray;
@@ -68,7 +70,7 @@ public class MotionSensor implements SensorEventListener {
     private double avgSpeedChange;
     private int avgSpeedCount;
     private boolean hasLinAccSensor;
-    private float[] gravity = { 0, 0, SensorManager.GRAVITY_EARTH };
+    private float[] gravity = {0, 0, SensorManager.GRAVITY_EARTH};
 
     // members for waking up the device for sampling
     private static final String ACTION_WAKEUP_ALARM = "nl.sense_os.service.MotionWakeUp";
@@ -101,7 +103,7 @@ public class MotionSensor implements SensorEventListener {
         gravity[1] = alpha * gravity[1] + (1 - alpha) * values[1];
         gravity[2] = alpha * gravity[2] + (1 - alpha) * values[2];
 
-        return new float[] { values[0] - gravity[0], values[1] - gravity[1], values[2] - gravity[2] };
+        return new float[]{values[0] - gravity[0], values[1] - gravity[1], values[2] - gravity[2]};
     }
 
     private JSONObject createJsonValue(SensorEvent event) {
@@ -116,47 +118,47 @@ public class MotionSensor implements SensorEventListener {
                 value = BigDecimal.valueOf(value).setScale(3, 0).doubleValue();
 
                 switch (axis) {
-                case 0:
-                    if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
-                            || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
-                            || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
-                        json.put("x-axis", value);
-                    } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
-                            || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                        json.put("azimuth", value);
-                    } else {
-                        Log.e(TAG, "Unexpected sensor type creating JSON value");
-                        return null;
-                    }
-                    break;
-                case 1:
-                    if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
-                            || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
-                            || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
-                        json.put("y-axis", value);
-                    } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
-                            || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                        json.put("pitch", value);
-                    } else {
-                        Log.e(TAG, "Unexpected sensor type creating JSON value");
-                        return null;
-                    }
-                    break;
-                case 2:
-                    if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
-                            || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
-                            || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
-                        json.put("z-axis", value);
-                    } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
-                            || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-                        json.put("roll", value);
-                    } else {
-                        Log.e(TAG, "Unexpected sensor type creating JSON value");
-                        return null;
-                    }
-                    break;
-                default:
-                    Log.w(TAG, "Unexpected sensor value! More than three axes?!");
+                    case 0 :
+                        if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
+                                || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
+                                || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
+                            json.put("x-axis", value);
+                        } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
+                                || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+                            json.put("azimuth", value);
+                        } else {
+                            Log.e(TAG, "Unexpected sensor type creating JSON value");
+                            return null;
+                        }
+                        break;
+                    case 1 :
+                        if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
+                                || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
+                                || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
+                            json.put("y-axis", value);
+                        } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
+                                || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+                            json.put("pitch", value);
+                        } else {
+                            Log.e(TAG, "Unexpected sensor type creating JSON value");
+                            return null;
+                        }
+                        break;
+                    case 2 :
+                        if (sensor.getType() == Sensor.TYPE_ACCELEROMETER
+                                || sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD
+                                || sensor.getType() == TYPE_LINEAR_ACCELERATION) {
+                            json.put("z-axis", value);
+                        } else if (sensor.getType() == Sensor.TYPE_ORIENTATION
+                                || sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+                            json.put("roll", value);
+                        } else {
+                            Log.e(TAG, "Unexpected sensor type creating JSON value");
+                            return null;
+                        }
+                        break;
+                    default :
+                        Log.w(TAG, "Unexpected sensor value! More than three axes?!");
                 }
                 axis++;
             }
@@ -234,7 +236,7 @@ public class MotionSensor implements SensorEventListener {
                     "{\"interval\":"
                             + Math.round(localBufferTime / dataBuffer[sensor.getType()].length())
                             + ",\"data\":" + dataBuffer[sensor.getType()].toString() + "}");
-            i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON_TIME_SERIE);
+            i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON_TIME_SERIE);
             i.putExtra(MsgHandler.KEY_TIMESTAMP, lastLocalSampleTimes[sensor.getType()]);
             context.startService(i);
             dataBuffer[sensor.getType()] = new JSONArray();
@@ -379,24 +381,24 @@ public class MotionSensor implements SensorEventListener {
         // determine sensor name
         String sensorName = "";
         switch (sensor.getType()) {
-        case Sensor.TYPE_ACCELEROMETER:
-            sensorName = SensorNames.ACCELEROMETER;
-            break;
-        case Sensor.TYPE_ORIENTATION:
-            sensorName = SensorNames.ORIENT;
-            break;
-        case Sensor.TYPE_MAGNETIC_FIELD:
-            sensorName = SensorNames.MAGNET_FIELD;
-            break;
-        case Sensor.TYPE_GYROSCOPE:
-            sensorName = SensorNames.GYRO;
-            break;
-        case TYPE_LINEAR_ACCELERATION:
-            sensorName = SensorNames.LIN_ACCELERATION;
-            break;
-        default:
-            Log.w(TAG, "Unexpected sensor type: " + sensor.getType());
-            return;
+            case Sensor.TYPE_ACCELEROMETER :
+                sensorName = SensorNames.ACCELEROMETER;
+                break;
+            case Sensor.TYPE_ORIENTATION :
+                sensorName = SensorNames.ORIENT;
+                break;
+            case Sensor.TYPE_MAGNETIC_FIELD :
+                sensorName = SensorNames.MAGNET_FIELD;
+                break;
+            case Sensor.TYPE_GYROSCOPE :
+                sensorName = SensorNames.GYRO;
+                break;
+            case TYPE_LINEAR_ACCELERATION :
+                sensorName = SensorNames.LIN_ACCELERATION;
+                break;
+            default :
+                Log.w(TAG, "Unexpected sensor type: " + sensor.getType());
+                return;
         }
 
         // prepare JSON object to send to MsgHandler
@@ -429,7 +431,8 @@ public class MotionSensor implements SensorEventListener {
 
             SensorManager mgr = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
 
-            int delay = isFallDetectMode || isEpiMode || isEnergyMode ? SensorManager.SENSOR_DELAY_GAME
+            int delay = isFallDetectMode || isEpiMode || isEnergyMode
+                    ? SensorManager.SENSOR_DELAY_GAME
                     : SensorManager.SENSOR_DELAY_NORMAL;
 
             for (Sensor sensor : sensors) {
@@ -459,7 +462,7 @@ public class MotionSensor implements SensorEventListener {
             i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.MOTION_ENERGY);
             i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, SensorNames.MOTION_ENERGY);
             i.putExtra(MsgHandler.KEY_VALUE, value);
-            i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_FLOAT);
+            i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.FLOAT);
             i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
             context.startService(i);
 
@@ -473,7 +476,7 @@ public class MotionSensor implements SensorEventListener {
         i.putExtra(MsgHandler.KEY_SENSOR_NAME, "fall detector");
         i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, fallDetector.demo ? "demo fall" : "human fall");
         i.putExtra(MsgHandler.KEY_VALUE, fall);
-        i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_BOOL);
+        i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.BOOL);
         i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
         context.startService(i);
     }
@@ -483,7 +486,7 @@ public class MotionSensor implements SensorEventListener {
         i.putExtra(MsgHandler.KEY_SENSOR_NAME, sensorName);
         i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());
         i.putExtra(MsgHandler.KEY_VALUE, json.toString());
-        i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
+        i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
         i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
         context.startService(i);
     }
@@ -494,19 +497,20 @@ public class MotionSensor implements SensorEventListener {
 
     public void startMotionSensing(long sampleDelay) {
 
-        final SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
+        final SharedPreferences mainPrefs = context.getSharedPreferences(SensePrefs.MAIN_PREFS,
                 Context.MODE_PRIVATE);
-        isEpiMode = mainPrefs.getBoolean(Constants.PREF_MOTION_EPIMODE, false);
-        isEnergyMode = mainPrefs.getBoolean(Constants.PREF_MOTION_ENERGY, false);
-        isUnregisterWhenIdle = mainPrefs.getBoolean(Constants.PREF_MOTION_UNREG, true);
+        isEpiMode = mainPrefs.getBoolean(Motion.EPIMODE, false);
+        isEnergyMode = mainPrefs.getBoolean(Motion.MOTION_ENERGY, false);
+        isUnregisterWhenIdle = mainPrefs.getBoolean(Motion.UNREG, true);
 
         if (isEpiMode) {
             sampleDelay = 0;
         }
 
         // check if the fall detector is enabled
-        isFallDetectMode = mainPrefs.getBoolean(Constants.PREF_MOTION_FALL_DETECT, false);
-        if (fallDetector.demo = mainPrefs.getBoolean(Constants.PREF_MOTION_FALL_DETECT_DEMO, false)) {
+        isFallDetectMode = mainPrefs.getBoolean(Motion.FALL_DETECT, false);
+        if (fallDetector.demo = mainPrefs.getBoolean(Motion.FALL_DETECT_DEMO,
+                false)) {
             isFallDetectMode = true;
         }
 

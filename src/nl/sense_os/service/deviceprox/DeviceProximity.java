@@ -5,7 +5,8 @@
  */
 package nl.sense_os.service.deviceprox;
 
-import nl.sense_os.service.Constants;
+import nl.sense_os.service.SensePrefs;
+import nl.sense_os.service.SensePrefs.Main.DevProx;
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -21,8 +22,12 @@ public class DeviceProximity {
 
     public DeviceProximity(Context context) {
         this.context = context;
-        this.bluetoothDP = new BluetoothDeviceProximity(context);
-        this.wifiDP = new WIFIDeviceProximity(context);
+        bluetoothDP = new BluetoothDeviceProximity(context);
+        wifiDP = new WIFIDeviceProximity(context);
+    }
+
+    public boolean getScanEnabled() {
+        return isScanEnabled;
     }
 
     public int getScanInterval() {
@@ -33,33 +38,31 @@ public class DeviceProximity {
         this.scanInterval = scanInterval;
     }
 
-    public boolean getScanEnabled() {
-        return isScanEnabled;
-    }
-
     public void startEnvironmentScanning(int interval) {
-        this.scanInterval = interval;
-        this.isScanEnabled = true;
+        scanInterval = interval;
+        isScanEnabled = true;
 
-        final SharedPreferences mainPrefs = this.context.getSharedPreferences(Constants.MAIN_PREFS,
+        final SharedPreferences mainPrefs = context.getSharedPreferences(SensePrefs.MAIN_PREFS,
                 Context.MODE_PRIVATE);
 
-        this.isBtEnabled = mainPrefs.getBoolean(Constants.PREF_PROXIMITY_BT, true);
-        if (this.isBtEnabled) {
-            this.bluetoothDP.startEnvironmentScanning(interval);
+        isBtEnabled = mainPrefs.getBoolean(DevProx.BLUETOOTH, true);
+        if (isBtEnabled) {
+            bluetoothDP.startEnvironmentScanning(interval);
         }
 
-        this.isWifiEnabled = mainPrefs.getBoolean(Constants.PREF_PROXIMITY_WIFI, true);
-        if (this.isWifiEnabled) {
-            this.wifiDP.startEnvironmentScanning(interval);
+        isWifiEnabled = mainPrefs.getBoolean(DevProx.WIFI, true);
+        if (isWifiEnabled) {
+            wifiDP.startEnvironmentScanning(interval);
         }
     }
 
     public void stopEnvironmentScanning() {
-        this.isScanEnabled = false;
-        if (this.isBtEnabled)
-            this.bluetoothDP.stopEnvironmentScanning();
-        if (this.isWifiEnabled)
-            this.wifiDP.stopEnvironmentScanning();
+        isScanEnabled = false;
+        if (isBtEnabled) {
+            bluetoothDP.stopEnvironmentScanning();
+        }
+        if (isWifiEnabled) {
+            wifiDP.stopEnvironmentScanning();
+        }
     }
 }

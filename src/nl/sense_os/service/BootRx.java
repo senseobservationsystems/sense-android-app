@@ -5,6 +5,7 @@
  */
 package nl.sense_os.service;
 
+import nl.sense_os.service.SensePrefs.Status;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -18,9 +19,9 @@ public class BootRx extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        SharedPreferences statusPrefs = context.getSharedPreferences(Constants.STATUS_PREFS,
+        SharedPreferences statusPrefs = context.getSharedPreferences(SensePrefs.STATUS_PREFS,
                 Context.MODE_PRIVATE);
-        final boolean autostart = statusPrefs.getBoolean(Constants.PREF_AUTOSTART, false);
+        final boolean autostart = statusPrefs.getBoolean(Status.AUTOSTART, false);
 
         // automatically start the Sense service if this is set in the preferences
         if (true == autostart) {

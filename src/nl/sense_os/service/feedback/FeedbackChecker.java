@@ -5,8 +5,9 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
-import nl.sense_os.service.Constants;
 import nl.sense_os.service.SenseApi;
+import nl.sense_os.service.SensePrefs;
+import nl.sense_os.service.SensePrefs.Auth;
 
 import org.json.JSONObject;
 
@@ -33,9 +34,9 @@ public class FeedbackChecker extends IntentService {
             url += "?last=1";
 
             // get cookie for authentication
-            final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS,
+            final SharedPreferences authPrefs = getSharedPreferences(SensePrefs.AUTH_PREFS,
                     MODE_PRIVATE);
-            String cookie = authPrefs.getString(Constants.PREF_LOGIN_COOKIE, null);
+            String cookie = authPrefs.getString(Auth.LOGIN_COOKIE, null);
 
             // get last feedback sensor value
             if (cookie != null) {

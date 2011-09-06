@@ -12,7 +12,10 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URLEncoder;
 
-import nl.sense_os.app.R;
+import nl.sense_os.service.SensePrefs.Auth;
+import nl.sense_os.service.SensePrefs.Main.Ambience;
+import nl.sense_os.service.SensePrefs.Main.Motion;
+import nl.sense_os.service.SensePrefs.Status;
 import nl.sense_os.service.ambience.LightSensor;
 import nl.sense_os.service.ambience.NoiseSensor;
 import nl.sense_os.service.deviceprox.DeviceProximity;
@@ -31,7 +34,6 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -71,8 +73,8 @@ public class SenseService extends Service {
                 @Override
                 public void handleMessage(Message msg) {
                     final SharedPreferences prefs = context.getSharedPreferences(
-                            Constants.STATUS_PREFS, MODE_PRIVATE);
-                    final boolean isStarted = prefs.getBoolean(Constants.PREF_STATUS_MAIN, false);
+                            SensePrefs.STATUS_PREFS, MODE_PRIVATE);
+                    final boolean isStarted = prefs.getBoolean(Status.MAIN, false);
 
                     if (!isStarted) {
                         // Log.v(TAG, "Connectivity changed, but service is not activated...");
@@ -85,7 +87,7 @@ public class SenseService extends Service {
                     if (null != info && info.isConnectedOrConnecting()) {
 
                         // check that we are not logged in yet before logging in
-                        if (false == isLoggedIn) {
+                        if (false == state.isLoggedIn()) {
                             // Log.v(TAG, "Regained connectivity! Trying to log in...");
                             login();
 
@@ -118,9 +120,9 @@ public class SenseService extends Service {
                 return;
             }
 
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
-            boolean useFix = prefs.getBoolean(Constants.PREF_SCREENOFF_FIX, false);
-            if (isMotionActive && useFix) {
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
+            boolean useFix = prefs.getBoolean(Motion.SCREENOFF_FIX, false);
+            if (state.isMotionActive() && useFix) {
                 // wait half a second and re-register
                 Runnable motionThread = new Runnable() {
 
@@ -154,19 +156,16 @@ public class SenseService extends Service {
         @Override
         public boolean getPrefBool(String key, boolean defValue) throws RemoteException {
             // Log.v(TAG, "Get preference: " + key);
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
-            if (key.equals(Constants.PREF_STATUS_AMBIENCE)
-                    || key.equals(Constants.PREF_STATUS_DEV_PROX)
-                    || key.equals(Constants.PREF_STATUS_EXTERNAL)
-                    || key.equals(Constants.PREF_STATUS_LOCATION)
-                    || key.equals(Constants.PREF_STATUS_MAIN)
-                    || key.equals(Constants.PREF_STATUS_MOTION)
-                    || key.equals(Constants.PREF_STATUS_PHONESTATE)
-                    || key.equals(Constants.PREF_STATUS_POPQUIZ)
-                    || key.equals(Constants.PREF_AUTOSTART)) {
-                prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
-            } else if (key.equals(Constants.PREF_DEV_MODE)) {
-                prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
+            if (key.equals(Status.AMBIENCE) || key.equals(Status.DEV_PROX)
+                    || key.equals(Status.EXTERNAL)
+                    || key.equals(Status.LOCATION)
+                    || key.equals(Status.MAIN) || key.equals(Status.MOTION)
+                    || key.equals(Status.PHONESTATE)
+                    || key.equals(Status.POPQUIZ) || key.equals(Status.AUTOSTART)) {
+                prefs = getSharedPreferences(SensePrefs.STATUS_PREFS, MODE_PRIVATE);
+            } else if (key.equals(Auth.DEV_MODE)) {
+                prefs = getSharedPreferences(SensePrefs.AUTH_PREFS, MODE_PRIVATE);
             }
 
             // return the preference value
@@ -180,7 +179,7 @@ public class SenseService extends Service {
         @Override
         public float getPrefFloat(String key, float defValue) throws RemoteException {
             // Log.v(TAG, "Get preference: " + key);
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
             try {
                 return prefs.getFloat(key, defValue);
             } catch (ClassCastException e) {
@@ -191,7 +190,7 @@ public class SenseService extends Service {
         @Override
         public int getPrefInt(String key, int defValue) throws RemoteException {
             // Log.v(TAG, "Get preference: " + key);
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
             try {
                 return prefs.getInt(key, defValue);
             } catch (ClassCastException e) {
@@ -202,9 +201,9 @@ public class SenseService extends Service {
         @Override
         public long getPrefLong(String key, long defValue) throws RemoteException {
             // Log.v(TAG, "Get preference: " + key);
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
-            if (key.equals(Constants.PREF_SENSOR_LIST_TIME)) {
-                prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
+            if (key.equals(Auth.SENSOR_LIST_TIME)) {
+                prefs = getSharedPreferences(SensePrefs.AUTH_PREFS, MODE_PRIVATE);
             }
 
             try {
@@ -217,14 +216,12 @@ public class SenseService extends Service {
         @Override
         public String getPrefString(String key, String defValue) throws RemoteException {
             // Log.v(TAG, "Get preference: " + key);
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
-            if (key.equals(Constants.PREF_LOGIN_COOKIE) || key.equals(Constants.PREF_LOGIN_PASS)
-                    || key.equals(Constants.PREF_LOGIN_USERNAME)
-                    || key.equals(Constants.PREF_SENSOR_LIST)
-                    || key.equals(Constants.PREF_DEVICE_ID)
-                    || key.equals(Constants.PREF_PHONE_IMEI)
-                    || key.equals(Constants.PREF_PHONE_TYPE)) {
-                prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
+            if (key.equals(Auth.LOGIN_COOKIE) || key.equals(Auth.LOGIN_PASS)
+                    || key.equals(Auth.LOGIN_USERNAME) || key.equals(Auth.SENSOR_LIST)
+                    || key.equals(Auth.DEVICE_ID) || key.equals(Auth.PHONE_IMEI)
+                    || key.equals(Auth.PHONE_TYPE)) {
+                prefs = getSharedPreferences(SensePrefs.AUTH_PREFS, MODE_PRIVATE);
             }
 
             // return the preference value
@@ -246,7 +243,7 @@ public class SenseService extends Service {
 
         @Override
         public void getStatus(ISenseServiceCallback callback) throws RemoteException {
-            callback.statusReport(SenseService.this.getStatus());
+            callback.statusReport(SenseService.this.state.getStatusCode());
         }
 
         @Override
@@ -259,26 +256,23 @@ public class SenseService extends Service {
         public void setPrefBool(String key, boolean value) throws RemoteException {
             // Log.v(TAG, "Set preference: '" + key + "': '" + value + "'");
 
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
-            if (key.equals(Constants.PREF_STATUS_AMBIENCE)
-                    || key.equals(Constants.PREF_STATUS_DEV_PROX)
-                    || key.equals(Constants.PREF_STATUS_EXTERNAL)
-                    || key.equals(Constants.PREF_STATUS_LOCATION)
-                    || key.equals(Constants.PREF_STATUS_MAIN)
-                    || key.equals(Constants.PREF_STATUS_MOTION)
-                    || key.equals(Constants.PREF_STATUS_PHONESTATE)
-                    || key.equals(Constants.PREF_STATUS_POPQUIZ)
-                    || key.equals(Constants.PREF_AUTOSTART)) {
-                prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
-            } else if (key.equals(Constants.PREF_DEV_MODE)) {
-                prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
+            if (key.equals(Status.AMBIENCE) || key.equals(Status.DEV_PROX)
+                    || key.equals(Status.EXTERNAL)
+                    || key.equals(Status.LOCATION)
+                    || key.equals(Status.MAIN) || key.equals(Status.MOTION)
+                    || key.equals(Status.PHONESTATE)
+                    || key.equals(Status.POPQUIZ) || key.equals(Status.AUTOSTART)) {
+                prefs = getSharedPreferences(SensePrefs.STATUS_PREFS, MODE_PRIVATE);
+            } else if (key.equals(Auth.DEV_MODE)) {
+                prefs = getSharedPreferences(SensePrefs.AUTH_PREFS, MODE_PRIVATE);
             }
 
             // store value
             boolean stored = prefs.edit().putBoolean(key, value).commit();
             if (stored == false) {
                 Log.w(TAG, "Preference '" + key + "' not stored!");
-            } else if (key.equals(Constants.PREF_DEV_MODE) && isLoggedIn) {
+            } else if (key.equals(Auth.DEV_MODE) && state.isLoggedIn()) {
                 login();
             }
         }
@@ -286,7 +280,7 @@ public class SenseService extends Service {
         @Override
         public void setPrefFloat(String key, float value) throws RemoteException {
             // Log.v(TAG, "Set preference: " + key + ": \'" + value + "\'");
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
 
             // store value
             boolean stored = prefs.edit().putFloat(key, value).commit();
@@ -298,7 +292,7 @@ public class SenseService extends Service {
         @Override
         public void setPrefInt(String key, int value) throws RemoteException {
             // Log.v(TAG, "Set preference: " + key + ": \'" + value + "\'");
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
 
             // store value
             boolean stored = prefs.edit().putFloat(key, value).commit();
@@ -310,9 +304,9 @@ public class SenseService extends Service {
         @Override
         public void setPrefLong(String key, long value) throws RemoteException {
             // Log.v(TAG, "Set preference: " + key + ": \'" + value + "\'");
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
-            if (key.equals(Constants.PREF_SENSOR_LIST_TIME)) {
-                prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
+            if (key.equals(Auth.SENSOR_LIST_TIME)) {
+                prefs = getSharedPreferences(SensePrefs.AUTH_PREFS, MODE_PRIVATE);
             }
 
             // store value
@@ -325,14 +319,12 @@ public class SenseService extends Service {
         @Override
         public void setPrefString(String key, String value) throws RemoteException {
             // Log.v(TAG, "Set preference: " + key + ": \'" + value + "\'");
-            SharedPreferences prefs = getSharedPreferences(Constants.MAIN_PREFS, MODE_PRIVATE);
-            if (key.equals(Constants.PREF_LOGIN_COOKIE) || key.equals(Constants.PREF_LOGIN_PASS)
-                    || key.equals(Constants.PREF_LOGIN_USERNAME)
-                    || key.equals(Constants.PREF_SENSOR_LIST)
-                    || key.equals(Constants.PREF_DEVICE_ID)
-                    || key.equals(Constants.PREF_PHONE_IMEI)
-                    || key.equals(Constants.PREF_PHONE_TYPE)) {
-                prefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
+            if (key.equals(Auth.LOGIN_COOKIE) || key.equals(Auth.LOGIN_PASS)
+                    || key.equals(Auth.LOGIN_USERNAME) || key.equals(Auth.SENSOR_LIST)
+                    || key.equals(Auth.DEVICE_ID) || key.equals(Auth.PHONE_IMEI)
+                    || key.equals(Auth.PHONE_TYPE)) {
+                prefs = getSharedPreferences(SensePrefs.AUTH_PREFS, MODE_PRIVATE);
             }
 
             // store value
@@ -342,9 +334,9 @@ public class SenseService extends Service {
             }
 
             // special check for sync and sample rate changes
-            if (key.equals(Constants.PREF_SAMPLE_RATE)) {
+            if (key.equals(SensePrefs.Main.SAMPLE_RATE)) {
                 onSampleRateChange();
-            } else if (key.equals(Constants.PREF_SYNC_RATE)) {
+            } else if (key.equals(SensePrefs.Main.SYNC_RATE)) {
                 onSyncRateChange();
             }
         }
@@ -352,64 +344,64 @@ public class SenseService extends Service {
         @Override
         public void toggleAmbience(boolean active) {
             // Log.v(TAG, "Toggle ambience: " + active);
-            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
-            prefs.edit().putBoolean(Constants.PREF_STATUS_AMBIENCE, active).commit();
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Status.AMBIENCE, active).commit();
             SenseService.this.toggleAmbience(active);
         }
 
         @Override
         public void toggleDeviceProx(boolean active) {
             // Log.v(TAG, "Toggle neighboring devices: " + active);
-            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
-            prefs.edit().putBoolean(Constants.PREF_STATUS_DEV_PROX, active).commit();
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Status.DEV_PROX, active).commit();
             SenseService.this.toggleDeviceProx(active);
         }
 
         @Override
         public void toggleExternalSensors(boolean active) {
             // Log.v(TAG, "Toggle external sensors: " + active);
-            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
-            prefs.edit().putBoolean(Constants.PREF_STATUS_EXTERNAL, active).commit();
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Status.EXTERNAL, active).commit();
             SenseService.this.toggleExternalSensors(active);
         }
 
         @Override
         public void toggleLocation(boolean active) {
             // Log.v(TAG, "Toggle location: " + active);
-            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
-            prefs.edit().putBoolean(Constants.PREF_STATUS_LOCATION, active).commit();
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Status.LOCATION, active).commit();
             SenseService.this.toggleLocation(active);
         }
 
         @Override
         public void toggleMain(boolean active) {
             // Log.v(TAG, "Toggle main: " + active);
-            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
-            prefs.edit().putBoolean(Constants.PREF_STATUS_MAIN, active).commit();
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Status.MAIN, active).commit();
             SenseService.this.toggleMain(active);
         }
 
         @Override
         public void toggleMotion(boolean active) {
             // Log.v(TAG, "Toggle motion: " + active);
-            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
-            prefs.edit().putBoolean(Constants.PREF_STATUS_MOTION, active).commit();
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Status.MOTION, active).commit();
             SenseService.this.toggleMotion(active);
         }
 
         @Override
         public void togglePhoneState(boolean active) {
             // Log.v(TAG, "Toggle phone state: " + active);
-            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
-            prefs.edit().putBoolean(Constants.PREF_STATUS_PHONESTATE, active).commit();
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Status.PHONESTATE, active).commit();
             SenseService.this.togglePhoneState(active);
         }
 
         @Override
         public void togglePopQuiz(boolean active) {
             // Log.v(TAG, "Toggle questionnaire: " + active);
-            SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS, MODE_PRIVATE);
-            prefs.edit().putBoolean(Constants.PREF_STATUS_POPQUIZ, active).commit();
+            SharedPreferences prefs = getSharedPreferences(SensePrefs.STATUS_PREFS, MODE_PRIVATE);
+            prefs.edit().putBoolean(Status.POPQUIZ, active).commit();
             SenseService.this.togglePopQuiz(active);
         }
     }
@@ -426,12 +418,9 @@ public class SenseService extends Service {
      */
     public final static String ACTION_SERVICE_BROADCAST = "nl.sense_os.service.Broadcast";
 
-    /**
-     * ID for the notification in the status bar. Used to cancel the notification.
-     */
-    private static final int NOTIF_ID = 1;
-
     private final ISenseService.Stub binder = new SenseServiceStub();
+
+    private ServiceStateHelper state;
 
     // broadcast receivers
     private final BroadcastReceiver screenOffListener = new ScreenOffListener();
@@ -449,9 +438,6 @@ public class SenseService extends Service {
     private SensePhoneState phoneStateListener;
     private ZephyrBioHarness es_bioHarness;
     private ZephyrHxM es_HxM;
-
-    private boolean isStarted, isForeground, isLoggedIn, isAmbienceActive, isDevProxActive,
-            isExternalActive, isLocationActive, isMotionActive, isPhoneStateActive, isQuizActive;
 
     /**
      * Handler on main application thread to display toasts to the user.
@@ -477,18 +463,19 @@ public class SenseService extends Service {
         stopSensorModules();
 
         // clear cached settings of the previous user (i.e. device id)
-        final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+        final SharedPreferences authPrefs = getSharedPreferences(SensePrefs.AUTH_PREFS,
+                MODE_PRIVATE);
         final Editor editor = authPrefs.edit();
 
         // save new username and password in the preferences
-        editor.putString(Constants.PREF_LOGIN_USERNAME, username);
-        editor.putString(Constants.PREF_LOGIN_PASS, SenseApi.hashPassword(password));
+        editor.putString(Auth.LOGIN_USERNAME, username);
+        editor.putString(Auth.LOGIN_PASS, SenseApi.hashPassword(password));
 
         // remove old session data
-        editor.remove(Constants.PREF_DEVICE_ID);
-        editor.remove(Constants.PREF_DEVICE_TYPE);
-        editor.remove(Constants.PREF_LOGIN_COOKIE);
-        editor.remove(Constants.PREF_SENSOR_LIST);
+        editor.remove(Auth.DEVICE_ID);
+        editor.remove(Auth.DEVICE_TYPE);
+        editor.remove(Auth.LOGIN_COOKIE);
+        editor.remove(Auth.SENSOR_LIST);
         editor.commit();
 
         return login();
@@ -502,7 +489,7 @@ public class SenseService extends Service {
         try {
             PackageInfo packageInfo = getPackageManager().getPackageInfo("nl.sense_os.app", 0);
             String versionName = URLEncoder.encode(packageInfo.versionName);
-            URI uri = new URI(Constants.URL_VERSION + "?version=" + versionName);
+            URI uri = new URI(SenseUrls.VERSION + "?version=" + versionName);
             final JSONObject version = SenseApi.getJsonObject(this, uri, "");
 
             if (version == null) {
@@ -520,26 +507,6 @@ public class SenseService extends Service {
     }
 
     /**
-     * @return the current status of the sensing modules
-     */
-    private int getStatus() {
-
-        int status = 0;
-
-        status = isStarted ? Constants.STATUSCODE_RUNNING : status;
-        status = isLoggedIn ? status + Constants.STATUSCODE_CONNECTED : status;
-        status = isPhoneStateActive ? status + Constants.STATUSCODE_PHONESTATE : status;
-        status = isLocationActive ? status + Constants.STATUSCODE_LOCATION : status;
-        status = isAmbienceActive ? status + Constants.STATUSCODE_AMBIENCE : status;
-        status = isQuizActive ? status + Constants.STATUSCODE_QUIZ : status;
-        status = isDevProxActive ? status + Constants.STATUSCODE_DEVICE_PROX : status;
-        status = isExternalActive ? status + Constants.STATUSCODE_EXTERNAL : status;
-        status = isMotionActive ? status + Constants.STATUSCODE_MOTION : status;
-
-        return status;
-    }
-
-    /**
      * Tries to login using the username and password from the private preferences and updates the
      * {@link #isLoggedIn} status accordingly. Can also be called from Activities that are bound to
      * the service.
@@ -550,13 +517,11 @@ public class SenseService extends Service {
     private int login() {
         // Log.v(TAG, "Log in...");
 
-        // show notification that we are not logged in (yet)
-        showNotification();
-
         // get login parameters from the preferences
-        final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
-        final String username = authPrefs.getString(Constants.PREF_LOGIN_USERNAME, null);
-        final String pass = authPrefs.getString(Constants.PREF_LOGIN_PASS, null);
+        final SharedPreferences authPrefs = getSharedPreferences(SensePrefs.AUTH_PREFS,
+                MODE_PRIVATE);
+        final String username = authPrefs.getString(Auth.LOGIN_USERNAME, null);
+        final String pass = authPrefs.getString(Auth.LOGIN_PASS, null);
 
         // try to log in
         int result = -1;
@@ -565,20 +530,20 @@ public class SenseService extends Service {
 
             if (0 == result) {
                 // logged in successfully
-                isLoggedIn = true;
+                state.setLoggedIn(true);
                 onLogIn();
             } else if (-2 == result) {
                 Log.w(TAG, "Login forbidden!");
-                isLoggedIn = false;
+                state.setLoggedIn(false);
             } else {
                 Log.w(TAG, "Login failed!");
-                isLoggedIn = false;
+                state.setLoggedIn(false);
             }
 
         } else {
             Log.w(TAG, "Cannot login: username or password unavailable... Username: " + username
                     + ", password: " + pass);
-            isLoggedIn = false;
+            state.setLoggedIn(false);
         }
 
         return result;
@@ -598,6 +563,8 @@ public class SenseService extends Service {
     public void onCreate() {
         // Log.v(TAG, "---------->  Sense Platform service is being created...  <----------");
         super.onCreate();
+
+        state = new ServiceStateHelper(this);
 
         // register broadcast receiver for login in case of Internet connection changes
         IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
@@ -649,9 +616,6 @@ public class SenseService extends Service {
         // start database leeglepelaar
         startTransmitAlarms();
 
-        // show notification
-        showNotification();
-
         checkVersion();
     }
 
@@ -660,18 +624,9 @@ public class SenseService extends Service {
      * updates the status bar notification; stops the periodic alarms for data transmission.
      */
     private void onLogOut() {
-        // check if we were actually logged to prevent overwriting the last active state..
-        if (isLoggedIn) {
-            Log.i(TAG, "Logged out...");
 
-            // update login status
-            isLoggedIn = false;
-        }
-
-        // update the notification icon
-        if (isForeground) {
-            showNotification();
-        }
+        // update login status
+        state.setLoggedIn(false);
 
         stopTransmitAlarms();
 
@@ -681,7 +636,7 @@ public class SenseService extends Service {
 
     private void onSampleRateChange() {
         // Log.v(TAG, "Sample rate changed...");
-        if (isLoggedIn) {
+        if (state.isLoggedIn()) {
             stopSensorModules();
             startSensorModules();
         }
@@ -727,17 +682,17 @@ public class SenseService extends Service {
             public void handleMessage(Message msg) {
 
                 try {
-                    final SharedPreferences prefs = getSharedPreferences(Constants.STATUS_PREFS,
+                    final SharedPreferences prefs = getSharedPreferences(SensePrefs.STATUS_PREFS,
                             MODE_PRIVATE);
-                    isStarted = prefs.getBoolean(Constants.PREF_STATUS_MAIN, true);
-                    if (false == isStarted) {
+                    state.setStarted(prefs.getBoolean(Status.MAIN, true));
+                    if (false == state.isStarted()) {
                         Log.w(TAG, "Sense service was started when the main status is not set!");
                         stopForegroundCompat();
                         return;
                     }
 
                     // make service as important as regular activities
-                    if (false == isForeground) {
+                    if (false == state.isForeground()) {
                         startForegroundCompat();
                     }
 
@@ -748,8 +703,7 @@ public class SenseService extends Service {
                     }
 
                     // try to login immediately
-                    if (false == isLoggedIn || relogin) {
-                        showNotification();
+                    if (false == state.isLoggedIn() || relogin) {
                         login();
                     } else {
                         checkVersion();
@@ -757,7 +711,6 @@ public class SenseService extends Service {
 
                     // restart the individual modules
                     startSensorModules();
-                    showNotification();
 
                 } finally {
                     getLooper().quit();
@@ -796,18 +749,19 @@ public class SenseService extends Service {
         String hashPass = SenseApi.hashPassword(password);
 
         // clear cached settings of the previous user (i.e. device id)
-        final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS, MODE_PRIVATE);
+        final SharedPreferences authPrefs = getSharedPreferences(SensePrefs.AUTH_PREFS,
+                MODE_PRIVATE);
         final Editor authEditor = authPrefs.edit();
 
         // save username and password in preferences
-        authEditor.putString(Constants.PREF_LOGIN_USERNAME, username);
-        authEditor.putString(Constants.PREF_LOGIN_PASS, hashPass);
+        authEditor.putString(Auth.LOGIN_USERNAME, username);
+        authEditor.putString(Auth.LOGIN_PASS, hashPass);
 
         // remove old session data
-        authEditor.remove(Constants.PREF_DEVICE_ID);
-        authEditor.remove(Constants.PREF_DEVICE_TYPE);
-        authEditor.remove(Constants.PREF_LOGIN_COOKIE);
-        authEditor.remove(Constants.PREF_SENSOR_LIST);
+        authEditor.remove(Auth.DEVICE_ID);
+        authEditor.remove(Auth.DEVICE_TYPE);
+        authEditor.remove(Auth.LOGIN_COOKIE);
+        authEditor.remove(Auth.SENSOR_LIST);
         authEditor.commit();
 
         // try to register
@@ -821,66 +775,14 @@ public class SenseService extends Service {
                 login();
             } else {
                 Log.w(TAG, "Registration failed");
-                isLoggedIn = false;
+                state.setLoggedIn(false);
             }
         } else {
             // Log.d(TAG, "Cannot register: username or password unavailable... Username: " +
             // username + ", password hash: " + hashPass);
-            isLoggedIn = false;
+            state.setLoggedIn(false);
         }
         return registered;
-    }
-
-    /**
-     * Shows a status bar notification that the Sense service is active, also displaying the
-     * username if the service is logged in.
-     * 
-     * @param loggedIn
-     *            set to <code>true</code> if the service is logged in.
-     */
-    private void showNotification() {
-
-        // select the icon resource
-        int icon = -1;
-        CharSequence contentText = null;
-        if (isStarted) {
-            if (isLoggedIn) {
-                icon = R.drawable.ic_status_sense;
-                final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS,
-                        MODE_PRIVATE);
-                String username = authPrefs.getString(Constants.PREF_LOGIN_USERNAME, "UNKNOWN");
-                contentText = "Active, logged in as '" + username + "'";
-            } else {
-                icon = R.drawable.ic_status_sense_alert;
-                contentText = "Active, not logged in (local mode only)";
-            }
-        } else {
-            if (isLoggedIn) {
-                icon = R.drawable.ic_status_sense_disabled;
-                final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS,
-                        MODE_PRIVATE);
-                String username = authPrefs.getString(Constants.PREF_LOGIN_USERNAME, "UNKNOWN");
-                contentText = "Inactive, logged in as '" + username + "'";
-            } else {
-                icon = R.drawable.ic_status_sense_disabled;
-                contentText = "Inactive, not logged in";
-            }
-        }
-
-        final long when = System.currentTimeMillis();
-        final Notification note = new Notification(icon, null, when);
-        note.flags = Notification.FLAG_NO_CLEAR;
-
-        // extra info text is shown when the status bar is opened
-        final CharSequence contentTitle = "Sense Platform";
-
-        final Intent notifIntent = new Intent("nl.sense_os.app.SenseApp");
-        notifIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        final PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notifIntent, 0);
-        note.setLatestEventInfo(getApplicationContext(), contentTitle, contentText, contentIntent);
-
-        final NotificationManager mgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        mgr.notify(NOTIF_ID, note);
     }
 
     /**
@@ -905,7 +807,7 @@ public class SenseService extends Service {
     private void startAliveChecks() {
         // Log.v(TAG, "Start periodic checks if Sense is still alive...");
 
-        isStarted = true;
+        state.setStarted(true);
 
         // start the alarms
         final Intent alarmIntent = new Intent(AliveChecker.ACTION_CHECK_ALIVE);
@@ -925,7 +827,7 @@ public class SenseService extends Service {
         // Log.v(TAG, "Enable foreground status...");
 
         @SuppressWarnings("rawtypes")
-        final Class[] startForegroundSignature = new Class[] { int.class, Notification.class };
+        final Class[] startForegroundSignature = new Class[]{int.class, Notification.class};
         Method startForeground = null;
         try {
             startForeground = getClass().getMethod("startForeground", startForegroundSignature);
@@ -937,28 +839,12 @@ public class SenseService extends Service {
         // call startForeground in fancy way so old systems do not get confused by unknown methods
         if (startForeground == null) {
             setForeground(true);
+
         } else {
             // create notification
-            int icon = R.drawable.ic_status_sense;
-            CharSequence contentText = "";
-            if (!isLoggedIn) {
-                icon = R.drawable.ic_status_sense_disabled;
-                contentText = "Not logged in...";
-            } else {
-                icon = R.drawable.ic_status_sense;
-                final SharedPreferences authPrefs = getSharedPreferences(Constants.AUTH_PREFS,
-                        MODE_PRIVATE);
-                contentText = "Logged in as "
-                        + authPrefs.getString(Constants.PREF_LOGIN_USERNAME, "UNKNOWN");
-            }
+            Notification n = state.getStateNotification();
 
-            final long when = System.currentTimeMillis();
-            final Notification n = new Notification(icon, null, when);
-            final Intent notifIntent = new Intent("nl.sense_os.app.SenseApp");
-            notifIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            final PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notifIntent, 0);
-            n.setLatestEventInfo(this, "Sense Platform", contentText, contentIntent);
-            Object[] startArgs = { Integer.valueOf(NOTIF_ID), n };
+            Object[] startArgs = {Integer.valueOf(ServiceStateHelper.NOTIF_ID), n};
             try {
                 startForeground.invoke(this, startArgs);
             } catch (InvocationTargetException e) {
@@ -974,8 +860,8 @@ public class SenseService extends Service {
 
         startAliveChecks();
 
-        // update state field
-        isForeground = true;
+        // update state
+        state.setForeground(true);
     }
 
     /**
@@ -984,38 +870,38 @@ public class SenseService extends Service {
      */
     private void startSensorModules() {
 
-        final SharedPreferences statusPrefs = getSharedPreferences(Constants.STATUS_PREFS,
+        final SharedPreferences statusPrefs = getSharedPreferences(SensePrefs.STATUS_PREFS,
                 MODE_PRIVATE);
 
-        if (statusPrefs.getBoolean(Constants.PREF_STATUS_MAIN, false)) {
+        if (statusPrefs.getBoolean(Status.MAIN, false)) {
 
             toggleMain(true);
 
-            if (statusPrefs.getBoolean(Constants.PREF_STATUS_PHONESTATE, false)) {
+            if (statusPrefs.getBoolean(Status.PHONESTATE, false)) {
                 // Log.d(TAG, "Restart phone state component...");
                 togglePhoneState(true);
             }
-            if (statusPrefs.getBoolean(Constants.PREF_STATUS_LOCATION, false)) {
+            if (statusPrefs.getBoolean(Status.LOCATION, false)) {
                 // Log.d(TAG, "Restart location component...");
                 toggleLocation(true);
             }
-            if (statusPrefs.getBoolean(Constants.PREF_STATUS_AMBIENCE, false)) {
+            if (statusPrefs.getBoolean(Status.AMBIENCE, false)) {
                 // Log.d(TAG, "Restart ambience components...");
                 toggleAmbience(true);
             }
-            if (statusPrefs.getBoolean(Constants.PREF_STATUS_MOTION, false)) {
+            if (statusPrefs.getBoolean(Status.MOTION, false)) {
                 // Log.d(TAG, "Restart motion component...");
                 toggleMotion(true);
             }
-            if (statusPrefs.getBoolean(Constants.PREF_STATUS_DEV_PROX, false)) {
+            if (statusPrefs.getBoolean(Status.DEV_PROX, false)) {
                 // Log.d(TAG, "Restart neighboring devices components...");
                 toggleDeviceProx(true);
             }
-            if (statusPrefs.getBoolean(Constants.PREF_STATUS_EXTERNAL, false)) {
+            if (statusPrefs.getBoolean(Status.EXTERNAL, false)) {
                 // Log.d(TAG, "Restart external sensors service...");
                 toggleExternalSensors(true);
             }
-            if (statusPrefs.getBoolean(Constants.PREF_STATUS_POPQUIZ, false)) {
+            if (statusPrefs.getBoolean(Status.POPQUIZ, false)) {
                 // Log.d(TAG, "Restart popquiz component...");
                 togglePopQuiz(true);
             }
@@ -1043,7 +929,7 @@ public class SenseService extends Service {
      */
     private void stopAliveChecks() {
 
-        isStarted = false;
+        state.setStarted(false);
 
         // stop the alive check broadcasts
         final Intent alarmIntent = new Intent(AliveChecker.ACTION_CHECK_ALIVE);
@@ -1062,7 +948,7 @@ public class SenseService extends Service {
         stopAliveChecks();
 
         @SuppressWarnings("rawtypes")
-        final Class[] stopForegroundSignature = new Class[] { boolean.class };
+        final Class[] stopForegroundSignature = new Class[]{boolean.class};
         Method stopForeground = null;
         try {
             stopForeground = getClass().getMethod("stopForeground", stopForegroundSignature);
@@ -1075,7 +961,7 @@ public class SenseService extends Service {
         if (stopForeground == null) {
             setForeground(false);
         } else {
-            Object[] stopArgs = { Boolean.TRUE };
+            Object[] stopArgs = {Boolean.TRUE};
             try {
                 stopForeground.invoke(this, stopArgs);
             } catch (InvocationTargetException e) {
@@ -1089,12 +975,8 @@ public class SenseService extends Service {
             }
         }
 
-        // remove the notification that the service is running
-        final NotificationManager noteMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        noteMgr.cancel(NOTIF_ID);
-
         // update state field
-        isForeground = false;
+        state.setForeground(false);
     }
 
     /**
@@ -1102,25 +984,25 @@ public class SenseService extends Service {
      */
     private void stopSensorModules() {
 
-        if (isDevProxActive) {
+        if (state.isDevProxActive()) {
             toggleDeviceProx(false);
         }
-        if (isMotionActive) {
+        if (state.isMotionActive()) {
             toggleMotion(false);
         }
-        if (isLocationActive) {
+        if (state.isLocationActive()) {
             toggleLocation(false);
         }
-        if (isAmbienceActive) {
+        if (state.isAmbienceActive()) {
             toggleAmbience(false);
         }
-        if (isPhoneStateActive) {
+        if (state.isPhoneStateActive()) {
             togglePhoneState(false);
         }
-        if (isQuizActive) {
+        if (state.isQuizActive()) {
             togglePopQuiz(false);
         }
-        if (isExternalActive) {
+        if (state.isExternalActive()) {
             toggleExternalSensors(false);
         }
 
@@ -1140,8 +1022,8 @@ public class SenseService extends Service {
 
     private void toggleAmbience(boolean active) {
 
-        if (active != isAmbienceActive) {
-            isAmbienceActive = active;
+        if (active != state.isAmbienceActive()) {
+            state.setAmbienceActive(active);
 
             if (true == active) {
 
@@ -1166,26 +1048,26 @@ public class SenseService extends Service {
                 }
 
                 // get sample rate from preferences
-                final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
                         MODE_PRIVATE);
-                final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SAMPLE_RATE,
-                        "0"));
+                final int rate = Integer.parseInt(mainPrefs.getString(
+                        SensePrefs.Main.SAMPLE_RATE, "0"));
                 int interval = -1;
                 switch (rate) {
-                case -2: // real time
-                    interval = -1;
-                    break;
-                case -1: // often
-                    interval = 10 * 1000;
-                    break;
-                case 0: // normal
-                    interval = 60 * 1000;
-                    break;
-                case 1: // rarely (15 minutes)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected sample rate preference.");
+                    case -2 : // real time
+                        interval = -1;
+                        break;
+                    case -1 : // often
+                        interval = 10 * 1000;
+                        break;
+                    case 0 : // normal
+                        interval = 60 * 1000;
+                        break;
+                    case 1 : // rarely (15 minutes)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected sample rate preference.");
                 }
                 // special interval for Agostino
                 final boolean agostinoMode = mainPrefs.getBoolean("agostino_mode", false);
@@ -1203,11 +1085,11 @@ public class SenseService extends Service {
                     @Override
                     public void run() {
 
-                        if (mainPrefs.getBoolean(Constants.PREF_AMBIENCE_MIC, true)) {
+                        if (mainPrefs.getBoolean(Ambience.MIC, true)) {
                             noiseSensor = new NoiseSensor(SenseService.this);
                             noiseSensor.enable(finalInterval);
                         }
-                        if (mainPrefs.getBoolean(Constants.PREF_AMBIENCE_LIGHT, true)) {
+                        if (mainPrefs.getBoolean(Ambience.LIGHT, true)) {
                             lightSensor = new LightSensor(SenseService.this);
                             lightSensor.startLightSensing(finalInterval);
                         }
@@ -1236,8 +1118,8 @@ public class SenseService extends Service {
 
     private void toggleDeviceProx(boolean active) {
 
-        if (active != isDevProxActive) {
-            isDevProxActive = active;
+        if (active != state.isDevProxActive()) {
+            state.setDevProxActive(active);
 
             if (true == active) {
 
@@ -1255,29 +1137,29 @@ public class SenseService extends Service {
                 }
 
                 // get sample rate
-                final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
                         MODE_PRIVATE);
-                final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SAMPLE_RATE,
-                        "0"));
+                final int rate = Integer.parseInt(mainPrefs.getString(
+                        SensePrefs.Main.SAMPLE_RATE, "0"));
                 int interval = 1;
                 switch (rate) {
-                case -2:
-                    interval = 1 * 1000;
-                    break;
-                case -1:
-                    // often
-                    interval = 60 * 1000;
-                    break;
-                case 0:
-                    // normal
-                    interval = 5 * 60 * 1000;
-                    break;
-                case 1:
-                    // rarely (15 mins)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected device proximity rate preference.");
+                    case -2 :
+                        interval = 1 * 1000;
+                        break;
+                    case -1 :
+                        // often
+                        interval = 60 * 1000;
+                        break;
+                    case 0 :
+                        // normal
+                        interval = 5 * 60 * 1000;
+                        break;
+                    case 1 :
+                        // rarely (15 mins)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected device proximity rate preference.");
                 }
                 final int finalInterval = interval;
 
@@ -1313,8 +1195,8 @@ public class SenseService extends Service {
 
     private void toggleExternalSensors(boolean active) {
 
-        if (active != isExternalActive) {
-            isExternalActive = active;
+        if (active != state.isExternalActive()) {
+            state.setExternalActive(active);
 
             if (true == active) {
 
@@ -1339,30 +1221,30 @@ public class SenseService extends Service {
                 }
 
                 // get sample rate
-                final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
                         MODE_PRIVATE);
-                final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SAMPLE_RATE,
-                        "0"));
+                final int rate = Integer.parseInt(mainPrefs.getString(
+                        SensePrefs.Main.SAMPLE_RATE, "0"));
                 int interval = 1;
                 switch (rate) {
-                case -2:
-                    interval = 1 * 1000;
-                    break;
-                case -1:
-                    // often
-                    interval = 5 * 1000;
-                    break;
-                case 0:
-                    // normal
-                    interval = 60 * 1000;
-                    break;
-                case 1:
-                    // rarely (15 minutes)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected external sensor rate preference.");
-                    return;
+                    case -2 :
+                        interval = 1 * 1000;
+                        break;
+                    case -1 :
+                        // often
+                        interval = 5 * 1000;
+                        break;
+                    case 0 :
+                        // normal
+                        interval = 60 * 1000;
+                        break;
+                    case 1 :
+                        // rarely (15 minutes)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected external sensor rate preference.");
+                        return;
                 }
                 final int finalInterval = interval;
 
@@ -1373,11 +1255,11 @@ public class SenseService extends Service {
 
                     @Override
                     public void run() {
-                        if (mainPrefs.getBoolean(Constants.PREF_BIOHARNESS, false)) {
+                        if (mainPrefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.MAIN, false)) {
                             es_bioHarness = new ZephyrBioHarness(SenseService.this);
                             es_bioHarness.startBioHarness(finalInterval);
                         }
-                        if (mainPrefs.getBoolean(Constants.PREF_HXM, false)) {
+                        if (mainPrefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM.MAIN, false)) {
                             es_HxM = new ZephyrHxM(SenseService.this);
                             es_HxM.startHxM(finalInterval);
                         }
@@ -1410,8 +1292,8 @@ public class SenseService extends Service {
 
     private void toggleLocation(boolean active) {
 
-        if (active != isLocationActive) {
-            isLocationActive = active;
+        if (active != state.isLocationActive()) {
+            state.setLocationActive(active);
 
             if (true == active) {
 
@@ -1429,32 +1311,32 @@ public class SenseService extends Service {
                 }
 
                 // get sample rate
-                final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
                         MODE_PRIVATE);
-                final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SAMPLE_RATE,
-                        "0"));
+                final int rate = Integer.parseInt(mainPrefs.getString(
+                        SensePrefs.Main.SAMPLE_RATE, "0"));
                 long minTime = -1;
                 float minDistance = -1;
                 switch (rate) {
-                case -2: // real-time
-                    minTime = 1000;
-                    minDistance = 0;
-                    break;
-                case -1: // often
-                    minTime = 30 * 1000;
-                    minDistance = 0;
-                    break;
-                case 0: // normal
-                    minTime = 5 * 60 * 1000;
-                    minDistance = 0;
-                    break;
-                case 1: // rarely
-                    minTime = 15 * 60 * 1000;
-                    minDistance = 0;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                    break;
+                    case -2 : // real-time
+                        minTime = 1000;
+                        minDistance = 0;
+                        break;
+                    case -1 : // often
+                        minTime = 30 * 1000;
+                        minDistance = 0;
+                        break;
+                    case 0 : // normal
+                        minTime = 5 * 60 * 1000;
+                        minDistance = 0;
+                        break;
+                    case 1 : // rarely
+                        minTime = 15 * 60 * 1000;
+                        minDistance = 0;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                        break;
                 }
                 // special interval for Agostino
                 final boolean agostinoMode = mainPrefs.getBoolean("agostino_mode", false);
@@ -1501,13 +1383,13 @@ public class SenseService extends Service {
         if (true == active) {
 
             // properly start the service to start sensing
-            if (!isStarted) {
+            if (!state.isStarted()) {
                 Log.i(TAG, "Start service...");
                 startService(new Intent(ISenseService.class.getName()));
             }
 
         } else {
-            if (isStarted) {
+            if (state.isStarted()) {
                 Log.i(TAG, "Stop service...");
             }
             onLogOut();
@@ -1518,8 +1400,8 @@ public class SenseService extends Service {
 
     private void toggleMotion(boolean active) {
 
-        if (active != isMotionActive) {
-            isMotionActive = active;
+        if (active != state.isMotionActive()) {
+            state.setMotionActive(active);
 
             if (true == active) {
 
@@ -1541,27 +1423,27 @@ public class SenseService extends Service {
                 }
 
                 // get sample rate
-                final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
                         MODE_PRIVATE);
-                final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SAMPLE_RATE,
-                        "0"));
+                final int rate = Integer.parseInt(mainPrefs.getString(
+                        SensePrefs.Main.SAMPLE_RATE, "0"));
                 int interval = -1;
                 switch (rate) {
-                case -2: // real time
-                    interval = 1 * 1000;
-                    break;
-                case -1: // often
-                    interval = 5 * 1000;
-                    break;
-                case 0: // normal
-                    interval = 60 * 1000;
-                    break;
-                case 1: // rarely (15 minutes)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                    break;
+                    case -2 : // real time
+                        interval = 1 * 1000;
+                        break;
+                    case -1 : // often
+                        interval = 5 * 1000;
+                        break;
+                    case 0 : // normal
+                        interval = 60 * 1000;
+                        break;
+                    case 1 : // rarely (15 minutes)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                        break;
                 }
                 // special interval for Agostino
                 final boolean agostinoMode = mainPrefs.getBoolean("agostino_mode", false);
@@ -1610,8 +1492,8 @@ public class SenseService extends Service {
 
     private void togglePhoneState(boolean active) {
 
-        if (active != isPhoneStateActive) {
-            isPhoneStateActive = active;
+        if (active != state.isPhoneStateActive()) {
+            state.setPhoneStateActive(active);
 
             if (true == active) {
 
@@ -1657,27 +1539,27 @@ public class SenseService extends Service {
                 }
 
                 // get sample rate
-                final SharedPreferences mainPrefs = getSharedPreferences(Constants.MAIN_PREFS,
+                final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
                         MODE_PRIVATE);
-                final int rate = Integer.parseInt(mainPrefs.getString(Constants.PREF_SAMPLE_RATE,
-                        "0"));
+                final int rate = Integer.parseInt(mainPrefs.getString(
+                        SensePrefs.Main.SAMPLE_RATE, "0"));
                 int interval = -1;
                 switch (rate) {
-                case -2: // real time
-                    interval = 1 * 1000;
-                    break;
-                case -1: // often
-                    interval = 10 * 1000;
-                    break;
-                case 0: // normal
-                    interval = 60 * 1000;
-                    break;
-                case 1: // rarely (15 minutes)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                    break;
+                    case -2 : // real time
+                        interval = 1 * 1000;
+                        break;
+                    case -1 : // often
+                        interval = 10 * 1000;
+                        break;
+                    case 0 : // normal
+                        interval = 60 * 1000;
+                        break;
+                    case 1 : // rarely (15 minutes)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                        break;
                 }
                 final int finalInterval = interval;
 

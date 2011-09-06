@@ -18,6 +18,9 @@ import java.util.Map.Entry;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import nl.sense_os.service.SensePrefs.Auth;
+import nl.sense_os.service.SensePrefs.Main.Advanced;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -61,13 +64,13 @@ public class SenseApi {
      */
     public static int getDeviceId(Context context) {
 
-        final SharedPreferences authPrefs = context.getSharedPreferences(Constants.AUTH_PREFS,
+        final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
                 Context.MODE_PRIVATE);
 
         // try to get the device ID from the cache
         try {
-            int cachedId = authPrefs.getInt(Constants.PREF_DEVICE_ID, -1);
-            long cacheTime = authPrefs.getLong(Constants.PREF_DEVICE_ID_TIME, 0);
+            int cachedId = authPrefs.getInt(Auth.DEVICE_ID, -1);
+            long cacheTime = authPrefs.getLong(Auth.DEVICE_ID_TIME, 0);
             boolean isOutdated = System.currentTimeMillis() - cacheTime > CACHE_REFRESH;
 
             // return cached ID of it is still valid
@@ -89,9 +92,9 @@ public class SenseApi {
 
         try {
             // get list of devices that are already registered at CommonSense for this user
-            boolean devMode = authPrefs.getBoolean(Constants.PREF_DEV_MODE, false);
-            final URI uri = new URI(devMode ? Constants.URL_DEV_DEVICES : Constants.URL_DEVICES);
-            String cookie = authPrefs.getString(Constants.PREF_LOGIN_COOKIE, "NO_COOKIE");
+            boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
+            final URI uri = new URI(devMode ? SenseUrls.DEV_DEVICES : SenseUrls.DEVICES);
+            String cookie = authPrefs.getString(Auth.LOGIN_COOKIE, "NO_COOKIE");
             JSONObject response = SenseApi.getJsonObject(context, uri, cookie);
 
             // check if this device is in the list
@@ -115,10 +118,10 @@ public class SenseApi {
                         // cache device ID in preferences
                         int deviceId = Integer.parseInt(device.getString("id"));
                         final Editor editor = authPrefs.edit();
-                        editor.putString(Constants.PREF_DEVICE_TYPE, device.getString("type"));
-                        editor.putInt(Constants.PREF_DEVICE_ID, deviceId);
-                        editor.putLong(Constants.PREF_DEVICE_ID_TIME, System.currentTimeMillis());
-                        editor.remove(Constants.PREF_SENSOR_LIST);
+                        editor.putString(Auth.DEVICE_TYPE, device.getString("type"));
+                        editor.putInt(Auth.DEVICE_ID, deviceId);
+                        editor.putLong(Auth.DEVICE_ID_TIME, System.currentTimeMillis());
+                        editor.remove(Auth.SENSOR_LIST);
                         editor.commit();
                         return deviceId;
                     }
@@ -152,13 +155,13 @@ public class SenseApi {
      */
     public static JSONArray getRegisteredSensors(Context context) {
 
-        final SharedPreferences authPrefs = context.getSharedPreferences(Constants.AUTH_PREFS,
+        final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
                 Context.MODE_PRIVATE);
 
         // try to get list of sensors from the cache
         try {
-            String cachedSensors = authPrefs.getString(Constants.PREF_SENSOR_LIST, null);
-            long cacheTime = authPrefs.getLong(Constants.PREF_SENSOR_LIST_TIME, 0);
+            String cachedSensors = authPrefs.getString(Auth.SENSOR_LIST, null);
+            long cacheTime = authPrefs.getLong(Auth.SENSOR_LIST_TIME, 0);
             boolean isOutdated = System.currentTimeMillis() - cacheTime > CACHE_REFRESH;
 
             // return cached list of it is still valid
@@ -191,9 +194,9 @@ public class SenseApi {
             }
 
             // get fresh list of sensors for this device from CommonSense
-            String cookie = authPrefs.getString(Constants.PREF_LOGIN_COOKIE, "NO_COOKIE");
-            boolean devMode = authPrefs.getBoolean(Constants.PREF_DEV_MODE, false);
-            String rawUrl = devMode ? Constants.URL_DEV_SENSORS : Constants.URL_SENSORS;
+            String cookie = authPrefs.getString(Auth.LOGIN_COOKIE, "NO_COOKIE");
+            boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
+            String rawUrl = devMode ? SenseUrls.DEV_SENSORS : SenseUrls.SENSORS;
             URI uri = new URI(rawUrl.replaceAll("<id>", "" + deviceId));
             JSONObject response = SenseApi.getJsonObject(context, uri, cookie);
 
@@ -203,8 +206,8 @@ public class SenseApi {
 
                 // store the new sensor list
                 Editor authEditor = authPrefs.edit();
-                authEditor.putString(Constants.PREF_SENSOR_LIST, sensorList.toString());
-                authEditor.putLong(Constants.PREF_SENSOR_LIST_TIME, System.currentTimeMillis());
+                authEditor.putString(Auth.SENSOR_LIST, sensorList.toString());
+                authEditor.putLong(Auth.SENSOR_LIST_TIME, System.currentTimeMillis());
                 authEditor.commit();
 
                 return sensorList;
@@ -229,9 +232,9 @@ public class SenseApi {
             String dataType, String deviceType) {
         try {
 
-            final SharedPreferences authPrefs = context.getSharedPreferences(Constants.AUTH_PREFS,
+            final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
                     Context.MODE_PRIVATE);
-            final boolean devMode = authPrefs.getBoolean(Constants.PREF_DEV_MODE, false);
+            final boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
 
             // get list of all registered sensors for this device
             JSONArray sensors = getRegisteredSensors(context);
@@ -247,13 +250,15 @@ public class SenseApi {
                             && sensor.getString("data_type").equalsIgnoreCase(dataType)) {
 
                         // found the right sensor
-                        if (dataType.equals(Constants.SENSOR_DATA_TYPE_FILE)) {
-                            String url = devMode ? Constants.URL_DEV_SENSOR_FILE
-                                    : Constants.URL_SENSOR_FILE;
+                        if (dataType.equals(SenseDataTypes.FILE)) {
+                            String url = devMode
+                                    ? SenseUrls.DEV_SENSOR_FILE
+                                    : SenseUrls.SENSOR_FILE;
                             return url.replaceFirst("<id>", sensor.getString("id"));
                         } else {
-                            String url = devMode ? Constants.URL_DEV_SENSOR_DATA
-                                    : Constants.URL_SENSOR_DATA;
+                            String url = devMode
+                                    ? SenseUrls.DEV_SENSOR_DATA
+                                    : SenseUrls.SENSOR_DATA;
                             return url.replaceFirst("<id>", sensor.getString("id"));
                         }
                     }
@@ -269,11 +274,11 @@ public class SenseApi {
             String id = registerSensor(context, sensorName, deviceType, dataType, sensorValue);
 
             // create URL with the new sensor ID
-            if (dataType.equals(Constants.SENSOR_DATA_TYPE_FILE)) {
-                String url = devMode ? Constants.URL_DEV_SENSOR_FILE : Constants.URL_SENSOR_FILE;
+            if (dataType.equals(SenseDataTypes.FILE)) {
+                String url = devMode ? SenseUrls.DEV_SENSOR_FILE : SenseUrls.SENSOR_FILE;
                 return url.replaceFirst("<id>", id);
             } else {
-                String url = devMode ? Constants.URL_DEV_SENSOR_DATA : Constants.URL_SENSOR_DATA;
+                String url = devMode ? SenseUrls.DEV_SENSOR_DATA : SenseUrls.SENSOR_DATA;
                 return url.replaceFirst("<id>", id);
             }
 
@@ -293,17 +298,17 @@ public class SenseApi {
      *             if the app ID is not valid
      */
     public static String getSessionId(Context context, String appId) throws IllegalAccessException {
-        SharedPreferences prefs = context.getSharedPreferences(Constants.AUTH_PREFS,
+        SharedPreferences prefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
                 Context.MODE_PRIVATE);
         if (AppSecrets.ASK.equals(appId)) {
             Log.v(TAG, "An ASK app accessed the CommonSense session ID");
-            return prefs.getString(Constants.PREF_LOGIN_COOKIE, null);
+            return prefs.getString(Auth.LOGIN_COOKIE, null);
         } else if (AppSecrets.RDAM_CS.equals(appId)) {
             Log.v(TAG, "A Rotterdam CS app accessed the CommonSense session ID");
-            return prefs.getString(Constants.PREF_LOGIN_COOKIE, null);
+            return prefs.getString(Auth.LOGIN_COOKIE, null);
         } else if (AppSecrets.SENSE.equals(appId)) {
             Log.v(TAG, "A Sense app accessed the CommonSense session ID");
-            return prefs.getString(Constants.PREF_LOGIN_COOKIE, null);
+            return prefs.getString(Auth.LOGIN_COOKIE, null);
         } else {
             Log.e(TAG, "App is not allowed access to the CommonSense session!");
             throw new IllegalAccessException(
@@ -354,11 +359,11 @@ public class SenseApi {
      */
     public static int login(Context context, String username, String pass) {
         try {
-            final SharedPreferences authPrefs = context.getSharedPreferences(Constants.AUTH_PREFS,
+            final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
                     Context.MODE_PRIVATE);
-            final boolean devMode = authPrefs.getBoolean(Constants.PREF_DEV_MODE, false);
+            final boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
 
-            final URL url = new URL(devMode ? Constants.URL_DEV_LOGIN : Constants.URL_LOGIN);
+            final URL url = new URL(devMode ? SenseUrls.DEV_LOGIN : SenseUrls.LOGIN);
             final JSONObject user = new JSONObject();
             user.put("username", username);
             user.put("password", pass);
@@ -374,12 +379,12 @@ public class SenseApi {
             String responseCode = response.get("http response code");
             if ("403".equalsIgnoreCase(responseCode)) {
                 Log.e(TAG, "CommonSense login refused! Response: forbidden!");
-                authEditor.remove(Constants.PREF_LOGIN_COOKIE);
+                authEditor.remove(Auth.LOGIN_COOKIE);
                 authEditor.commit();
                 return -2;
             } else if (!"200".equalsIgnoreCase(responseCode)) {
                 Log.e(TAG, "CommonSense login failed! Response: " + responseCode);
-                authEditor.remove(Constants.PREF_LOGIN_COOKIE);
+                authEditor.remove(Auth.LOGIN_COOKIE);
                 authEditor.commit();
                 return -1;
             }
@@ -388,7 +393,7 @@ public class SenseApi {
             if (response.get("set-cookie") == null) {
                 // incorrect login
                 Log.e(TAG, "CommonSense login failed: no cookie received.");
-                authEditor.remove(Constants.PREF_LOGIN_COOKIE);
+                authEditor.remove(Auth.LOGIN_COOKIE);
                 authEditor.commit();
                 return -1;
             }
@@ -396,7 +401,7 @@ public class SenseApi {
             // store cookie in the preferences
             String cookie = response.get("set-cookie");
             // Log.v(TAG, "CommonSense login OK!");
-            authEditor.putString(Constants.PREF_LOGIN_COOKIE, cookie);
+            authEditor.putString(Auth.LOGIN_COOKIE, cookie);
             authEditor.commit();
 
             Log.i(TAG, "'" + username + "' logged in at CommonSense...");
@@ -405,10 +410,10 @@ public class SenseApi {
         } catch (Exception e) {
             Log.e(TAG, "Exception during login: " + e.getMessage());
 
-            final SharedPreferences authPrefs = context.getSharedPreferences(Constants.AUTH_PREFS,
+            final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
                     Context.MODE_PRIVATE);
             final Editor editor = authPrefs.edit();
-            editor.remove(Constants.PREF_LOGIN_COOKIE);
+            editor.remove(Auth.LOGIN_COOKIE);
             editor.commit();
             return -1;
         }
@@ -434,15 +439,14 @@ public class SenseApi {
     public static String registerSensor(Context context, String sensorName, String deviceType,
             String dataType, String sensorValue) {
 
-        final SharedPreferences authPrefs = context.getSharedPreferences(Constants.AUTH_PREFS,
+        final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
                 Context.MODE_PRIVATE);
-        final boolean devMode = authPrefs.getBoolean(Constants.PREF_DEV_MODE, false);
-        String cookie = authPrefs.getString(Constants.PREF_LOGIN_COOKIE, "");
+        final boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
+        String cookie = authPrefs.getString(Auth.LOGIN_COOKIE, "");
 
         try {
             // prepare request to create new sensor
-            URL url = new URL(devMode ? Constants.URL_DEV_CREATE_SENSOR
-                    : Constants.URL_CREATE_SENSOR);
+            URL url = new URL(devMode ? SenseUrls.DEV_CREATE_SENSOR : SenseUrls.CREATE_SENSOR);
             JSONObject postData = new JSONObject();
             JSONObject sensor = new JSONObject();
             sensor.put("name", sensorName);
@@ -485,7 +489,7 @@ public class SenseApi {
             JSONArray sensors = getRegisteredSensors(context);
             sensors.put(JSONSensor);
             Editor authEditor = authPrefs.edit();
-            authEditor.putString(Constants.PREF_SENSOR_LIST, sensors.toString());
+            authEditor.putString(Auth.SENSOR_LIST, sensors.toString());
             authEditor.commit();
 
             // Log.v(TAG, "Created sensor: '" + sensorName + "'");
@@ -493,11 +497,12 @@ public class SenseApi {
             // get device properties from preferences, so it matches the properties in CommonSense
             final String device_uuid = ((TelephonyManager) context
                     .getSystemService(Context.TELEPHONY_SERVICE)).getDeviceId();
-            final String device_type = authPrefs.getString(Constants.PREF_DEVICE_TYPE, Build.MODEL);
+            final String device_type = authPrefs.getString(Auth.DEVICE_TYPE, Build.MODEL);
 
             // Add sensor to this device at CommonSense
-            String rawUrl = devMode ? Constants.URL_DEV_ADD_SENSOR_TO_DEVICE
-                    : Constants.URL_ADD_SENSOR_TO_DEVICE;
+            String rawUrl = devMode
+                    ? SenseUrls.DEV_ADD_SENSOR_TO_DEVICE
+                    : SenseUrls.ADD_SENSOR_TO_DEVICE;
             url = new URL(rawUrl.replaceFirst("<id>", id));
             postData = new JSONObject();
             JSONObject device = new JSONObject();
@@ -548,19 +553,19 @@ public class SenseApi {
             String surname, String email, String mobile) {
 
         // clear cached settings of the previous user
-        final SharedPreferences authPrefs = context.getSharedPreferences(Constants.AUTH_PREFS,
+        final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
                 Context.MODE_PRIVATE);
         final Editor authEditor = authPrefs.edit();
-        authEditor.remove(Constants.PREF_DEVICE_ID);
-        authEditor.remove(Constants.PREF_DEVICE_TYPE);
-        authEditor.remove(Constants.PREF_LOGIN_COOKIE);
-        authEditor.remove(Constants.PREF_SENSOR_LIST);
+        authEditor.remove(Auth.DEVICE_ID);
+        authEditor.remove(Auth.DEVICE_TYPE);
+        authEditor.remove(Auth.LOGIN_COOKIE);
+        authEditor.remove(Auth.SENSOR_LIST);
         authEditor.commit();
 
         try {
-            final boolean devMode = authPrefs.getBoolean(Constants.PREF_DEV_MODE, false);
+            final boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
 
-            final URL url = new URL(devMode ? Constants.URL_DEV_REG : Constants.URL_REG);
+            final URL url = new URL(devMode ? SenseUrls.DEV_REG : SenseUrls.REG);
 
             // create JSON object to POST
             final JSONObject data = new JSONObject();
@@ -619,9 +624,9 @@ public class SenseApi {
     public static JSONObject getJsonObject(Context context, URI uri, String cookie) {
         try {
 
-            final SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
+            final SharedPreferences mainPrefs = context.getSharedPreferences(SensePrefs.MAIN_PREFS,
                     Context.MODE_PRIVATE);
-            final boolean compress = mainPrefs.getBoolean(Constants.PREF_COMPRESSION, true);
+            final boolean compress = mainPrefs.getBoolean(Advanced.COMPRESS, true);
 
             final HttpGet get = new HttpGet(uri);
             get.setHeader("Cookie", cookie);
@@ -695,9 +700,9 @@ public class SenseApi {
             DataOutputStream printout;
 
             // Set compression
-            final SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
+            final SharedPreferences mainPrefs = context.getSharedPreferences(SensePrefs.MAIN_PREFS,
                     Context.MODE_PRIVATE);
-            final boolean compress = mainPrefs.getBoolean(Constants.PREF_COMPRESSION, true);
+            final boolean compress = mainPrefs.getBoolean(Advanced.COMPRESS, true);
             if (compress) {
                 // Don't Set content size
                 urlConn.setRequestProperty("Transfer-Encoding", "chunked");

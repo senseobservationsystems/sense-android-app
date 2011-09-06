@@ -7,7 +7,7 @@
  */
 package nl.sense_os.service.popquiz;
 
-import nl.sense_os.service.Constants;
+import nl.sense_os.service.SensePrefs;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -109,10 +109,10 @@ public class PopQuizSync extends BroadcastReceiver {
         // this.context = context;
 
         // save this sync time in the preferences
-        SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
+        SharedPreferences mainPrefs = context.getSharedPreferences(SensePrefs.MAIN_PREFS,
                 Context.MODE_PRIVATE);
         Editor editor = mainPrefs.edit();
-        editor.putLong(Constants.PREF_QUIZ_SYNC_TIME, System.currentTimeMillis());
+        editor.putLong(nl.sense_os.service.SensePrefs.Main.Quiz.SYNC_TIME, System.currentTimeMillis());
         editor.commit();
 
         // set next sync alarm

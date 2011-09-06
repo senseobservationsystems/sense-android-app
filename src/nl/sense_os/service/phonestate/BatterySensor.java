@@ -5,8 +5,8 @@
  */
 package nl.sense_os.service.phonestate;
 
-import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensorData.SensorNames;
 
 import org.json.JSONException;
@@ -60,7 +60,8 @@ public class BatterySensor {
                         if (plugType > 0) {
                             statusString = statusString
                                     + " "
-                                    + ((plugType == BatteryManager.BATTERY_PLUGGED_AC) ? "AC"
+                                    + ((plugType == BatteryManager.BATTERY_PLUGGED_AC)
+                                            ? "AC"
                                             : "USB");
                         }
                         try {
@@ -107,7 +108,7 @@ public class BatterySensor {
                     // Log.v(TAG, "Transmit battery state: " + json.toString());
 
                     Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
+                    i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
                     i.putExtra(MsgHandler.KEY_VALUE, json.toString());
                     i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.BATTERY_SENSOR);
                     i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());

@@ -5,8 +5,9 @@
  */
 package nl.sense_os.service.location;
 
-import nl.sense_os.service.Constants;
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.SenseDataTypes;
+import nl.sense_os.service.SensePrefs;
 import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.SensorData.SensorNames;
 
@@ -67,7 +68,7 @@ public class LocationSensor {
             Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
             i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.LOCATION);
             i.putExtra(MsgHandler.KEY_VALUE, json.toString());
-            i.putExtra(MsgHandler.KEY_DATA_TYPE, Constants.SENSOR_DATA_TYPE_JSON);
+            i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
             i.putExtra(MsgHandler.KEY_TIMESTAMP, fix.getTime());
             context.startService(i);
         }
@@ -135,9 +136,9 @@ public class LocationSensor {
      */
     private void checkSensorSettings() {
 
-        SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
+        SharedPreferences mainPrefs = context.getSharedPreferences(SensePrefs.MAIN_PREFS,
                 Context.MODE_PRIVATE);
-        boolean selfAwareMode = mainPrefs.getBoolean(Constants.PREF_LOCATION_AUTO_GPS, true);
+        boolean selfAwareMode = mainPrefs.getBoolean(nl.sense_os.service.SensePrefs.Main.Location.AUTO_GPS, true);
 
         if (selfAwareMode) {
             // Log.v(TAG, "Check location sensor settings...");
@@ -263,8 +264,8 @@ public class LocationSensor {
             // get linear acceleration data
             long timerange = 1000 * 60 * 15; // 15 minutes
             Uri uri = DataPoint.CONTENT_URI;
-            String[] projection = new String[] { DataPoint.SENSOR_NAME, DataPoint.TIMESTAMP,
-                    DataPoint.VALUE };
+            String[] projection = new String[]{DataPoint.SENSOR_NAME, DataPoint.TIMESTAMP,
+                    DataPoint.VALUE};
             String selection = DataPoint.SENSOR_NAME + "='" + SensorNames.LIN_ACCELERATION + "'"
                     + " AND " + DataPoint.TIMESTAMP + ">"
                     + (System.currentTimeMillis() - timerange);
@@ -352,8 +353,8 @@ public class LocationSensor {
             // get location data from time since the last check
             long timerange = 1000 * 60 * 15; // 15 minutes
             Uri uri = DataPoint.CONTENT_URI;
-            String[] projection = new String[] { DataPoint.SENSOR_NAME, DataPoint.TIMESTAMP,
-                    DataPoint.VALUE };
+            String[] projection = new String[]{DataPoint.SENSOR_NAME, DataPoint.TIMESTAMP,
+                    DataPoint.VALUE};
             String selection = DataPoint.SENSOR_NAME + "='" + SensorNames.LOCATION + "'" + " AND "
                     + DataPoint.TIMESTAMP + ">" + (System.currentTimeMillis() - timerange);
             data = context.getContentResolver().query(uri, projection, selection, null, null);
@@ -517,10 +518,10 @@ public class LocationSensor {
 
     private void startListening() {
 
-        SharedPreferences mainPrefs = context.getSharedPreferences(Constants.MAIN_PREFS,
+        SharedPreferences mainPrefs = context.getSharedPreferences(SensePrefs.MAIN_PREFS,
                 Context.MODE_PRIVATE);
-        isGpsAllowed = mainPrefs.getBoolean(Constants.PREF_LOCATION_GPS, true);
-        isNetworkAllowed = mainPrefs.getBoolean(Constants.PREF_LOCATION_NETWORK, true);
+        isGpsAllowed = mainPrefs.getBoolean(nl.sense_os.service.SensePrefs.Main.Location.GPS, true);
+        isNetworkAllowed = mainPrefs.getBoolean(nl.sense_os.service.SensePrefs.Main.Location.NETWORK, true);
 
         // start listening to GPS and/or Network location
         if (isGpsAllowed) {

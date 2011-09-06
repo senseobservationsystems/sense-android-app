@@ -5,6 +5,7 @@
  */
 package nl.sense_os.service;
 
+import nl.sense_os.service.SensePrefs.Status;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -32,9 +33,9 @@ public class AliveChecker extends BroadcastReceiver {
         mgr.set(AlarmManager.RTC_WAKEUP, alarmTime, alarmOp);
 
         /* check if the Sense service should be alive */
-        final SharedPreferences statusPrefs = context.getSharedPreferences(Constants.STATUS_PREFS,
+        final SharedPreferences statusPrefs = context.getSharedPreferences(SensePrefs.STATUS_PREFS,
                 Context.MODE_PRIVATE);
-        final boolean alive = statusPrefs.getBoolean(Constants.PREF_STATUS_MAIN, false);
+        final boolean alive = statusPrefs.getBoolean(Status.MAIN, false);
 
         /* if it should be alive, check if it really is still alive */
         if (true == alive) {
