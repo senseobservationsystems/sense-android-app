@@ -13,6 +13,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 
 import nl.sense_os.service.SensePrefs.Auth;
+import nl.sense_os.service.SensePrefs.Main.Advanced;
 import nl.sense_os.service.SensePrefs.Main.Ambience;
 import nl.sense_os.service.SensePrefs.Main.Motion;
 import nl.sense_os.service.SensePrefs.Status;
@@ -99,6 +100,7 @@ public class SenseService extends Service {
                         // login not possible without connection
                         // Log.v(TAG, "Lost connectivity! Updating login status...");
                         // onLogOut();
+                        state.setLoggedIn(false);
                     }
 
                     getLooper().quit();
@@ -158,11 +160,10 @@ public class SenseService extends Service {
             // Log.v(TAG, "Get preference: " + key);
             SharedPreferences prefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
             if (key.equals(Status.AMBIENCE) || key.equals(Status.DEV_PROX)
-                    || key.equals(Status.EXTERNAL)
-                    || key.equals(Status.LOCATION)
+                    || key.equals(Status.EXTERNAL) || key.equals(Status.LOCATION)
                     || key.equals(Status.MAIN) || key.equals(Status.MOTION)
-                    || key.equals(Status.PHONESTATE)
-                    || key.equals(Status.POPQUIZ) || key.equals(Status.AUTOSTART)) {
+                    || key.equals(Status.PHONESTATE) || key.equals(Status.POPQUIZ)
+                    || key.equals(Status.AUTOSTART)) {
                 prefs = getSharedPreferences(SensePrefs.STATUS_PREFS, MODE_PRIVATE);
             } else if (key.equals(Auth.DEV_MODE)) {
                 prefs = getSharedPreferences(SensePrefs.AUTH_PREFS, MODE_PRIVATE);
@@ -258,11 +259,10 @@ public class SenseService extends Service {
 
             SharedPreferences prefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
             if (key.equals(Status.AMBIENCE) || key.equals(Status.DEV_PROX)
-                    || key.equals(Status.EXTERNAL)
-                    || key.equals(Status.LOCATION)
+                    || key.equals(Status.EXTERNAL) || key.equals(Status.LOCATION)
                     || key.equals(Status.MAIN) || key.equals(Status.MOTION)
-                    || key.equals(Status.PHONESTATE)
-                    || key.equals(Status.POPQUIZ) || key.equals(Status.AUTOSTART)) {
+                    || key.equals(Status.PHONESTATE) || key.equals(Status.POPQUIZ)
+                    || key.equals(Status.AUTOSTART)) {
                 prefs = getSharedPreferences(SensePrefs.STATUS_PREFS, MODE_PRIVATE);
             } else if (key.equals(Auth.DEV_MODE)) {
                 prefs = getSharedPreferences(SensePrefs.AUTH_PREFS, MODE_PRIVATE);
@@ -274,6 +274,12 @@ public class SenseService extends Service {
                 Log.w(TAG, "Preference '" + key + "' not stored!");
             } else if (key.equals(Auth.DEV_MODE) && state.isLoggedIn()) {
                 login();
+            } else if (key.equals(Advanced.USE_COMMONSENSE)) {
+                if (value) {
+                    login();
+                } else {
+                    onLogOut();
+                }
             }
         }
 
@@ -517,9 +523,16 @@ public class SenseService extends Service {
     private int login() {
         // Log.v(TAG, "Log in...");
 
+        // check that we are actually allowed to log in
+        SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
+        boolean allowed = mainPrefs.getBoolean(Advanced.USE_COMMONSENSE, true);
+        if (!allowed) {
+            Log.w(TAG, "Not logging in. Use of CommonSense is disabled.");
+            return -1;
+        }
+
         // get login parameters from the preferences
-        final SharedPreferences authPrefs = getSharedPreferences(SensePrefs.AUTH_PREFS,
-                MODE_PRIVATE);
+        SharedPreferences authPrefs = getSharedPreferences(SensePrefs.AUTH_PREFS, MODE_PRIVATE);
         final String username = authPrefs.getString(Auth.LOGIN_USERNAME, null);
         final String pass = authPrefs.getString(Auth.LOGIN_PASS, null);
 
@@ -636,9 +649,17 @@ public class SenseService extends Service {
 
     private void onSampleRateChange() {
         // Log.v(TAG, "Sample rate changed...");
-        if (state.isLoggedIn()) {
+        if (state.isStarted()) {
             stopSensorModules();
             startSensorModules();
+        }
+    }
+
+    private void onSyncRateChange() {
+        Log.v(TAG, "Sync rate changed...");
+        if (state.isStarted()) {
+            stopTransmitAlarms();
+            startTransmitAlarms();
         }
     }
 
@@ -717,11 +738,6 @@ public class SenseService extends Service {
                 }
             };
         }.sendEmptyMessage(0);
-    }
-
-    private void onSyncRateChange() {
-        // Log.v(TAG, "Sync rate changed...");
-        startTransmitAlarms();
     }
 
     /**
@@ -805,7 +821,7 @@ public class SenseService extends Service {
      * immediately after sensing starts.
      */
     private void startAliveChecks() {
-        // Log.v(TAG, "Start periodic checks if Sense is still alive...");
+        Log.v(TAG, "Start periodic checks if Sense is still alive...");
 
         state.setStarted(true);
 
@@ -827,7 +843,7 @@ public class SenseService extends Service {
         // Log.v(TAG, "Enable foreground status...");
 
         @SuppressWarnings("rawtypes")
-        final Class[] startForegroundSignature = new Class[]{int.class, Notification.class};
+        final Class[] startForegroundSignature = new Class[] { int.class, Notification.class };
         Method startForeground = null;
         try {
             startForeground = getClass().getMethod("startForeground", startForegroundSignature);
@@ -844,7 +860,7 @@ public class SenseService extends Service {
             // create notification
             Notification n = state.getStateNotification();
 
-            Object[] startArgs = {Integer.valueOf(ServiceStateHelper.NOTIF_ID), n};
+            Object[] startArgs = { Integer.valueOf(ServiceStateHelper.NOTIF_ID), n };
             try {
                 startForeground.invoke(this, startArgs);
             } catch (InvocationTargetException e) {
@@ -915,13 +931,45 @@ public class SenseService extends Service {
      * Start periodic broadcast to trigger the MsgHandler to flush its buffer to CommonSense.
      */
     private void startTransmitAlarms() {
-        // Log.v(TAG, "Start periodic data transmission alarms...");
+        Log.v(TAG, "Start periodic data transmission alarms...");
 
+        // intent to broadcast for alarm
         Intent alarm = new Intent(this, DataTransmitter.class);
         PendingIntent operation = PendingIntent.getBroadcast(this, DataTransmitter.REQID, alarm, 0);
+
+        // alarm manager
         AlarmManager mgr = (AlarmManager) getSystemService(ALARM_SERVICE);
         mgr.cancel(operation);
-        mgr.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 5000, operation);
+
+        // determine sync rate
+        SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
+        final int rate = Integer.parseInt(mainPrefs.getString(SensePrefs.Main.SYNC_RATE, "0"));
+
+        // schedule alarms
+        switch (rate) {
+        case -2: // real-time: clear out the buffer once, set eco-mode alarm "just in case"
+            mgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
+                    AlarmManager.INTERVAL_HALF_HOUR, operation);
+            return;
+        case -1: // 60 seconds
+            mgr.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000L * 60,
+                    operation);
+            break;
+        case 0: // 5 minute
+            mgr.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000L * 60 * 5,
+                    operation);
+            break;
+        case 1: // eco-mode
+            mgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
+                    AlarmManager.INTERVAL_HALF_HOUR, operation);
+            break;
+        default:
+            Log.e(TAG, "Unexpected sync rate value: " + rate);
+            return;
+        }
+
+        // send first alarm transmission
+        sendBroadcast(alarm);
     }
 
     /**
@@ -948,7 +996,7 @@ public class SenseService extends Service {
         stopAliveChecks();
 
         @SuppressWarnings("rawtypes")
-        final Class[] stopForegroundSignature = new Class[]{boolean.class};
+        final Class[] stopForegroundSignature = new Class[] { boolean.class };
         Method stopForeground = null;
         try {
             stopForeground = getClass().getMethod("stopForeground", stopForegroundSignature);
@@ -961,7 +1009,7 @@ public class SenseService extends Service {
         if (stopForeground == null) {
             setForeground(false);
         } else {
-            Object[] stopArgs = {Boolean.TRUE};
+            Object[] stopArgs = { Boolean.TRUE };
             try {
                 stopForeground.invoke(this, stopArgs);
             } catch (InvocationTargetException e) {
@@ -1050,24 +1098,24 @@ public class SenseService extends Service {
                 // get sample rate from preferences
                 final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
                         MODE_PRIVATE);
-                final int rate = Integer.parseInt(mainPrefs.getString(
-                        SensePrefs.Main.SAMPLE_RATE, "0"));
+                final int rate = Integer.parseInt(mainPrefs.getString(SensePrefs.Main.SAMPLE_RATE,
+                        "0"));
                 int interval = -1;
                 switch (rate) {
-                    case -2 : // real time
-                        interval = -1;
-                        break;
-                    case -1 : // often
-                        interval = 10 * 1000;
-                        break;
-                    case 0 : // normal
-                        interval = 60 * 1000;
-                        break;
-                    case 1 : // rarely (15 minutes)
-                        interval = 15 * 60 * 1000;
-                        break;
-                    default :
-                        Log.e(TAG, "Unexpected sample rate preference.");
+                case -2: // real time
+                    interval = -1;
+                    break;
+                case -1: // often
+                    interval = 10 * 1000;
+                    break;
+                case 0: // normal
+                    interval = 60 * 1000;
+                    break;
+                case 1: // rarely (15 minutes)
+                    interval = 15 * 60 * 1000;
+                    break;
+                default:
+                    Log.e(TAG, "Unexpected sample rate preference.");
                 }
                 // special interval for Agostino
                 final boolean agostinoMode = mainPrefs.getBoolean("agostino_mode", false);
@@ -1139,27 +1187,27 @@ public class SenseService extends Service {
                 // get sample rate
                 final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
                         MODE_PRIVATE);
-                final int rate = Integer.parseInt(mainPrefs.getString(
-                        SensePrefs.Main.SAMPLE_RATE, "0"));
+                final int rate = Integer.parseInt(mainPrefs.getString(SensePrefs.Main.SAMPLE_RATE,
+                        "0"));
                 int interval = 1;
                 switch (rate) {
-                    case -2 :
-                        interval = 1 * 1000;
-                        break;
-                    case -1 :
-                        // often
-                        interval = 60 * 1000;
-                        break;
-                    case 0 :
-                        // normal
-                        interval = 5 * 60 * 1000;
-                        break;
-                    case 1 :
-                        // rarely (15 mins)
-                        interval = 15 * 60 * 1000;
-                        break;
-                    default :
-                        Log.e(TAG, "Unexpected device proximity rate preference.");
+                case -2:
+                    interval = 1 * 1000;
+                    break;
+                case -1:
+                    // often
+                    interval = 60 * 1000;
+                    break;
+                case 0:
+                    // normal
+                    interval = 5 * 60 * 1000;
+                    break;
+                case 1:
+                    // rarely (15 mins)
+                    interval = 15 * 60 * 1000;
+                    break;
+                default:
+                    Log.e(TAG, "Unexpected device proximity rate preference.");
                 }
                 final int finalInterval = interval;
 
@@ -1223,28 +1271,28 @@ public class SenseService extends Service {
                 // get sample rate
                 final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
                         MODE_PRIVATE);
-                final int rate = Integer.parseInt(mainPrefs.getString(
-                        SensePrefs.Main.SAMPLE_RATE, "0"));
+                final int rate = Integer.parseInt(mainPrefs.getString(SensePrefs.Main.SAMPLE_RATE,
+                        "0"));
                 int interval = 1;
                 switch (rate) {
-                    case -2 :
-                        interval = 1 * 1000;
-                        break;
-                    case -1 :
-                        // often
-                        interval = 5 * 1000;
-                        break;
-                    case 0 :
-                        // normal
-                        interval = 60 * 1000;
-                        break;
-                    case 1 :
-                        // rarely (15 minutes)
-                        interval = 15 * 60 * 1000;
-                        break;
-                    default :
-                        Log.e(TAG, "Unexpected external sensor rate preference.");
-                        return;
+                case -2:
+                    interval = 1 * 1000;
+                    break;
+                case -1:
+                    // often
+                    interval = 5 * 1000;
+                    break;
+                case 0:
+                    // normal
+                    interval = 60 * 1000;
+                    break;
+                case 1:
+                    // rarely (15 minutes)
+                    interval = 15 * 60 * 1000;
+                    break;
+                default:
+                    Log.e(TAG, "Unexpected external sensor rate preference.");
+                    return;
                 }
                 final int finalInterval = interval;
 
@@ -1255,11 +1303,14 @@ public class SenseService extends Service {
 
                     @Override
                     public void run() {
-                        if (mainPrefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.MAIN, false)) {
+                        if (mainPrefs.getBoolean(
+                                nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.MAIN,
+                                false)) {
                             es_bioHarness = new ZephyrBioHarness(SenseService.this);
                             es_bioHarness.startBioHarness(finalInterval);
                         }
-                        if (mainPrefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM.MAIN, false)) {
+                        if (mainPrefs.getBoolean(
+                                nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM.MAIN, false)) {
                             es_HxM = new ZephyrHxM(SenseService.this);
                             es_HxM.startHxM(finalInterval);
                         }
@@ -1313,30 +1364,30 @@ public class SenseService extends Service {
                 // get sample rate
                 final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
                         MODE_PRIVATE);
-                final int rate = Integer.parseInt(mainPrefs.getString(
-                        SensePrefs.Main.SAMPLE_RATE, "0"));
+                final int rate = Integer.parseInt(mainPrefs.getString(SensePrefs.Main.SAMPLE_RATE,
+                        "0"));
                 long minTime = -1;
                 float minDistance = -1;
                 switch (rate) {
-                    case -2 : // real-time
-                        minTime = 1000;
-                        minDistance = 0;
-                        break;
-                    case -1 : // often
-                        minTime = 30 * 1000;
-                        minDistance = 0;
-                        break;
-                    case 0 : // normal
-                        minTime = 5 * 60 * 1000;
-                        minDistance = 0;
-                        break;
-                    case 1 : // rarely
-                        minTime = 15 * 60 * 1000;
-                        minDistance = 0;
-                        break;
-                    default :
-                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                        break;
+                case -2: // real-time
+                    minTime = 1000;
+                    minDistance = 0;
+                    break;
+                case -1: // often
+                    minTime = 30 * 1000;
+                    minDistance = 0;
+                    break;
+                case 0: // normal
+                    minTime = 5 * 60 * 1000;
+                    minDistance = 0;
+                    break;
+                case 1: // rarely
+                    minTime = 15 * 60 * 1000;
+                    minDistance = 0;
+                    break;
+                default:
+                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                    break;
                 }
                 // special interval for Agostino
                 final boolean agostinoMode = mainPrefs.getBoolean("agostino_mode", false);
@@ -1381,7 +1432,6 @@ public class SenseService extends Service {
         Log.v(TAG, "Toggle main: " + active);
 
         if (true == active) {
-
             // properly start the service to start sensing
             if (!state.isStarted()) {
                 Log.i(TAG, "Start service...");
@@ -1425,25 +1475,25 @@ public class SenseService extends Service {
                 // get sample rate
                 final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
                         MODE_PRIVATE);
-                final int rate = Integer.parseInt(mainPrefs.getString(
-                        SensePrefs.Main.SAMPLE_RATE, "0"));
+                final int rate = Integer.parseInt(mainPrefs.getString(SensePrefs.Main.SAMPLE_RATE,
+                        "0"));
                 int interval = -1;
                 switch (rate) {
-                    case -2 : // real time
-                        interval = 1 * 1000;
-                        break;
-                    case -1 : // often
-                        interval = 5 * 1000;
-                        break;
-                    case 0 : // normal
-                        interval = 60 * 1000;
-                        break;
-                    case 1 : // rarely (15 minutes)
-                        interval = 15 * 60 * 1000;
-                        break;
-                    default :
-                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                        break;
+                case -2: // real time
+                    interval = 1 * 1000;
+                    break;
+                case -1: // often
+                    interval = 5 * 1000;
+                    break;
+                case 0: // normal
+                    interval = 60 * 1000;
+                    break;
+                case 1: // rarely (15 minutes)
+                    interval = 15 * 60 * 1000;
+                    break;
+                default:
+                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                    break;
                 }
                 // special interval for Agostino
                 final boolean agostinoMode = mainPrefs.getBoolean("agostino_mode", false);
@@ -1541,25 +1591,25 @@ public class SenseService extends Service {
                 // get sample rate
                 final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
                         MODE_PRIVATE);
-                final int rate = Integer.parseInt(mainPrefs.getString(
-                        SensePrefs.Main.SAMPLE_RATE, "0"));
+                final int rate = Integer.parseInt(mainPrefs.getString(SensePrefs.Main.SAMPLE_RATE,
+                        "0"));
                 int interval = -1;
                 switch (rate) {
-                    case -2 : // real time
-                        interval = 1 * 1000;
-                        break;
-                    case -1 : // often
-                        interval = 10 * 1000;
-                        break;
-                    case 0 : // normal
-                        interval = 60 * 1000;
-                        break;
-                    case 1 : // rarely (15 minutes)
-                        interval = 15 * 60 * 1000;
-                        break;
-                    default :
-                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                        break;
+                case -2: // real time
+                    interval = 1 * 1000;
+                    break;
+                case -1: // often
+                    interval = 10 * 1000;
+                    break;
+                case 0: // normal
+                    interval = 60 * 1000;
+                    break;
+                case 1: // rarely (15 minutes)
+                    interval = 15 * 60 * 1000;
+                    break;
+                default:
+                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                    break;
                 }
                 final int finalInterval = interval;
 

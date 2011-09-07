@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Locale;
 
 import nl.sense_os.service.SensePrefs.Auth;
+import nl.sense_os.service.SensePrefs.Main;
 import nl.sense_os.service.SensePrefs.Main.Advanced;
 import nl.sense_os.service.SensorData.BufferedData;
 import nl.sense_os.service.SensorData.DataPoint;
@@ -393,7 +394,7 @@ public class MsgHandler extends Service {
      */
     private void bufferDataPoint(String sensorName, String sensorValue, String timeInSecs,
             String dataType, String deviceType) {
-        // Log.d(TAG, "Buffer new sensor data");
+        // Log.d(TAG, "Buffer '" + sensorName + "' data for transmission later on");
 
         try {
             // create JSON object for buffering
@@ -570,10 +571,8 @@ public class MsgHandler extends Service {
             }
 
             // check if we can send the data point immediately
-            final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
-                    MODE_PRIVATE);
-            final int rate = Integer.parseInt(mainPrefs.getString(SensePrefs.Main.SYNC_RATE,
-                    "0"));
+            SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
+            int rate = Integer.parseInt(mainPrefs.getString(Main.SYNC_RATE, "0"));
             boolean isMaxThreads = nrOfSendMessageThreads >= MAX_NR_OF_SEND_MSG_THREADS - 5;
             boolean isRealTimeMode = rate == -2;
             if (isOnline() && isRealTimeMode && !isMaxThreads) {
@@ -592,7 +591,6 @@ public class MsgHandler extends Service {
 
             } else {
                 /* buffer data if there is no connectivity */
-
                 bufferDataPoint(sensorName, sensorValue, timeInSecs, dataType, deviceType);
             }
 
@@ -644,9 +642,15 @@ public class MsgHandler extends Service {
      * @return <code>true</code> if the phone has network connectivity.
      */
     private boolean isOnline() {
+        SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
+        boolean isCommonSenseEnabled = mainPrefs.getBoolean(Main.Advanced.USE_COMMONSENSE, true);
+
+        SharedPreferences authPrefs = getSharedPreferences(SensePrefs.AUTH_PREFS, MODE_PRIVATE);
+        boolean isLoggedIn = authPrefs.getString(Auth.LOGIN_COOKIE, null) != null;
+
         final ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         final NetworkInfo info = cm.getActiveNetworkInfo();
-        return null != info && info.isConnected();
+        return null != info && info.isConnected() && isCommonSenseEnabled && isLoggedIn;
     }
 
     @Override
@@ -802,7 +806,7 @@ public class MsgHandler extends Service {
         try {
             // query the database
             openDb();
-            String[] cols = {BufferedData._ID, BufferedData.JSON, BufferedData.SENSOR};
+            String[] cols = { BufferedData._ID, BufferedData.JSON, BufferedData.SENSOR };
             String sel = BufferedData.ACTIVE + "!=\'true\'";
             while (!emptyDataBase) {
                 c = db.query(DbHelper.TABLE_NAME, cols, sel, null, null, null, BufferedData.SENSOR,
@@ -863,7 +867,7 @@ public class MsgHandler extends Service {
                     while (false == c.isAfterLast()) {
                         int id = c.getInt(c.getColumnIndex(BufferedData._ID));
                         String where = BufferedData._ID + "=?";
-                        String[] whereArgs = {"" + id};
+                        String[] whereArgs = { "" + id };
                         db.delete(DbHelper.TABLE_NAME, where, whereArgs);
                         c.moveToNext();
                     }
