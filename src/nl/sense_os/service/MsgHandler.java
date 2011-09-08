@@ -627,6 +627,7 @@ public class MsgHandler extends Service {
         values.put(DataPoint.DATA_TYPE, dataType);
         values.put(DataPoint.TIMESTAMP, timestamp);
         values.put(DataPoint.VALUE, value);
+        values.put(DataPoint.TRANSMIT_STATE, 0);
 
         getContentResolver().insert(url, values);
     }

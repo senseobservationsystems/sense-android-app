@@ -28,15 +28,15 @@ public class ParserUtils {
 
         List<String> names = new ArrayList<String>();
 
-        // preprocess the selection string a bit
-        selection = selection.replaceAll(" = ", "=");
-        selection = selection.replaceAll("= ", "=");
-        selection = selection.replaceAll(" =", "=");
-        selection = selection.replaceAll(" != ", "!=");
-        selection = selection.replaceAll("!= ", "!=");
-        selection = selection.replaceAll(" !=", "!=");
-
         if (selection != null && selection.contains(DataPoint.SENSOR_NAME)) {
+
+            // preprocess the selection string a bit
+            selection = selection.replaceAll(" = ", "=");
+            selection = selection.replaceAll("= ", "=");
+            selection = selection.replaceAll(" =", "=");
+            selection = selection.replaceAll(" != ", "!=");
+            selection = selection.replaceAll("!= ", "!=");
+            selection = selection.replaceAll(" !=", "!=");
 
             int eqKeyStart = selection.indexOf(DataPoint.SENSOR_NAME + "='");
             int neqKeyStart = selection.indexOf(DataPoint.SENSOR_NAME + "!='")
@@ -102,21 +102,21 @@ public class ParserUtils {
         long minTimestamp = Long.MIN_VALUE;
         long maxTimestamp = Long.MAX_VALUE;
 
-        // preprocess the selection string a bit
-        selection = selection.replaceAll(" = ", "=");
-        selection = selection.replaceAll("= ", "=");
-        selection = selection.replaceAll(" =", "=");
-        selection = selection.replaceAll(" > ", ">");
-        selection = selection.replaceAll("> ", ">");
-        selection = selection.replaceAll(" >", ">");
-        selection = selection.replaceAll(" < ", "<");
-        selection = selection.replaceAll("< ", "<");
-        selection = selection.replaceAll(" <", "<");
-        selection = selection.replaceAll(" != ", "!=");
-        selection = selection.replaceAll("!= ", "!=");
-        selection = selection.replaceAll(" !=", "!=");
-
         if (selection != null && selection.contains(DataPoint.TIMESTAMP)) {
+
+            // preprocess the selection string a bit
+            selection = selection.replaceAll(" = ", "=");
+            selection = selection.replaceAll("= ", "=");
+            selection = selection.replaceAll(" =", "=");
+            selection = selection.replaceAll(" > ", ">");
+            selection = selection.replaceAll("> ", ">");
+            selection = selection.replaceAll(" >", ">");
+            selection = selection.replaceAll(" < ", "<");
+            selection = selection.replaceAll("< ", "<");
+            selection = selection.replaceAll(" <", "<");
+            selection = selection.replaceAll(" != ", "!=");
+            selection = selection.replaceAll("!= ", "!=");
+            selection = selection.replaceAll(" !=", "!=");
 
             int eqKeyStart = selection.indexOf(DataPoint.TIMESTAMP + "=");
             int neqKeyStart = selection.indexOf(DataPoint.TIMESTAMP + "!=");
@@ -219,6 +219,59 @@ public class ParserUtils {
         }
 
         return new long[] { minTimestamp, maxTimestamp };
+    }
+
+    public static int getSelectedTransmitState(String selection, String[] selectionArgs) {
+
+        int result = -1;
+        if (selection != null && selection.contains(DataPoint.TRANSMIT_STATE)) {
+
+            // preprocess the selection a bit
+            selection = selection.replaceAll(" = ", "=");
+            selection = selection.replaceAll("= ", "=");
+            selection = selection.replaceAll(" =", "=");
+            selection = selection.replaceAll(" != ", "!=");
+            selection = selection.replaceAll("!= ", "!=");
+            selection = selection.replaceAll(" !=", "!=");
+
+            int eqKeyStart = selection.indexOf(DataPoint.TRANSMIT_STATE + "='");
+            int neqKeyStart = selection.indexOf(DataPoint.TRANSMIT_STATE + "!='")
+                    + (DataPoint.TRANSMIT_STATE + "!='").length();
+
+            if (-1 != eqKeyStart) {
+                // selection contains "sensor_name='"
+                int stateStart = eqKeyStart + (DataPoint.TRANSMIT_STATE + "='").length();
+                int stateEnd = selection.indexOf("'", stateStart);
+                stateEnd = stateEnd == -1 ? selection.length() - 1 : stateEnd;
+                String state = selection.substring(stateStart, stateEnd);
+                if (state.equals("?")) {
+                    throw new IllegalArgumentException(
+                            "LocalStorage cannot handle queries with arguments array, sorry...");
+                }
+                Log.v(TAG, "Query contains: " + DataPoint.TRANSMIT_STATE + " = '" + state + "'");
+
+                result = state.equals("1") ? 1 : 0;
+
+            } else if (-1 != neqKeyStart) {
+                // selection contains "sensor_name!='"
+                int stateStart = neqKeyStart + (DataPoint.TRANSMIT_STATE + "!='").length();
+                int stateEnd = selection.indexOf("'", stateStart);
+                stateEnd = stateEnd == -1 ? selection.length() - 1 : stateEnd;
+                String notState = selection.substring(stateStart, stateEnd);
+                if (notState.equals("?")) {
+                    throw new IllegalArgumentException(
+                            "LocalStorage cannot handle queries with arguments array, sorry...");
+                }
+                Log.v(TAG, "Query contains: " + DataPoint.TRANSMIT_STATE + " != '" + notState + "'");
+
+                result = notState.equals("1") ? 0 : 1;
+
+            } else {
+                Log.w(TAG, "Parser cannot handle selection query: " + selection);
+            }
+        }
+
+        return result;
     }
 
     private ParserUtils() {

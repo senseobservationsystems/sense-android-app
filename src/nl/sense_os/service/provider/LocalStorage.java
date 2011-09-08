@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import nl.sense_os.service.SensorData.BufferedData;
 import nl.sense_os.service.SensorData.DataPoint;
 import android.content.ContentProvider;
 import android.content.ContentUris;
@@ -67,7 +66,7 @@ public class LocalStorage extends ContentProvider {
 
         switch (uriMatcher.match(uri)) {
         case VALUES_URI:
-            return BufferedData.CONTENT_TYPE;
+            return DataPoint.CONTENT_TYPE;
 
         default:
             throw new IllegalArgumentException("Unknown URI " + uri);
@@ -134,7 +133,8 @@ public class LocalStorage extends ContentProvider {
         // try to parse the selection criteria
         List<String> sensorNames = ParserUtils.getSelectedSensors(storage.keySet(), selection,
                 selectionArgs);
-        long[] timeRange = ParserUtils.getSelectedTimeRange(selection, selectionArgs);
+        long[] timeRangeSelect = ParserUtils.getSelectedTimeRange(selection, selectionArgs);
+        int transmitStateSelect = ParserUtils.getSelectedTransmitState(selection, selectionArgs);
 
         // create new cursor with the query result
         MatrixCursor result = new MatrixCursor(projection);
@@ -145,12 +145,17 @@ public class LocalStorage extends ContentProvider {
             if (null != selectedValues) {
                 for (ContentValues rowValues : selectedValues) {
                     long timestamp = rowValues.getAsLong(DataPoint.TIMESTAMP);
-                    if (timestamp > timeRange[0] && timestamp < timeRange[1]) {
-                        Object[] row = new Object[projection.length];
-                        for (int i = 0; i < projection.length; i++) {
-                            row[i] = rowValues.get(projection[i]);
+                    if (timestamp > timeRangeSelect[0] && timestamp < timeRangeSelect[1]) {
+                        int transmitState = rowValues.getAsInteger(DataPoint.TRANSMIT_STATE);
+                        if (transmitStateSelect == -1 || transmitState == transmitStateSelect) {
+                            Object[] row = new Object[projection.length];
+                            for (int i = 0; i < projection.length; i++) {
+                                row[i] = rowValues.get(projection[i]);
+                            }
+                            result.addRow(row);
+                        } else {
+                            Log.v(TAG, "incorrect transmit state: " + transmitState);
                         }
-                        result.addRow(row);
                     }
                 }
             }
@@ -180,6 +185,43 @@ public class LocalStorage extends ContentProvider {
 
     @Override
     public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+
+        // check URI
+        switch (uriMatcher.match(uri)) {
+        case VALUES_URI:
+            break;
+        default:
+            throw new IllegalArgumentException("Unknown URI " + uri);
+        }
+
+        // try to parse the selection criteria
+        List<String> sensorNames = ParserUtils.getSelectedSensors(storage.keySet(), selection,
+                selectionArgs);
+        long[] timeRangeSelect = ParserUtils.getSelectedTimeRange(selection, selectionArgs);
+        int transmitStateSelect = ParserUtils.getSelectedTransmitState(selection, selectionArgs);
+
+        for (String sensorName : sensorNames) {
+            // return the sensor
+            List<ContentValues> selectedValues = storage.get(sensorName);
+            if (null != selectedValues) {
+                for (ContentValues rowValues : selectedValues) {
+                    long timestamp = rowValues.getAsLong(DataPoint.TIMESTAMP);
+                    if (timestamp > timeRangeSelect[0] && timestamp < timeRangeSelect[1]) {
+                        int transmitState = rowValues.getAsInteger(DataPoint.TRANSMIT_STATE);
+                        if (transmitStateSelect == -1 || transmitState == transmitStateSelect) {
+                            // Object[] row = new Object[projection.length];
+                            // for (int i = 0; i < projection.length; i++) {
+                            // row[i] = rowValues.get(projection[i]);
+                            // }
+                            // result.addRow(row);
+                        } else {
+                            Log.v(TAG, "incorrect transmit state: " + transmitState);
+                        }
+                    }
+                }
+            }
+        }
+
         throw new IllegalArgumentException("Updating rows is not possible");
     }
 }
