@@ -366,7 +366,7 @@ public class MsgHandler extends Service {
     public static final String KEY_SENSOR_NAME = "sensor_name";
     public static final String KEY_TIMESTAMP = "timestamp";
     public static final String KEY_VALUE = "value";
-    private static final int MAX_BUFFER = 1048500; // 1mb in bytes
+    private static final int MAX_BUFFER = 2097000; // 2mb in bytes
     private static final int MAX_NR_OF_SEND_MSG_THREADS = 50;
     private static final int MAX_POST_DATA = 100;
     private static final int MAX_POST_DATA_TIME_SERIE = 10;

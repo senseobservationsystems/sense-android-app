@@ -1429,7 +1429,7 @@ public class SenseService extends Service {
     }
 
     private void toggleMain(boolean active) {
-        Log.v(TAG, "Toggle main: " + active);
+        // Log.v(TAG, "Toggle main: " + active);
 
         if (true == active) {
             // properly start the service to start sensing

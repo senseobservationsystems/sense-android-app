@@ -706,7 +706,7 @@ public class SenseSettings extends PreferenceActivity {
             syncPref.setSummary("Normal: buffer size is 5 minutes");
             break;
         case 1: // rarely
-            syncPref.setSummary("Eco-mode: buffer size is 15 minutes");
+            syncPref.setSummary("Eco-mode: buffer size is 30 minutes");
             break;
         default:
             syncPref.setSummary("ERROR");
