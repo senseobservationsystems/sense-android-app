@@ -1,13 +1,17 @@
 package nl.sense_os.service;
 
 import nl.sense_os.app.R;
+import nl.sense_os.app.appwidget.SenseWidgetProvider;
 import nl.sense_os.service.SensePrefs.Auth;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.appwidget.AppWidgetManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.widget.RemoteViews;
 
 public class ServiceStateHelper {
 
@@ -159,6 +163,25 @@ public class ServiceStateHelper {
         } else {
             nm.cancel(NOTIF_ID);
         }
+
+        // update app widget
+        ComponentName provider = new ComponentName(context, SenseWidgetProvider.class);
+        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget);
+        if (isStarted()) {
+            if (isLoggedIn()) {
+                views.setImageViewResource(R.id.imageButton1, R.drawable.ic_status_sense);
+            } else {
+                views.setImageViewResource(R.id.imageButton1, R.drawable.ic_status_sense_alert);
+            }
+        } else {
+            if (isLoggedIn()) {
+                views.setImageViewResource(R.id.imageButton1, R.drawable.ic_status_sense_disabled);
+            } else {
+                views.setImageViewResource(R.id.imageButton1, R.drawable.ic_status_sense_disabled);
+            }
+        }
+        AppWidgetManager mgr = AppWidgetManager.getInstance(context);
+        mgr.updateAppWidget(provider, views);
     }
 
     public Notification getStateNotification() {

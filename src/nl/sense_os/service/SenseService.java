@@ -131,7 +131,7 @@ public class SenseService extends Service {
                     @Override
                     public void run() {
                         // Unregisters the motion listener and registers it again.
-                        Log.v(TAG, "Screen went off, re-registering the Motion sensor");
+                        // Log.v(TAG, "Screen went off, re-registering the Motion sensor");
                         toggleMotion(false);
                         toggleMotion(true);
                     };
@@ -656,7 +656,7 @@ public class SenseService extends Service {
     }
 
     private void onSyncRateChange() {
-        Log.v(TAG, "Sync rate changed...");
+        // Log.v(TAG, "Sync rate changed...");
         if (state.isStarted()) {
             stopTransmitAlarms();
             startTransmitAlarms();
@@ -692,7 +692,7 @@ public class SenseService extends Service {
      *            {@link #stopSelfResult(int)}.
      */
     private void onStartCompat(final Intent intent, int flags, int startId) {
-        Log.v(TAG, "onStart...");
+        // Log.v(TAG, "onStart...");
 
         HandlerThread startThread = new HandlerThread("Start thread",
                 Process.THREAD_PRIORITY_FOREGROUND);
@@ -821,7 +821,7 @@ public class SenseService extends Service {
      * immediately after sensing starts.
      */
     private void startAliveChecks() {
-        Log.v(TAG, "Start periodic checks if Sense is still alive...");
+        // Log.v(TAG, "Start periodic checks if Sense is still alive...");
 
         state.setStarted(true);
 
@@ -843,7 +843,7 @@ public class SenseService extends Service {
         // Log.v(TAG, "Enable foreground status...");
 
         @SuppressWarnings("rawtypes")
-        final Class[] startForegroundSignature = new Class[] { int.class, Notification.class };
+        final Class[] startForegroundSignature = new Class[]{int.class, Notification.class};
         Method startForeground = null;
         try {
             startForeground = getClass().getMethod("startForeground", startForegroundSignature);
@@ -860,7 +860,7 @@ public class SenseService extends Service {
             // create notification
             Notification n = state.getStateNotification();
 
-            Object[] startArgs = { Integer.valueOf(ServiceStateHelper.NOTIF_ID), n };
+            Object[] startArgs = {Integer.valueOf(ServiceStateHelper.NOTIF_ID), n};
             try {
                 startForeground.invoke(this, startArgs);
             } catch (InvocationTargetException e) {
@@ -931,7 +931,7 @@ public class SenseService extends Service {
      * Start periodic broadcast to trigger the MsgHandler to flush its buffer to CommonSense.
      */
     private void startTransmitAlarms() {
-        Log.v(TAG, "Start periodic data transmission alarms...");
+        // Log.v(TAG, "Start periodic data transmission alarms...");
 
         // intent to broadcast for alarm
         Intent alarm = new Intent(this, DataTransmitter.class);
@@ -947,25 +947,25 @@ public class SenseService extends Service {
 
         // schedule alarms
         switch (rate) {
-        case -2: // real-time: clear out the buffer once, set eco-mode alarm "just in case"
-            mgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
-                    AlarmManager.INTERVAL_HALF_HOUR, operation);
-            return;
-        case -1: // 60 seconds
-            mgr.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000L * 60,
-                    operation);
-            break;
-        case 0: // 5 minute
-            mgr.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000L * 60 * 5,
-                    operation);
-            break;
-        case 1: // eco-mode
-            mgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
-                    AlarmManager.INTERVAL_HALF_HOUR, operation);
-            break;
-        default:
-            Log.e(TAG, "Unexpected sync rate value: " + rate);
-            return;
+            case -2 : // real-time: clear out the buffer once, set eco-mode alarm "just in case"
+                mgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
+                        AlarmManager.INTERVAL_HALF_HOUR, operation);
+                return;
+            case -1 : // 60 seconds
+                mgr.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000L * 60,
+                        operation);
+                break;
+            case 0 : // 5 minute
+                mgr.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
+                        1000L * 60 * 5, operation);
+                break;
+            case 1 : // eco-mode
+                mgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
+                        AlarmManager.INTERVAL_HALF_HOUR, operation);
+                break;
+            default :
+                Log.e(TAG, "Unexpected sync rate value: " + rate);
+                return;
         }
     }
 
@@ -993,7 +993,7 @@ public class SenseService extends Service {
         stopAliveChecks();
 
         @SuppressWarnings("rawtypes")
-        final Class[] stopForegroundSignature = new Class[] { boolean.class };
+        final Class[] stopForegroundSignature = new Class[]{boolean.class};
         Method stopForeground = null;
         try {
             stopForeground = getClass().getMethod("stopForeground", stopForegroundSignature);
@@ -1006,7 +1006,7 @@ public class SenseService extends Service {
         if (stopForeground == null) {
             setForeground(false);
         } else {
-            Object[] stopArgs = { Boolean.TRUE };
+            Object[] stopArgs = {Boolean.TRUE};
             try {
                 stopForeground.invoke(this, stopArgs);
             } catch (InvocationTargetException e) {
@@ -1099,20 +1099,20 @@ public class SenseService extends Service {
                         "0"));
                 int interval = -1;
                 switch (rate) {
-                case -2: // real time
-                    interval = -1;
-                    break;
-                case -1: // often
-                    interval = 10 * 1000;
-                    break;
-                case 0: // normal
-                    interval = 60 * 1000;
-                    break;
-                case 1: // rarely (15 minutes)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected sample rate preference.");
+                    case -2 : // real time
+                        interval = -1;
+                        break;
+                    case -1 : // often
+                        interval = 10 * 1000;
+                        break;
+                    case 0 : // normal
+                        interval = 60 * 1000;
+                        break;
+                    case 1 : // rarely (15 minutes)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected sample rate preference.");
                 }
                 // special interval for Agostino
                 final boolean agostinoMode = mainPrefs.getBoolean("agostino_mode", false);
@@ -1188,23 +1188,23 @@ public class SenseService extends Service {
                         "0"));
                 int interval = 1;
                 switch (rate) {
-                case -2:
-                    interval = 1 * 1000;
-                    break;
-                case -1:
-                    // often
-                    interval = 60 * 1000;
-                    break;
-                case 0:
-                    // normal
-                    interval = 5 * 60 * 1000;
-                    break;
-                case 1:
-                    // rarely (15 mins)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected device proximity rate preference.");
+                    case -2 :
+                        interval = 1 * 1000;
+                        break;
+                    case -1 :
+                        // often
+                        interval = 60 * 1000;
+                        break;
+                    case 0 :
+                        // normal
+                        interval = 5 * 60 * 1000;
+                        break;
+                    case 1 :
+                        // rarely (15 mins)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected device proximity rate preference.");
                 }
                 final int finalInterval = interval;
 
@@ -1272,24 +1272,24 @@ public class SenseService extends Service {
                         "0"));
                 int interval = 1;
                 switch (rate) {
-                case -2:
-                    interval = 1 * 1000;
-                    break;
-                case -1:
-                    // often
-                    interval = 5 * 1000;
-                    break;
-                case 0:
-                    // normal
-                    interval = 60 * 1000;
-                    break;
-                case 1:
-                    // rarely (15 minutes)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected external sensor rate preference.");
-                    return;
+                    case -2 :
+                        interval = 1 * 1000;
+                        break;
+                    case -1 :
+                        // often
+                        interval = 5 * 1000;
+                        break;
+                    case 0 :
+                        // normal
+                        interval = 60 * 1000;
+                        break;
+                    case 1 :
+                        // rarely (15 minutes)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected external sensor rate preference.");
+                        return;
                 }
                 final int finalInterval = interval;
 
@@ -1366,25 +1366,25 @@ public class SenseService extends Service {
                 long minTime = -1;
                 float minDistance = -1;
                 switch (rate) {
-                case -2: // real-time
-                    minTime = 1000;
-                    minDistance = 0;
-                    break;
-                case -1: // often
-                    minTime = 30 * 1000;
-                    minDistance = 0;
-                    break;
-                case 0: // normal
-                    minTime = 5 * 60 * 1000;
-                    minDistance = 0;
-                    break;
-                case 1: // rarely
-                    minTime = 15 * 60 * 1000;
-                    minDistance = 0;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                    break;
+                    case -2 : // real-time
+                        minTime = 1000;
+                        minDistance = 0;
+                        break;
+                    case -1 : // often
+                        minTime = 30 * 1000;
+                        minDistance = 0;
+                        break;
+                    case 0 : // normal
+                        minTime = 5 * 60 * 1000;
+                        minDistance = 0;
+                        break;
+                    case 1 : // rarely
+                        minTime = 15 * 60 * 1000;
+                        minDistance = 0;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                        break;
                 }
                 // special interval for Agostino
                 final boolean agostinoMode = mainPrefs.getBoolean("agostino_mode", false);
@@ -1476,21 +1476,21 @@ public class SenseService extends Service {
                         "0"));
                 int interval = -1;
                 switch (rate) {
-                case -2: // real time
-                    interval = 1 * 1000;
-                    break;
-                case -1: // often
-                    interval = 5 * 1000;
-                    break;
-                case 0: // normal
-                    interval = 60 * 1000;
-                    break;
-                case 1: // rarely (15 minutes)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                    break;
+                    case -2 : // real time
+                        interval = 1 * 1000;
+                        break;
+                    case -1 : // often
+                        interval = 5 * 1000;
+                        break;
+                    case 0 : // normal
+                        interval = 60 * 1000;
+                        break;
+                    case 1 : // rarely (15 minutes)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                        break;
                 }
                 // special interval for Agostino
                 final boolean agostinoMode = mainPrefs.getBoolean("agostino_mode", false);
@@ -1592,21 +1592,21 @@ public class SenseService extends Service {
                         "0"));
                 int interval = -1;
                 switch (rate) {
-                case -2: // real time
-                    interval = 1 * 1000;
-                    break;
-                case -1: // often
-                    interval = 10 * 1000;
-                    break;
-                case 0: // normal
-                    interval = 60 * 1000;
-                    break;
-                case 1: // rarely (15 minutes)
-                    interval = 15 * 60 * 1000;
-                    break;
-                default:
-                    Log.e(TAG, "Unexpected commonsense rate: " + rate);
-                    break;
+                    case -2 : // real time
+                        interval = 1 * 1000;
+                        break;
+                    case -1 : // often
+                        interval = 10 * 1000;
+                        break;
+                    case 0 : // normal
+                        interval = 60 * 1000;
+                        break;
+                    case 1 : // rarely (15 minutes)
+                        interval = 15 * 60 * 1000;
+                        break;
+                    default :
+                        Log.e(TAG, "Unexpected commonsense rate: " + rate);
+                        break;
                 }
                 final int finalInterval = interval;
 

@@ -39,7 +39,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"></uses-permission>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -59,7 +59,8 @@
 
     <application
         android:label="@string/sense_app_name"
-        android:icon="@drawable/ic_launcher_sense" android:debuggable="true">
+        android:icon="@drawable/ic_launcher_sense"
+        android:debuggable="true">
 
         <activity
             android:launchMode="singleInstance"
@@ -74,6 +75,9 @@
             <intent-filter>
                 <action android:name="nl.sense_os.app.SenseApp" />
                 <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
 
@@ -163,19 +167,31 @@
             </intent-filter>
         </receiver>
 
-        <receiver
-            android:name="nl.sense_os.service.feedback.FeedbackRx"
-            android:process="nl.sense_os.service">
-            <intent-filter>
-                <action android:name="nl.sense_os.service.CheckFeedback" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </receiver>
+        <!-- <receiver -->
+        <!-- android:name="nl.sense_os.service.feedback.FeedbackRx" -->
+        <!-- android:process="nl.sense_os.service"> -->
+        <!-- <intent-filter> -->
+        <!-- <action android:name="nl.sense_os.service.CheckFeedback" /> -->
+        <!-- <category android:name="android.intent.category.DEFAULT" /> -->
+        <!-- </intent-filter> -->
+        <!-- </receiver> -->
 
         <receiver
             android:name="nl.sense_os.service.DataTransmitter"
             android:process="nl.sense_os.service.datatransmitter" />
-            
+
+        <receiver
+            android:label="@string/sense_app_name"
+            android:icon="@drawable/ic_launcher_sense"
+            android:name=".appwidget.SenseWidgetProvider">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_provider" />
+        </receiver>
+
         <provider
             android:name="nl.sense_os.service.provider.LocalStorage"
             android:exported="true"

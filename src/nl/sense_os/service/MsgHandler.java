@@ -11,6 +11,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -49,89 +50,161 @@ import android.util.Log;
 
 public class MsgHandler extends Service {
 
+    /**
+     * Handler for tasks that send buffered sensor data to CommonSense. Nota that this handler is
+     * re-usable: every time the handler receives a message, it gets the latest data in a Cursor and
+     * sends it to CommonSense.<br>
+     * <br>
+     * Subclasses have to implement {@link #getUnsentData()} and
+     * {@link #onTransmitSuccess(JSONObject)} to make them work with their intended data source.
+     */
     private abstract class AbstractDataTransmitHandler extends Handler {
 
         final Context context;
         String cookie;
         Cursor cursor;
         private WakeLock wakeLock;
+        private URL url;
+        private final DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.ENGLISH);
+        private final NumberFormat dateFormatter = new DecimalFormat("##########.###", symbols);
 
         public AbstractDataTransmitHandler(Context context, Looper looper) {
             super(looper);
             this.context = context;
-        }
-
-        protected abstract Cursor getData();
-
-        @Override
-        public void handleMessage(Message msg) {
-            cookie = msg.getData().getString("cookie");
-            cursor = getData();
-            if (cursor.getCount() > 0) {
-                transmit();
-            } else {
-                // nothing to transmit
+            try {
+                url = new URL(SenseUrls.SENSOR_DATA.replace("/<id>/", "/"));
+            } catch (MalformedURLException e) {
+                // should never happen
+                Log.e(TAG, "Failed to create the URL to post sensor data points to");
             }
         }
 
-        private void stopAndCleanup() {
+        /**
+         * Cleans up after transmission is over. Closes the Cursor with the data and releases the
+         * wake lock. Should always be called after transmission, even if the attempt failed.
+         */
+        private void cleanup() {
             if (null != cursor) {
                 cursor.close();
+                cursor = null;
             }
             if (null != wakeLock) {
                 wakeLock.release();
+                wakeLock = null;
             }
         }
 
-        private void transmit() {
+        /**
+         * @return Cursor with the data points that have to be sent to CommonSense.
+         */
+        protected abstract Cursor getUnsentData();
+
+        @Override
+        public void handleMessage(Message msg) {
             try {
-                // make sure the device stays awake while transmitting
-                wakeLock = getWakeLock();
-                wakeLock.acquire();
+                cookie = msg.getData().getString("cookie");
+                cursor = getUnsentData();
+                if (cursor.getCount() > 0) {
+                    transmit();
+                } else {
+                    // nothing to transmit
+                }
+            } catch (Exception e) {
+                if (null != e.getMessage()) {
+                    Log.e(TAG, "Exception sending buffered data: " + e.getMessage()
+                            + " Data will be resent later.");
+                } else {
+                    Log.e(TAG, "Exception sending cursor data. Data will be resent later.", e);
+                }
+
+            } finally {
+                cleanup();
+            }
+        }
+
+        /**
+         * Performs cleanup tasks after transmission was successfully completed. Should update the
+         * data point records to show that they have been sent to CommonSense.
+         * 
+         * @param transmission
+         *            The JSON Object that was sent to CommonSense. Contains all the data points
+         *            that were transmitted.
+         * @throws JSONException
+         */
+        protected abstract void onTransmitSuccess(JSONObject transmission) throws JSONException;
+
+        /**
+         * Transmits the data points from {@link #cursor} to CommonSense. Any "file" type data
+         * points will be sent separately via
+         * {@link MsgHandler#sendSensorData(String, JSONObject, String, String)}.
+         * 
+         * @throws JSONException
+         * @throws MalformedURLException
+         */
+        private void transmit() throws JSONException, MalformedURLException {
+
+            // make sure the device stays awake while transmitting
+            wakeLock = getWakeLock();
+            wakeLock.acquire();
+
+            // continue until all points in the cursor have been sent
+            HashMap<String, JSONObject> sensorDataMap = null;
+            while (!cursor.isAfterLast()) {
 
                 // organize the data into a hash map sorted by sensor
-                HashMap<String, JSONArray> sensorDataMap = new HashMap<String, JSONArray>();
-                while (!cursor.isAfterLast()) {
-                    // get the data point details
-                    String sensorName = cursor.getString(cursor
-                            .getColumnIndex(DataPoint.SENSOR_NAME));
-                    String sensorDesc = cursor.getString(cursor
-                            .getColumnIndex(DataPoint.SENSOR_DESCRIPTION));
-                    String dataType = cursor.getString(cursor.getColumnIndex(DataPoint.DATA_TYPE));
-                    String value = cursor.getString(cursor.getColumnIndex(DataPoint.VALUE));
-                    long timestamp = cursor.getLong(cursor.getColumnIndex(DataPoint.TIMESTAMP));
+                sensorDataMap = new HashMap<String, JSONObject>();
+                String sensorName, sensorDesc, dataType, value;
+                long timestamp;
+                int points = 0;
+                while (points < MAX_POST_DATA && !cursor.isAfterLast()) {
 
-                    // if the data type is a "file", we need special handling
-                    DecimalFormatSymbols englishSymbols = new DecimalFormatSymbols(Locale.ENGLISH);
-                    NumberFormat formatter = new DecimalFormat("##########.###", englishSymbols);
+                    // get the data point details
+                    sensorName = cursor.getString(cursor.getColumnIndex(DataPoint.SENSOR_NAME));
+                    sensorDesc = cursor.getString(cursor
+                            .getColumnIndex(DataPoint.SENSOR_DESCRIPTION));
+                    dataType = cursor.getString(cursor.getColumnIndex(DataPoint.DATA_TYPE));
+                    value = cursor.getString(cursor.getColumnIndex(DataPoint.VALUE));
+                    timestamp = cursor.getLong(cursor.getColumnIndex(DataPoint.TIMESTAMP));
+
+                    // "normal" data is added to the map until we reach the max amount of points
                     if (!dataType.equals(SenseDataTypes.FILE)) {
 
                         // construct JSON representation of the value
                         JSONObject jsonDataPoint = new JSONObject();
-                        jsonDataPoint.put("date", formatter.format(timestamp / 1000d));
+                        jsonDataPoint.put("date", dateFormatter.format(timestamp / 1000d));
                         jsonDataPoint.put("value", value);
 
-                        // get the sensor ID
-                        String sensorId = SenseApi.getSensorId(context, sensorName, value,
-                                dataType, sensorDesc);
-
                         // put the new value Object in the appropriate sensor's data
-                        JSONArray data = sensorDataMap.get(sensorId);
-                        if (data == null) {
+                        String key = sensorName + sensorDesc;
+                        JSONObject sensorEntry = sensorDataMap.get(key);
+                        JSONArray data = null;
+                        if (sensorEntry == null) {
+                            sensorEntry = new JSONObject();
+                            sensorEntry.put("sensor_id", SenseApi.getSensorId(context, sensorName,
+                                    value, dataType, sensorDesc));
                             data = new JSONArray();
+                        } else {
+                            data = sensorEntry.getJSONArray("data");
                         }
                         data.put(jsonDataPoint);
-                        sensorDataMap.put(sensorId, data);
+                        sensorEntry.put("data", data);
+                        sensorDataMap.put(key, sensorEntry);
+
+                        // count the added point to the total number of sensor data
+                        points++;
+
                     } else {
-                        Log.d(TAG, "transmit file separately from the rest of the buffered data: '"
-                                + value + "'");
+                        // if the data type is a "file", we need special handling
+                        Log.d(TAG,
+                                "Transmit file separately from the other buffered data points: '"
+                                        + value + "'");
 
                         // create sensor data JSON object with only 1 data point
                         JSONObject sensorData = new JSONObject();
                         JSONArray dataArray = new JSONArray();
                         JSONObject data = new JSONObject();
                         data.put("value", value);
-                        data.put("date", formatter.format(timestamp / 1000d));
+                        data.put("date", dateFormatter.format(timestamp / 1000d));
                         dataArray.put(data);
                         sensorData.put("data", dataArray);
 
@@ -143,72 +216,83 @@ public class MsgHandler extends Service {
 
                 if (sensorDataMap.size() < 1) {
                     // no data to transmit
-                    return;
+                    continue;
                 }
 
-                // put the sensors' data into JSON
+                // prepare the main JSON object for transmission
                 JSONArray sensors = new JSONArray();
-                for (Entry<String, JSONArray> entry : sensorDataMap.entrySet()) {
-                    JSONObject sensorData = new JSONObject();
-                    sensorData.put("sensor_id", entry.getKey());
-                    sensorData.put("data", entry.getValue());
-                    sensors.put(sensorData);
+                for (Entry<String, JSONObject> entry : sensorDataMap.entrySet()) {
+                    sensors.put(entry.getValue());
                 }
+                JSONObject transmission = new JSONObject();
+                transmission.put("sensors", sensors);
 
-                JSONObject json = new JSONObject();
-                json.put("sensors", sensors);
-
-                // get sensor URL at CommonSense
-                String url = SenseUrls.SENSOR_DATA.replace("/<id>/", "/");
-
-                HashMap<String, String> response = SenseApi.sendJson(context, new URL(url), json,
-                        "POST", cookie);
-                // Error when sending
-                if (response == null
-                        || response.get("http response code").compareToIgnoreCase("201") != 0) {
-
-                    // if un-authorized: relogin
-                    if (response != null
-                            && response.get("http response code").compareToIgnoreCase("403") == 0) {
-                        final Intent serviceIntent = new Intent(ISenseService.class.getName());
-                        serviceIntent.putExtra(SenseService.ACTION_RELOGIN, true);
-                        context.startService(serviceIntent);
-                    }
-
-                    // Show the HTTP response Code
-                    if (response != null) {
-                        Log.w(TAG,
-                                "Failed to send cursor data. Response code:"
-                                        + response.get("http response code")
-                                        + ", Response content: '" + response.get("content") + "'\n"
-                                        + "Data will be retried later");
-                    } else {
-                        Log.w(TAG, "Failed to send cursor data.\nData will be retried later.");
-                    }
-                }
-
-                // Data sent successfully
-                else {
-                    updateTransmitStates(json);
-                }
-
-            } catch (Exception e) {
-                if (null != e.getMessage()) {
-                    Log.e(TAG,
-                            "Exception sending cursor data, data will be retried later: "
-                                    + e.getMessage());
-                } else {
-                    Log.e(TAG, "Exception sending cursor data, data will be retried later.", e);
-                }
-
-            } finally {
-                stopAndCleanup();
+                // perform the actual POST request
+                postData(transmission);
             }
         }
 
-        protected abstract void updateTransmitStates(JSONObject transmission) throws JSONException;
+        /**
+         * POSTs the sensor data points to the main sensor data URL at CommonSense.
+         * 
+         * @param transmission
+         *            JSON Object with data points for transmission
+         * @throws JSONException
+         * @throws MalformedURLException
+         */
+        private void postData(JSONObject transmission) throws JSONException, MalformedURLException {
+
+            HashMap<String, String> response = SenseApi.sendJson(context, url, transmission,
+                    "POST", cookie);
+
+            if (response == null) {
+                // Error when sending
+                Log.w(TAG, "Failed to send buffered data points.\nData will be retried later.");
+
+            } else if (response.get("http response code").compareToIgnoreCase("201") != 0) {
+                // incorrect status code
+                String statusCode = response.get("http response code");
+
+                // if un-authorized: relogin
+                if (statusCode.compareToIgnoreCase("403") == 0) {
+                    final Intent serviceIntent = new Intent(ISenseService.class.getName());
+                    serviceIntent.putExtra(SenseService.ACTION_RELOGIN, true);
+                    context.startService(serviceIntent);
+                }
+
+                // Show the HTTP response Code
+                Log.w(TAG, "Failed to send buffered data points: " + statusCode
+                        + ", Response content: '" + response.get("content") + "'\n"
+                        + "Data will be retried later");
+
+            } else {
+                // Data sent successfully
+                onTransmitSuccess(transmission);
+            }
+        }
+
+        /**
+         * @param bytes
+         *            Byte count;
+         * @param si
+         *            true to use SI system, where 1000 B = 1 kB
+         * @return A String with human-readable byte count, including suffix.
+         */
+        public String humanReadableByteCount(long bytes, boolean si) {
+            int unit = si ? 1000 : 1024;
+            if (bytes < unit)
+                return bytes + " B";
+            int exp = (int) (Math.log(bytes) / Math.log(unit));
+            String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
+            return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
+        }
     }
 
+    /**
+     * Handler for transmit tasks of persisted data (i.e. data that was stored in the SQLite
+     * database). Removes the data from the database after the transmission is completed
+     * successfully.
+     */
     private class PersistedDataTransmitHandler extends AbstractDataTransmitHandler {
 
         public PersistedDataTransmitHandler(Context context, Looper looper) {
@@ -216,7 +300,7 @@ public class MsgHandler extends Service {
         }
 
         @Override
-        protected Cursor getData() {
+        protected Cursor getUnsentData() {
             String where = DataPoint.TRANSMIT_STATE + "=0";
             Cursor unsent = getContentResolver().query(DataPoint.CONTENT_PERSISTED_URI, null,
                     where, null, null);
@@ -226,17 +310,17 @@ public class MsgHandler extends Service {
                 return unsent;
             } else {
                 Log.v(TAG, "No unsent data points in the persistant storage");
-                return new MatrixCursor(new String[] {});
+                return new MatrixCursor(new String[]{});
             }
         }
 
         @Override
-        protected void updateTransmitStates(JSONObject transmission) throws JSONException {
+        protected void onTransmitSuccess(JSONObject transmission) throws JSONException {
 
             // log our great success
             int bytes = transmission.toString().getBytes().length;
-            Log.i(TAG, "Sent old sensor data from persistant storage! Raw data size: " + bytes
-                    + " bytes");
+            Log.i(TAG, "Sent old sensor data from persistant storage! Raw data size: "
+                    + humanReadableByteCount(bytes, false));
 
             JSONArray sensors = SenseApi.getRegisteredSensors(context);
             if (sensors == null) {
@@ -285,6 +369,11 @@ public class MsgHandler extends Service {
         }
     }
 
+    /**
+     * Handler for transmit tasks of recently added data (i.e. data that is stored in system RAM
+     * memory). Updates {@link DataPoint#TRANSMIT_STATE} of the data points after the transmission
+     * is completed successfully.
+     */
     private class RecentDataTransmitHandler extends AbstractDataTransmitHandler {
 
         public RecentDataTransmitHandler(Context context, Looper looper) {
@@ -292,7 +381,7 @@ public class MsgHandler extends Service {
         }
 
         @Override
-        protected Cursor getData() {
+        protected Cursor getUnsentData() {
             String where = DataPoint.TRANSMIT_STATE + "=0";
             Cursor unsent = getContentResolver().query(DataPoint.CONTENT_URI, null, where, null,
                     null);
@@ -301,17 +390,17 @@ public class MsgHandler extends Service {
                 return unsent;
             } else {
                 Log.v(TAG, "No unsent recent data points");
-                return new MatrixCursor(new String[] {});
+                return new MatrixCursor(new String[]{});
             }
         }
 
         @Override
-        protected void updateTransmitStates(JSONObject transmission) throws JSONException {
+        protected void onTransmitSuccess(JSONObject transmission) throws JSONException {
 
             // log our great success
             int bytes = transmission.toString().getBytes().length;
-            Log.i(TAG, "Sent recent sensor data from the local storage! Raw data size: " + bytes
-                    + " bytes");
+            Log.i(TAG, "Sent recent sensor data from the local storage! Raw data size: "
+                    + humanReadableByteCount(bytes, false));
 
             // new content values with updated transmit state
             ContentValues values = new ContentValues();
@@ -353,23 +442,11 @@ public class MsgHandler extends Service {
                         null);
                 if (updated == dataPoints.length()) {
                     Log.v(TAG, "Updated all " + updated + " '" + sensorName
-                            + "' rows in the local storage");
+                            + "' data points in the local storage");
                 } else {
                     Log.w(TAG, "Wrong number of '" + sensorName
                             + "' data points updated after transmission! " + updated + " vs. "
                             + dataPoints.length());
-
-                    // try the persistant storage
-                    int deleted = getContentResolver().delete(DataPoint.CONTENT_PERSISTED_URI,
-                            where, null);
-                    if (deleted == dataPoints.length()) {
-                        Log.v(TAG, "Deleted all " + updated + " '" + sensorName
-                                + "' rows in the persistant storage");
-                    } else {
-                        Log.w(TAG, "Wrong number of '" + sensorName
-                                + "' data points deleted after transmission! " + deleted + " vs. "
-                                + dataPoints.length());
-                    }
                 }
             }
         }
@@ -664,6 +741,12 @@ public class MsgHandler extends Service {
             }
         }
 
+        private void stopAndCleanup() {
+            --nrOfSendMessageThreads;
+            wakeLock.release();
+            getLooper().quit();
+        }
+
         private void updateTransmitState(String date) {
 
             // new content values with updated transmit state
@@ -686,12 +769,6 @@ public class MsgHandler extends Service {
                         "Failed to update the local storage after a file was successfully sent to CommonSense!");
             }
 
-        }
-
-        private void stopAndCleanup() {
-            --nrOfSendMessageThreads;
-            wakeLock.release();
-            getLooper().quit();
         }
     }
 

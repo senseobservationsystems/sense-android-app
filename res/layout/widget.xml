@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="horizontal" android:gravity="center_vertical">
+    <ImageButton
+        android:layout_height="wrap_content"
+        android:src="@android:drawable/checkbox_on_background"
+        android:layout_width="wrap_content"
+        android:id="@+id/imageButton1"></ImageButton>
+    <TextView
+        android:id="@+id/textView1" android:textAppearance="?android:attr/textAppearanceMedium" android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="@string/sense_app_name" android:layout_weight="1" android:gravity="center"></TextView>
+    <ImageButton
+        android:layout_height="wrap_content"
+        android:src="@android:drawable/checkbox_on_background"
+        android:layout_width="wrap_content"
+        android:id="@+id/ImageButton01"></ImageButton>
+
+</LinearLayout>
