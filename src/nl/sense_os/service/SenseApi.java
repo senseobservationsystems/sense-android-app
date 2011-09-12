@@ -224,18 +224,10 @@ public class SenseApi {
         }
     }
 
-    /**
-     * This method returns the URL to which the data must be send, it does this based on the sensor
-     * name and device_type. If the sensor cannot be found, then it will be created.
-     */
-    public static String getSensorUrl(Context context, String sensorName, String sensorValue,
+    public static String getSensorId(Context context, String sensorName, String sensorValue,
             String dataType, String deviceType) {
+
         try {
-
-            final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
-                    Context.MODE_PRIVATE);
-            final boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
-
             // get list of all registered sensors for this device
             JSONArray sensors = getRegisteredSensors(context);
 
@@ -248,32 +240,47 @@ public class SenseApi {
                     if (sensor.getString("device_type").equalsIgnoreCase(deviceType)
                             && sensor.getString("name").equalsIgnoreCase(sensorName)
                             && sensor.getString("data_type").equalsIgnoreCase(dataType)) {
-
                         // found the right sensor
-                        if (dataType.equals(SenseDataTypes.FILE)) {
-                            String url = devMode
-                                    ? SenseUrls.DEV_SENSOR_FILE
-                                    : SenseUrls.SENSOR_FILE;
-                            return url.replaceFirst("<id>", sensor.getString("id"));
-                        } else {
-                            String url = devMode
-                                    ? SenseUrls.DEV_SENSOR_DATA
-                                    : SenseUrls.SENSOR_DATA;
-                            return url.replaceFirst("<id>", sensor.getString("id"));
-                        }
+                        return sensor.getString("id");
                     }
                 }
             } else {
                 // couldn't get the list of sensors, probably a connection problem: give up
-                Log.w(TAG, "Failed to get URL for sensor '" + sensorName
+                Log.w(TAG, "Failed to get ID for sensor '" + sensorName
                         + "': there was an error getting the list of sensors");
                 return null;
             }
 
-            /* Sensor not found in current list of sensors, create it at CommonSense */
-            String id = registerSensor(context, sensorName, deviceType, dataType, sensorValue);
+            // Sensor not found in current list of sensors, create it at CommonSense
+            return registerSensor(context, sensorName, deviceType, dataType, sensorValue);
 
-            // create URL with the new sensor ID
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to get ID for sensor '" + sensorName + "': Exception occurred:", e);
+            return null;
+        }
+    }
+
+    /**
+     * This method returns the URL to which the data must be send, it does this based on the sensor
+     * name and device_type. If the sensor cannot be found, then it will be created.
+     */
+    public static String getSensorUrl(Context context, String sensorName, String sensorValue,
+            String dataType, String deviceType) {
+
+        try {
+            String id = getSensorId(context, sensorName, sensorValue, dataType, deviceType);
+
+            if (id == null) {
+                Log.e(TAG, "Failed to get URL for sensor '" + sensorName
+                        + "': sensor ID is not available");
+                return null;
+            }
+
+            final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
+                    Context.MODE_PRIVATE);
+            final boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
+
+            // found the right sensor
             if (dataType.equals(SenseDataTypes.FILE)) {
                 String url = devMode ? SenseUrls.DEV_SENSOR_FILE : SenseUrls.SENSOR_FILE;
                 return url.replaceFirst("<id>", id);
@@ -500,8 +507,7 @@ public class SenseApi {
             final String device_type = authPrefs.getString(Auth.DEVICE_TYPE, Build.MODEL);
 
             // Add sensor to this device at CommonSense
-            String rawUrl = devMode
-                    ? SenseUrls.DEV_ADD_SENSOR_TO_DEVICE
+            String rawUrl = devMode ? SenseUrls.DEV_ADD_SENSOR_TO_DEVICE
                     : SenseUrls.ADD_SENSOR_TO_DEVICE;
             url = new URL(rawUrl.replaceFirst("<id>", id));
             postData = new JSONObject();

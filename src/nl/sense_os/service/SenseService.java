@@ -967,9 +967,6 @@ public class SenseService extends Service {
             Log.e(TAG, "Unexpected sync rate value: " + rate);
             return;
         }
-
-        // send first alarm transmission
-        sendBroadcast(alarm);
     }
 
     /**

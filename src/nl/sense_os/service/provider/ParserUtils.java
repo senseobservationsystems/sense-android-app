@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.Set;
 
 import nl.sense_os.service.SensorData.DataPoint;
-import android.util.Log;
 
 public class ParserUtils {
 
+    @SuppressWarnings("unused")
     private static final String TAG = "ParserUtils";
 
     /**
@@ -76,7 +76,8 @@ public class ParserUtils {
                     }
                 }
             } else {
-                Log.w(TAG, "Parser cannot handle selection query: " + selection);
+                throw new IllegalArgumentException("Parser cannot handle selection query: "
+                        + selection);
             }
 
         } else {
@@ -84,7 +85,8 @@ public class ParserUtils {
             names.addAll(allSensors);
         }
 
-        return names;
+        // return a copy of the list of names
+        return new ArrayList<String>(names);
     }
 
     /**
@@ -152,8 +154,9 @@ public class ParserUtils {
                 // Log.v(TAG, "Query contains: " + DataPoint.TIMESTAMP + " != " + timestamp);
 
                 // use default timestamps
+            }
 
-            } else if (-1 != geqKeyStart) {
+            if (-1 != geqKeyStart) {
                 // selection contains "timestamp>='"
                 int timestampStart = geqKeyStart + (DataPoint.TIMESTAMP + ">=").length();
                 int timestampEnd = selection.indexOf(" ", timestampStart);
@@ -181,7 +184,9 @@ public class ParserUtils {
 
                 minTimestamp = Long.parseLong(timestamp) - 1;
 
-            } else if (-1 != leqKeyStart) {
+            }
+
+            if (-1 != leqKeyStart) {
                 // selection contains "timestamp<='"
                 int timestampStart = leqKeyStart + (DataPoint.TIMESTAMP + "<=").length();
                 int timestampEnd = selection.indexOf(" ", timestampStart);
@@ -209,8 +214,6 @@ public class ParserUtils {
 
                 maxTimestamp = Long.parseLong(timestamp) - 1;
 
-            } else {
-                Log.w(TAG, "Parser cannot handle selection query: " + selection);
             }
 
         } else {
@@ -234,40 +237,42 @@ public class ParserUtils {
             selection = selection.replaceAll("!= ", "!=");
             selection = selection.replaceAll(" !=", "!=");
 
-            int eqKeyStart = selection.indexOf(DataPoint.TRANSMIT_STATE + "='");
-            int neqKeyStart = selection.indexOf(DataPoint.TRANSMIT_STATE + "!='")
-                    + (DataPoint.TRANSMIT_STATE + "!='").length();
+            int eqKeyStart = selection.indexOf(DataPoint.TRANSMIT_STATE + "=");
+            int neqKeyStart = selection.indexOf(DataPoint.TRANSMIT_STATE + "!=")
+                    + (DataPoint.TRANSMIT_STATE + "!=").length();
 
             if (-1 != eqKeyStart) {
                 // selection contains "sensor_name='"
-                int stateStart = eqKeyStart + (DataPoint.TRANSMIT_STATE + "='").length();
-                int stateEnd = selection.indexOf("'", stateStart);
+                int stateStart = eqKeyStart + (DataPoint.TRANSMIT_STATE + "=").length();
+                int stateEnd = selection.indexOf(" ", stateStart);
                 stateEnd = stateEnd == -1 ? selection.length() - 1 : stateEnd;
                 String state = selection.substring(stateStart, stateEnd);
                 if (state.equals("?")) {
                     throw new IllegalArgumentException(
                             "LocalStorage cannot handle queries with arguments array, sorry...");
                 }
-                Log.v(TAG, "Query contains: " + DataPoint.TRANSMIT_STATE + " = '" + state + "'");
+                // Log.v(TAG, "Query contains: " + DataPoint.TRANSMIT_STATE + " = " + state + "");
 
                 result = state.equals("1") ? 1 : 0;
 
             } else if (-1 != neqKeyStart) {
                 // selection contains "sensor_name!='"
-                int stateStart = neqKeyStart + (DataPoint.TRANSMIT_STATE + "!='").length();
-                int stateEnd = selection.indexOf("'", stateStart);
+                int stateStart = neqKeyStart + (DataPoint.TRANSMIT_STATE + "!=").length();
+                int stateEnd = selection.indexOf(" ", stateStart);
                 stateEnd = stateEnd == -1 ? selection.length() - 1 : stateEnd;
                 String notState = selection.substring(stateStart, stateEnd);
                 if (notState.equals("?")) {
                     throw new IllegalArgumentException(
                             "LocalStorage cannot handle queries with arguments array, sorry...");
                 }
-                Log.v(TAG, "Query contains: " + DataPoint.TRANSMIT_STATE + " != '" + notState + "'");
+                // Log.v(TAG, "Query contains: " + DataPoint.TRANSMIT_STATE + " != " + notState +
+                // "");
 
                 result = notState.equals("1") ? 0 : 1;
 
             } else {
-                Log.w(TAG, "Parser cannot handle selection query: " + selection);
+                throw new IllegalArgumentException("Parser cannot handle selection query: "
+                        + selection);
             }
         }
 

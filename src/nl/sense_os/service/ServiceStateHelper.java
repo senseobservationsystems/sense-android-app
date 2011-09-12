@@ -8,7 +8,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.util.Log;
 
 public class ServiceStateHelper {
 
@@ -17,6 +16,7 @@ public class ServiceStateHelper {
      */
     public static final int NOTIF_ID = 1;
 
+    @SuppressWarnings("unused")
     private static final String TAG = "Sense Service State";
 
     private final Context context;
@@ -102,12 +102,13 @@ public class ServiceStateHelper {
     public void setForeground(boolean foreground) {
         if (foreground != isForeground()) {
             this.foreground = foreground;
-            Log.v(TAG, isForeground()
-                    ? "Sense Platform Service is in foreground..."
-                    : "Sense Platform Service is in background...");
+            // Log.v(TAG, isForeground()
+            // ? "Sense Platform Service is in foreground..."
+            // : "Sense Platform Service is in background...");
             updateNotification();
         }
     }
+
     public void setLocationActive(boolean active) {
         locationActive = active;
     }
@@ -115,7 +116,8 @@ public class ServiceStateHelper {
     public void setLoggedIn(boolean loggedIn) {
         if (loggedIn != isLoggedIn()) {
             this.loggedIn = loggedIn;
-            Log.v(TAG, isLoggedIn() ? "Logged in..." : "Logged out...");
+            // Log.v(TAG, isLoggedIn() ? "Sense Platform Service logged in..."
+            // : "Sense Platform Service logged out...");
             updateNotification();
         }
     }
@@ -135,9 +137,9 @@ public class ServiceStateHelper {
     public void setStarted(boolean started) {
         if (started != isStarted()) {
             this.started = started;
-            Log.v(TAG, isStarted()
-                    ? "Sense Platform Service started..."
-                    : "Sense Platform Service stopped...");
+            // Log.v(TAG, isStarted()
+            // ? "Sense Platform Service started..."
+            // : "Sense Platform Service stopped...");
             updateNotification();
         }
     }
@@ -170,8 +172,7 @@ public class ServiceStateHelper {
                 icon = R.drawable.ic_status_sense;
                 final SharedPreferences authPrefs = context.getSharedPreferences(
                         SensePrefs.AUTH_PREFS, Context.MODE_PRIVATE);
-                String username = authPrefs.getString(Auth.LOGIN_USERNAME,
-                        "UNKNOWN");
+                String username = authPrefs.getString(Auth.LOGIN_USERNAME, "UNKNOWN");
                 contentText = "Sensors active, logged in as '" + username + "'";
             } else {
                 icon = R.drawable.ic_status_sense_alert;
@@ -182,8 +183,7 @@ public class ServiceStateHelper {
                 icon = R.drawable.ic_status_sense_disabled;
                 final SharedPreferences authPrefs = context.getSharedPreferences(
                         SensePrefs.AUTH_PREFS, Context.MODE_PRIVATE);
-                String username = authPrefs.getString(Auth.LOGIN_USERNAME,
-                        "UNKNOWN");
+                String username = authPrefs.getString(Auth.LOGIN_USERNAME, "UNKNOWN");
                 contentText = "Sensors inactive, logged in as '" + username + "'";
             } else {
                 icon = R.drawable.ic_status_sense_disabled;
