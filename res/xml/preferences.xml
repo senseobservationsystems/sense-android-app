@@ -319,6 +319,11 @@
                     android:summary="FOR SCIENCE!"
                     android:defaultValue="false"
                     android:key="agostino_mode" />
+                <CheckBoxPreference
+                    android:title="Epi mode"
+                    android:summary="FOR HEALTH!"
+                    android:defaultValue="false"
+                    android:key="epimode" />
             </PreferenceCategory>
         </PreferenceScreen>
     </PreferenceCategory>

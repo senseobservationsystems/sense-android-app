@@ -480,6 +480,7 @@ public class SenseSettings extends PreferenceActivity {
             editor.putBoolean(Advanced.USE_COMMONSENSE,
                     service.getPrefBool(Advanced.USE_COMMONSENSE, true));
             editor.putBoolean("agostino_mode", service.getPrefBool("agostino_mode", false));
+            editor.putBoolean(Motion.EPIMODE, service.getPrefBool(Motion.EPIMODE, false));
 
             editor.commit();
 

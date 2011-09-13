@@ -131,7 +131,7 @@
             </intent-filter>
         </service>
 
-        <receiver
+        <service android:name="nl.sense_os.service.states.EpiStateMonitor"></service><receiver
             android:name="nl.sense_os.service.popquiz.PopQuizRx"
             android:process="nl.sense_os.service">
             <intent-filter>
@@ -196,6 +196,7 @@
             android:name="nl.sense_os.service.provider.LocalStorage"
             android:exported="true"
             android:authorities="nl.sense_os.service.provider.LocalStorage" />
+        
 
     </application>
 
