@@ -123,6 +123,23 @@ public class MsgHandler extends Service {
         }
 
         /**
+         * @param bytes
+         *            Byte count;
+         * @param si
+         *            true to use SI system, where 1000 B = 1 kB
+         * @return A String with human-readable byte count, including suffix.
+         */
+        public String humanReadableByteCount(long bytes, boolean si) {
+            int unit = si ? 1000 : 1024;
+            if (bytes < unit) {
+                return bytes + " B";
+            }
+            int exp = (int) (Math.log(bytes) / Math.log(unit));
+            String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
+            return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
+        }
+
+        /**
          * Performs cleanup tasks after transmission was successfully completed. Should update the
          * data point records to show that they have been sent to CommonSense.
          * 
@@ -132,6 +149,45 @@ public class MsgHandler extends Service {
          * @throws JSONException
          */
         protected abstract void onTransmitSuccess(JSONObject transmission) throws JSONException;
+
+        /**
+         * POSTs the sensor data points to the main sensor data URL at CommonSense.
+         * 
+         * @param transmission
+         *            JSON Object with data points for transmission
+         * @throws JSONException
+         * @throws MalformedURLException
+         */
+        private void postData(JSONObject transmission) throws JSONException, MalformedURLException {
+
+            HashMap<String, String> response = SenseApi.sendJson(context, url, transmission,
+                    "POST", cookie);
+
+            if (response == null) {
+                // Error when sending
+                Log.w(TAG, "Failed to send buffered data points.\nData will be retried later.");
+
+            } else if (response.get("http response code").compareToIgnoreCase("201") != 0) {
+                // incorrect status code
+                String statusCode = response.get("http response code");
+
+                // if un-authorized: relogin
+                if (statusCode.compareToIgnoreCase("403") == 0) {
+                    final Intent serviceIntent = new Intent(ISenseService.class.getName());
+                    serviceIntent.putExtra(SenseService.ACTION_RELOGIN, true);
+                    context.startService(serviceIntent);
+                }
+
+                // Show the HTTP response Code
+                Log.w(TAG, "Failed to send buffered data points: " + statusCode
+                        + ", Response content: '" + response.get("content") + "'\n"
+                        + "Data will be retried later");
+
+            } else {
+                // Data sent successfully
+                onTransmitSuccess(transmission);
+            }
+        }
 
         /**
          * Transmits the data points from {@link #cursor} to CommonSense. Any "file" type data
@@ -231,61 +287,6 @@ public class MsgHandler extends Service {
                 postData(transmission);
             }
         }
-
-        /**
-         * POSTs the sensor data points to the main sensor data URL at CommonSense.
-         * 
-         * @param transmission
-         *            JSON Object with data points for transmission
-         * @throws JSONException
-         * @throws MalformedURLException
-         */
-        private void postData(JSONObject transmission) throws JSONException, MalformedURLException {
-
-            HashMap<String, String> response = SenseApi.sendJson(context, url, transmission,
-                    "POST", cookie);
-
-            if (response == null) {
-                // Error when sending
-                Log.w(TAG, "Failed to send buffered data points.\nData will be retried later.");
-
-            } else if (response.get("http response code").compareToIgnoreCase("201") != 0) {
-                // incorrect status code
-                String statusCode = response.get("http response code");
-
-                // if un-authorized: relogin
-                if (statusCode.compareToIgnoreCase("403") == 0) {
-                    final Intent serviceIntent = new Intent(ISenseService.class.getName());
-                    serviceIntent.putExtra(SenseService.ACTION_RELOGIN, true);
-                    context.startService(serviceIntent);
-                }
-
-                // Show the HTTP response Code
-                Log.w(TAG, "Failed to send buffered data points: " + statusCode
-                        + ", Response content: '" + response.get("content") + "'\n"
-                        + "Data will be retried later");
-
-            } else {
-                // Data sent successfully
-                onTransmitSuccess(transmission);
-            }
-        }
-
-        /**
-         * @param bytes
-         *            Byte count;
-         * @param si
-         *            true to use SI system, where 1000 B = 1 kB
-         * @return A String with human-readable byte count, including suffix.
-         */
-        public String humanReadableByteCount(long bytes, boolean si) {
-            int unit = si ? 1000 : 1024;
-            if (bytes < unit)
-                return bytes + " B";
-            int exp = (int) (Math.log(bytes) / Math.log(unit));
-            String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
-            return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
-        }
     }
 
     /**
@@ -310,7 +311,7 @@ public class MsgHandler extends Service {
                 return unsent;
             } else {
                 Log.v(TAG, "No unsent data points in the persistant storage");
-                return new MatrixCursor(new String[]{});
+                return new MatrixCursor(new String[] {});
             }
         }
 
@@ -390,7 +391,7 @@ public class MsgHandler extends Service {
                 return unsent;
             } else {
                 Log.v(TAG, "No unsent recent data points");
-                return new MatrixCursor(new String[]{});
+                return new MatrixCursor(new String[] {});
             }
         }
 
@@ -499,8 +500,7 @@ public class MsgHandler extends Service {
 
                 if (url == null) {
                     Log.w(TAG, "Received invalid sensor URL for '" + sensorName
-                            + "': requeue the message.");
-                    bufferMessage(sensorName, data, dataType, deviceType);
+                            + "': data will be retried.");
                     return;
                 }
 
@@ -522,14 +522,11 @@ public class MsgHandler extends Service {
                     if (response != null) {
                         Log.w(TAG, "Failed to send '" + sensorName + "' data. Response code:"
                                 + response.get("http response code") + ", Response content: '"
-                                + response.get("content") + "'\nMessage will be requeued");
+                                + response.get("content") + "'\nData will be retried");
                     } else {
                         Log.w(TAG, "Failed to send '" + sensorName
-                                + "' data.\nMessage will be requeued.");
+                                + "' data.\nData will be retried.");
                     }
-
-                    // connection error put all the messages back in the queue
-                    bufferMessage(sensorName, data, dataType, deviceType);
                 }
 
                 // Data sent successfully
@@ -537,31 +534,24 @@ public class MsgHandler extends Service {
                     int bytes = data.toString().getBytes().length;
                     Log.i(TAG, "Sent '" + sensorName + "' data! Raw data size: " + bytes + " bytes");
 
-                    updateTransmitState();
+                    onTransmitSuccess();
                 }
 
             } catch (Exception e) {
                 if (null != e.getMessage()) {
                     Log.e(TAG, "Exception sending '" + sensorName
-                            + "' data, message will be requeued: " + e.getMessage());
+                            + "' data, data will be retried: " + e.getMessage());
                 } else {
-                    Log.e(TAG, "Exception sending '" + sensorName
-                            + "' data, message will be requeued.", e);
+                    Log.e(TAG,
+                            "Exception sending '" + sensorName + "' data, data will be retried.", e);
                 }
-                bufferMessage(sensorName, data, dataType, deviceType);
 
             } finally {
                 stopAndCleanup();
             }
         }
 
-        private void stopAndCleanup() {
-            --nrOfSendMessageThreads;
-            wakeLock.release();
-            getLooper().quit();
-        }
-
-        private void updateTransmitState() throws JSONException {
+        private void onTransmitSuccess() throws JSONException {
             // new content values with updated transmit state
             ContentValues values = new ContentValues();
             values.put(DataPoint.TRANSMIT_STATE, 1);
@@ -584,6 +574,12 @@ public class MsgHandler extends Service {
                 Log.w(TAG, "Wrong number of local storage points updated! " + updated + " vs. "
                         + dataPoints.length());
             }
+        }
+
+        private void stopAndCleanup() {
+            --nrOfSendMessageThreads;
+            wakeLock.release();
+            getLooper().quit();
         }
     }
 
@@ -645,20 +641,14 @@ public class MsgHandler extends Service {
                     String fileName = (String) object.get("value");
 
                     HttpURLConnection conn = null;
-
                     DataOutputStream dos = null;
-
-                    // OutputStream os = null;
-                    // boolean ret = false;
 
                     String lineEnd = "\r\n";
                     String twoHyphens = "--";
                     String boundary = "----FormBoundary6bYQOdhfGEj4oCSv";
 
                     int bytesRead, bytesAvailable, bufferSize;
-
                     byte[] buffer;
-
                     int maxBufferSize = 1 * 1024 * 1024;
 
                     // ------------------ CLIENT REQUEST
@@ -666,11 +656,9 @@ public class MsgHandler extends Service {
                     FileInputStream fileInputStream = new FileInputStream(new File(fileName));
 
                     // open a URL connection to the Servlet
-
                     URL url = new URL(urlStr);
 
                     // Open a HTTP connection to the URL
-
                     conn = (HttpURLConnection) url.openConnection();
 
                     // Allow Inputs
@@ -702,7 +690,6 @@ public class MsgHandler extends Service {
                     buffer = new byte[bufferSize];
 
                     // read file and write it into form...
-
                     bytesRead = fileInputStream.read(buffer, 0, bufferSize);
 
                     while (bytesRead > 0) {
@@ -713,25 +700,23 @@ public class MsgHandler extends Service {
                     }
 
                     // send multipart form data necesssary after file data...
-
                     dos.writeBytes(lineEnd);
                     dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
 
                     // close streams
-
                     fileInputStream.close();
                     dos.flush();
                     dos.close();
 
                     if (conn.getResponseCode() != 201) {
                         Log.e(TAG,
-                                "Sending '" + sensorName
-                                        + "' sensor file failed. Data lost. Response code:"
+                                "Failed to send '" + sensorName
+                                        + "' value file. Data lost. Response code:"
                                         + conn.getResponseCode());
                     } else {
                         Log.i(TAG, "Sent '" + sensorName + "' sensor value file OK!");
                         String date = (String) object.get("date");
-                        updateTransmitState(date);
+                        onTransmitSuccess(date);
                     }
                 }
             } catch (Exception e) {
@@ -741,19 +726,13 @@ public class MsgHandler extends Service {
             }
         }
 
-        private void stopAndCleanup() {
-            --nrOfSendMessageThreads;
-            wakeLock.release();
-            getLooper().quit();
-        }
-
-        private void updateTransmitState(String date) {
+        private void onTransmitSuccess(String timeInSecs) {
 
             // new content values with updated transmit state
             ContentValues values = new ContentValues();
             values.put(DataPoint.TRANSMIT_STATE, 1);
 
-            long timestamp = Math.round(Double.parseDouble(date) * 1000);
+            long timestamp = Math.round(Double.parseDouble(timeInSecs) * 1000);
             String where = DataPoint.SENSOR_NAME + "='" + sensorName + "'" + " AND "
                     + DataPoint.TIMESTAMP + "=" + timestamp;
 
@@ -770,6 +749,12 @@ public class MsgHandler extends Service {
             }
 
         }
+
+        private void stopAndCleanup() {
+            --nrOfSendMessageThreads;
+            wakeLock.release();
+            getLooper().quit();
+        }
     }
 
     private static final String TAG = "Sense MsgHandler";
@@ -783,98 +768,11 @@ public class MsgHandler extends Service {
     public static final String KEY_VALUE = "value";
     private static final int MAX_NR_OF_SEND_MSG_THREADS = 50;
     private static final int MAX_POST_DATA = 100;
-    private static final int MAX_POST_DATA_TIME_SERIE = 10;
-    private JSONObject buffer;
-    private int bufferCount;
     private int nrOfSendMessageThreads = 0;
     private WakeLock wakeLock;
 
     private RecentDataTransmitHandler recentDataTransmitter;
     private PersistedDataTransmitHandler persistedDataTransmitter;
-
-    /**
-     * Buffers a data point in the memory, for scheduled transmission later on.
-     * 
-     * @param sensorName
-     *            Sensor name.
-     * @param sensorValue
-     *            Sensor value, stored as a String.
-     * @param timeInSecs
-     *            Timestamp of the data point, in seconds and properly formatted.
-     * @param dataType
-     *            Data type of the point.
-     * @param deviceType
-     *            Sensor device type.
-     */
-    private void bufferDataPoint(String sensorName, String sensorValue, String timeInSecs,
-            String dataType, String deviceType) {
-        // Log.d(TAG, "Buffer '" + sensorName + "' data for transmission later on");
-
-        // try {
-        // // create JSON object for buffering
-        // JSONObject json = new JSONObject();
-        // json.put("name", sensorName);
-        // json.put("time", timeInSecs);
-        // json.put("type", dataType);
-        // json.put("device", deviceType);
-        // json.put("val", sensorValue);
-        //
-        // int jsonBytes = json.toString().length();
-        //
-        // // check if there is room in the buffer
-        // if (bufferCount + jsonBytes >= MAX_BUFFER) {
-        // // empty buffer into database
-        // // Log.v(TAG, "Buffer overflow! Emptying buffer to database");
-        // emptyBufferToDb();
-        // }
-        //
-        // // put data in buffer
-        // String sensorKey = sensorName + "_" + deviceType;
-        // JSONArray dataArray = buffer.optJSONArray(sensorKey);
-        // if (dataArray == null) {
-        // dataArray = new JSONArray();
-        // }
-        // dataArray.put(json);
-        // buffer.put(sensorKey, dataArray);
-        // bufferCount += jsonBytes;
-        //
-        // } catch (Exception e) {
-        // Log.e(TAG, "Error in buffering data:" + e.getMessage());
-        // }
-    }
-
-    /**
-     * Puts a failed sensor data message back in the buffer, for transmission later on.
-     * 
-     * @param sensorName
-     *            Sensor name.
-     * @param messageData
-     *            JSON object with array of sensor data points that have to be buffered again.
-     * @param dataType
-     *            Sensor data type.
-     * @param deviceType
-     *            Sensor device type.
-     */
-    private void bufferMessage(String sensorName, JSONObject messageData, String dataType,
-            String deviceType) {
-        // Log.v(TAG, "Buffer sensor data from failed transmission...");
-
-        // try {
-        // JSONArray dataArray = messageData.getJSONArray("data");
-        //
-        // // put each data point in the buffer individually
-        // for (int index = 0; index < dataArray.length(); index++) {
-        // JSONObject mysteryJson = dataArray.getJSONObject(index);
-        // String value = mysteryJson.getString("value");
-        // String date = mysteryJson.getString("date");
-        // bufferDataPoint(sensorName, value, date, dataType, deviceType);
-        // // Log.v(TAG, sensorName + " data buffered.");
-        // }
-        //
-        // } catch (Exception e) {
-        // Log.e(TAG, "Error in buffering failed message:", e);
-        // }
-    }
 
     /**
      * Puts data from the buffer in the flash database for long-term storage
@@ -885,32 +783,6 @@ public class MsgHandler extends Service {
         String where = DataPoint.TRANSMIT_STATE + "=" + 0;
         getContentResolver().update(Uri.parse(DataPoint.CONTENT_URI.toString() + "?persist=true"),
                 new ContentValues(), where, null);
-
-        // try {
-        // openDb();
-        // JSONArray names = buffer.names();
-        // if (names == null) {
-        // return;
-        // }
-        // for (int i = 0; i < names.length(); i++) {
-        // JSONArray sensorArray = buffer.getJSONArray(names.getString(i));
-        //
-        // for (int x = 0; x < sensorArray.length(); x++) {
-        // ContentValues values = new ContentValues();
-        // values.put(BufferedData.JSON, ((JSONObject) sensorArray.get(x)).toString());
-        // values.put(BufferedData.SENSOR, names.getString(i));
-        // values.put(BufferedData.ACTIVE, false);
-        // db.insert(DbHelper.TABLE_NAME, null, values);
-        // }
-        // }
-        // // reset buffer
-        // bufferCount = 0;
-        // buffer = new JSONObject();
-        // } catch (Exception e) {
-        // Log.e(TAG, "Error storing buffer in persistant database!", e);
-        // } finally {
-        // closeDb();
-        // }
     }
 
     /**
@@ -938,21 +810,17 @@ public class MsgHandler extends Service {
      * message or if it wants to send data to CommonSense.
      */
     private void handleIntent(Intent intent, int flags, int startId) {
-
-        final String action = intent.getAction();
-
-        if (action != null && action.equals(ACTION_NEW_MSG)) {
+        if (ACTION_NEW_MSG.equals(intent.getAction())) {
             handleNewMsgIntent(intent);
-        } else if (action != null && action.equals(ACTION_SEND_DATA)) {
+        } else if (ACTION_SEND_DATA.equals(intent.getAction())) {
             handleSendIntent(intent);
         } else {
-            Log.e(TAG, "Unexpected intent action: " + action);
+            Log.e(TAG, "Unexpected intent action: " + intent.getAction());
         }
     }
 
     private void handleNewMsgIntent(Intent intent) {
         // Log.d(TAG, "handleNewMsgIntent");
-
         try {
             DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.ENGLISH);
             NumberFormat formatter = new DecimalFormat("##########.###", otherSymbols);
@@ -960,8 +828,8 @@ public class MsgHandler extends Service {
             // get data point details from Intent
             String sensorName = intent.getStringExtra(KEY_SENSOR_NAME);
             String dataType = intent.getStringExtra(KEY_DATA_TYPE);
-            String timeInSecs = formatter.format(intent.getLongExtra(KEY_TIMESTAMP,
-                    System.currentTimeMillis()) / 1000.0d);
+            long timestamp = intent.getLongExtra(KEY_TIMESTAMP, System.currentTimeMillis());
+            String timeInSecs = formatter.format(timestamp / 1000.0d);
             String deviceType = intent.getStringExtra(KEY_SENSOR_DEVICE);
             deviceType = deviceType != null ? deviceType : sensorName;
 
@@ -981,6 +849,9 @@ public class MsgHandler extends Service {
                 sensorValue += intent.getStringExtra(KEY_VALUE);
             }
 
+            // put the data point in the local storage
+            insertToLocalStorage(sensorName, deviceType, dataType, timestamp, sensorValue);
+
             // check if we can send the data point immediately
             SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
             int rate = Integer.parseInt(mainPrefs.getString(Main.SYNC_RATE, "0"));
@@ -999,17 +870,7 @@ public class MsgHandler extends Service {
                 sensorData.put("data", dataArray);
 
                 sendSensorData(sensorName, sensorData, dataType, deviceType);
-
-            } else {
-                /* buffer data if there is no connectivity */
-                bufferDataPoint(sensorName, sensorValue, timeInSecs, dataType, deviceType);
             }
-
-            // put the data point in the local storage
-            // if (mainPrefs.getBoolean(Advanced.LOCAL_STORAGE, true)) {
-            insertToLocalStorage(sensorName, deviceType, dataType,
-                    intent.getLongExtra(KEY_TIMESTAMP, System.currentTimeMillis()), sensorValue);
-            // }
 
         } catch (Exception e) {
             Log.e(TAG, "Failed to handle new data point!", e);
@@ -1096,7 +957,6 @@ public class MsgHandler extends Service {
         persistedDataThread.start();
         persistedDataTransmitter = new PersistedDataTransmitHandler(this,
                 persistedDataThread.getLooper());
-
     }
 
     @Override
@@ -1127,242 +987,40 @@ public class MsgHandler extends Service {
         return START_NOT_STICKY;
     }
 
-    /**
-     * Puts a message with sensor data in the queue for the MsgHandler again, for immediate
-     * retrying.
-     * 
-     * @param sensorName
-     *            Name of the sensor.
-     * @param data
-     *            JSON sensor data, with multiple data points.
-     * @param dataType
-     *            Sensor data type.
-     * @param deviceType
-     *            Sensor device type.
-     * @param context
-     *            Application context, used to call the MsgHandler.
-     */
-    private void requeueMessage(String sensorName, JSONObject data, String dataType,
-            String deviceType, Context context) {
-        // try {
-        // JSONArray dataArray = data.getJSONArray("data");
-        // for (int index = 0; index < dataArray.length(); index++) {
-        // Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-        // i.putExtra(MsgHandler.KEY_SENSOR_NAME, sensorName);
-        // i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, deviceType);
-        // i.putExtra(MsgHandler.KEY_DATA_TYPE, dataType);
-        // i.putExtra(MsgHandler.KEY_TIMESTAMP, (long) ((float) Double.parseDouble(dataArray
-        // .getJSONObject(index).getString("date")) * 1000f));
-        // String value = dataArray.getJSONObject(index).getString("value");
-        // if (dataType.equals(SenseDataTypes.BOOL)) {
-        // i.putExtra(MsgHandler.KEY_VALUE, Boolean.getBoolean(value));
-        // } else if (dataType.equals(SenseDataTypes.FLOAT)) {
-        // i.putExtra(MsgHandler.KEY_VALUE, Float.parseFloat(value));
-        // } else if (dataType.equals(SenseDataTypes.INT)) {
-        // i.putExtra(MsgHandler.KEY_VALUE, Integer.parseInt(value));
-        // } else {
-        // i.putExtra(MsgHandler.KEY_VALUE, value);
-        // }
-        // context.startService(i);
-        // // Log.v(TAG, sensorName + " data requeued.");
-        // }
-        //
-        // } catch (Exception e) {
-        // Log.e(TAG, "Error in sending sensor data:", e);
-        // }
-    }
-
-    private boolean sendDataFromBuffer() {
-
-        if (bufferCount > 0) {
-            // Log.v(TAG, "Sending " + bufferCount + " bytes from local buffer to CommonSense");
-            try {
-                int sentCount = 0;
-                int sentIndex = 0;
-                JSONArray names = buffer.names();
-                int max_post_sensor_data = MAX_POST_DATA;
-                for (int i = 0; i < names.length(); i++) {
-                    JSONArray sensorArray = buffer.getJSONArray(names.getString(i));
-                    JSONObject sensorData = new JSONObject();
-                    JSONArray dataArray = new JSONArray();
-                    if (((JSONObject) sensorArray.get(0)).getString("type").equalsIgnoreCase(
-                            SenseDataTypes.JSON_TIME_SERIE)) {
-                        max_post_sensor_data = MAX_POST_DATA_TIME_SERIE;
-                    }
-                    for (int x = sentIndex; x < sensorArray.length()
-                            && sentCount - sentIndex < max_post_sensor_data; x++) {
-                        JSONObject data = new JSONObject();
-                        JSONObject sensor = (JSONObject) sensorArray.get(x);
-                        data.put("value", sensor.getString("val"));
-                        data.put("date", sensor.get("time"));
-                        dataArray.put(data);
-                        ++sentCount;
-                    }
-
-                    sensorData.put("data", dataArray);
-                    JSONObject sensor = (JSONObject) sensorArray.get(0);
-                    sendSensorData(sensor.getString("name"), sensorData, sensor.getString("type"),
-                            sensor.getString("device"));
-
-                    // if MAX_POST_DATA reached but their are still some items left, then do the
-                    // rest --i;
-                    if (sentCount != sensorArray.length()) {
-                        --i;
-                        sentIndex = sentCount;
-                    } else {
-                        sentIndex = sentCount = 0;
-                    }
-                }
-                // Log.d(TAG, "Buffered sensor values sent OK");
-                buffer = new JSONObject();
-                bufferCount = 0;
-            } catch (Exception e) {
-                Log.e(TAG, "Error sending data from buffer:" + e.getMessage());
-            }
-
-        } else {
-            // TODO smart transmission scaling
-        }
-
-        return true;
-    }
-
-    private boolean sendDataFromDb() {
-        // Cursor c = null;
-        // boolean emptyDataBase = false;
-        // String limit = "90";
-        //
-        // try {
-        // // query the database
-        // openDb();
-        // String[] cols = { BufferedData._ID, BufferedData.JSON, BufferedData.SENSOR };
-        // String sel = BufferedData.ACTIVE + "!=\'true\'";
-        // while (!emptyDataBase) {
-        // c = db.query(DbHelper.TABLE_NAME, cols, sel, null, null, null, BufferedData.SENSOR,
-        // limit);
-        //
-        // if (c.getCount() > 0) {
-        // // Log.v(TAG, "Sending " + c.getCount() + " values from DB to CommonSense");
-        //
-        // // Send Data from each sensor
-        // int sentCount = 0;
-        // String sensorKey = "";
-        // JSONObject sensorData = new JSONObject();
-        // JSONArray dataArray = new JSONArray();
-        // String sensorName = "";
-        // String sensorType = "";
-        // String sensorDevice = "";
-        // c.moveToFirst();
-        // int max_post_sensor_data = MAX_POST_DATA;
-        // while (false == c.isAfterLast()) {
-        // if (sensorType.equalsIgnoreCase(SenseDataTypes.JSON_TIME_SERIE)) {
-        // max_post_sensor_data = MAX_POST_DATA_TIME_SERIE;
-        // }
-        // if (c.getString(2).compareToIgnoreCase(sensorKey) != 0
-        // || sentCount >= max_post_sensor_data) {
-        // // send the in the previous rounds collected data
-        // if (sensorKey.length() > 0) {
-        // sensorData.put("data", dataArray);
-        // sendSensorData(sensorName, sensorData, sensorType, sensorDevice);
-        // sensorData = new JSONObject();
-        // dataArray = new JSONArray();
-        // }
-        // }
-        //
-        // JSONObject sensor = new JSONObject(c.getString(1));
-        // JSONObject data = new JSONObject();
-        // data.put("value", sensor.getString("val"));
-        // data.put("date", sensor.get("time"));
-        // if (dataArray.length() == 0) {
-        // sensorName = sensor.getString("name");
-        // sensorType = sensor.getString("type");
-        // sensorDevice = sensor.getString("device");
-        // }
-        // dataArray.put(data);
-        // sensorKey = c.getString(2);
-        // // if last, then send
-        // if (c.isLast()) {
-        // sensorData.put("data", dataArray);
-        // sendSensorData(sensorName, sensorData, sensorType, sensorDevice);
-        // }
-        // sentCount++;
-        // c.moveToNext();
-        // }
-        //
-        // // Log.d(TAG, "Sensor values from database sent OK!");
-        //
-        // // remove data from database
-        // c.moveToFirst();
-        // while (false == c.isAfterLast()) {
-        // int id = c.getInt(c.getColumnIndex(BufferedData._ID));
-        // String where = BufferedData._ID + "=?";
-        // String[] whereArgs = { "" + id };
-        // db.delete(DbHelper.TABLE_NAME, where, whereArgs);
-        // c.moveToNext();
-        // }
-        // c.close();
-        // c = null;
-        // } else {
-        // emptyDataBase = true;
-        // // TODO smart transmission scaling
-        // }
-        // }
-        // } catch (Exception e) {
-        // Log.e(TAG, "Error in sending data from database!", e);
-        // return false;
-        // } finally {
-        // if (c != null) {
-        // c.close();
-        // }
-        // closeDb();
-        // }
-        return true;
-    }
-
     private void sendSensorData(final String sensorName, final JSONObject sensorData,
             final String dataType, final String deviceType) {
 
         try {
-            if (nrOfSendMessageThreads >= MAX_NR_OF_SEND_MSG_THREADS) {
-                requeueMessage(sensorName, sensorData, dataType, deviceType, this);
+            if (nrOfSendMessageThreads < MAX_NR_OF_SEND_MSG_THREADS) {
 
-            } else {
-                final SharedPreferences prefs = getSharedPreferences(SensePrefs.AUTH_PREFS,
-                        Context.MODE_PRIVATE);
+                // get cookie for transmission
+                SharedPreferences prefs = getSharedPreferences(SensePrefs.AUTH_PREFS, MODE_PRIVATE);
                 String cookie = prefs.getString(Auth.LOGIN_COOKIE, "");
 
-                // check for sending a file
-                if (dataType.equals(SenseDataTypes.FILE)) {
-                    if (nrOfSendMessageThreads < MAX_NR_OF_SEND_MSG_THREADS) {
-                        ++nrOfSendMessageThreads;
+                if (cookie.length() > 0) {
+                    ++nrOfSendMessageThreads;
 
-                        // create handlerthread and run task on there
+                    // check for sending a file
+                    if (dataType.equals(SenseDataTypes.FILE)) {
+                        // create handler thread and run task on there
                         HandlerThread ht = new HandlerThread("sendFileThread");
                         ht.start();
                         new SendFileThread(cookie, sensorData, sensorName, dataType, deviceType,
                                 this, ht.getLooper()).sendEmptyMessage(0);
 
                     } else {
-                        Log.w(TAG, "Maximum number of sensor data transmission threads reached");
-                        requeueMessage(sensorName, sensorData, dataType, deviceType, this);
-                    }
-
-                } else {
-                    // start send thread
-                    if (nrOfSendMessageThreads < MAX_NR_OF_SEND_MSG_THREADS) {
-                        ++nrOfSendMessageThreads;
-
-                        // create handlerthread and run task on there
+                        // create handler thread and run task on there
                         HandlerThread ht = new HandlerThread("sendDataPointThread");
                         ht.start();
                         new SendDataThread(cookie, sensorData, sensorName, dataType, deviceType,
                                 this, ht.getLooper()).sendEmptyMessage(0);
 
-                    } else {
-                        Log.w(TAG, "Maximum number of sensor data transmission threads reached");
-                        requeueMessage(sensorName, sensorData, dataType, deviceType, this);
                     }
+                } else {
+                    Log.d(TAG, "Cannot send data point: no cookie");
                 }
+            } else {
+                Log.d(TAG, "Maximum number of sensor data transmission threads reached");
             }
 
         } catch (Exception e) {

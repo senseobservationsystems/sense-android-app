@@ -1,6 +1,5 @@
 package nl.sense_os.service.provider;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +46,7 @@ public class LocalStorage extends ContentProvider {
      */
     private static class DbHelper extends SQLiteOpenHelper {
 
-        protected static final String DATABASE_NAME = "persitant_storage.sqlite3";
+        protected static final String DATABASE_NAME = "persitent_storage.sqlite3";
         protected static final int DATABASE_VERSION = 1;
 
         DbHelper(Context context) {
@@ -56,7 +55,7 @@ public class LocalStorage extends ContentProvider {
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            final StringBuilder sb = new StringBuilder("CREATE TABLE " + TABLE_PERSISTANT + "(");
+            final StringBuilder sb = new StringBuilder("CREATE TABLE " + TABLE_PERSISTENT + "(");
             sb.append(BaseColumns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT");
             sb.append(", " + DataPoint.SENSOR_NAME + " STRING");
             sb.append(", " + DataPoint.SENSOR_DESCRIPTION + " STRING");
@@ -82,22 +81,24 @@ public class LocalStorage extends ContentProvider {
 
     public static final String AUTHORITY = "nl.sense_os.service.provider.LocalStorage";
     private static final String TABLE_VOLATILE = "recent_values";
-    private static final String TABLE_PERSISTANT = "persisted_values";
+    private static final String TABLE_PERSISTENT = "persisted_values";
     private static final int VOLATILE_VALUES_URI = 1;
     private static final int PERSISTED_VALUES_URI = 2;
-    private static final long RETENTION_TIME = 1000 * 60 * 90; // 90 minutes
+    private static final int MAX_VOLATILE_VALUES = 100;
 
     private static long count = 0;
 
     private DbHelper dbHelper;
 
     private static UriMatcher uriMatcher;
-    private final static Map<String, List<ContentValues>> storage = new HashMap<String, List<ContentValues>>();
+    private final static Map<String, ContentValues[]> storage = new HashMap<String, ContentValues[]>();
+    private final static Map<String, Integer> pointers = new HashMap<String, Integer>();
+
     static {
         // set up URI matcher
         uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
         uriMatcher.addURI(AUTHORITY, TABLE_VOLATILE, VOLATILE_VALUES_URI);
-        uriMatcher.addURI(AUTHORITY, TABLE_PERSISTANT, PERSISTED_VALUES_URI);
+        uriMatcher.addURI(AUTHORITY, TABLE_PERSISTENT, PERSISTED_VALUES_URI);
     }
 
     @Override
@@ -107,7 +108,7 @@ public class LocalStorage extends ContentProvider {
             throw new IllegalArgumentException("Cannot delete recent data points!");
         case PERSISTED_VALUES_URI:
             SQLiteDatabase db = dbHelper.getWritableDatabase();
-            int result = db.delete(TABLE_PERSISTANT, where, selectionArgs);
+            int result = db.delete(TABLE_PERSISTENT, where, selectionArgs);
             return result;
         default:
             throw new IllegalArgumentException("Unknown URI " + uri);
@@ -136,7 +137,7 @@ public class LocalStorage extends ContentProvider {
             break;
         case PERSISTED_VALUES_URI:
             throw new IllegalArgumentException(
-                    "Cannot insert directly into persitant data point database");
+                    "Cannot insert directly into persistent data point database");
         default:
             throw new IllegalArgumentException("Unknown URI " + uri);
         }
@@ -147,26 +148,28 @@ public class LocalStorage extends ContentProvider {
 
         // get currently stored values from the storage map
         String sensorName = values.getAsString(DataPoint.SENSOR_NAME);
-        List<ContentValues> storedValues = storage.get(sensorName);
+        ContentValues[] storedValues = storage.get(sensorName);
+        Integer index = pointers.get(sensorName);
         if (null == storedValues) {
-            storedValues = new ArrayList<ContentValues>();
+            storedValues = new ContentValues[MAX_VOLATILE_VALUES];
+            index = 0;
         }
 
         // add the new data point
         // Log.v(TAG, "Insert '" + sensorName + "' value in local storage...");
-        storedValues.add(values);
-
-        // remove the oldest points from the storage
-        List<ContentValues> tooOld = new ArrayList<ContentValues>();
-        for (ContentValues storedValue : storedValues) {
-            long ts = storedValue.getAsLong(DataPoint.TIMESTAMP);
-            if (ts < System.currentTimeMillis() - RETENTION_TIME) {
-                tooOld.add(storedValue);
-            }
+        if (index < MAX_VOLATILE_VALUES) {
+            storedValues[index] = values;
+            index++;
+        } else {
+            // store older points in the persistent storage
+            Log.d(TAG, "Buffer overflow! More than " + MAX_VOLATILE_VALUES + " points for '"
+                    + sensorName + "'. Send to persistent storage...");
+            persist(storedValues);
+            storedValues = new ContentValues[MAX_VOLATILE_VALUES];
+            index = 0;
         }
-        storedValues.removeAll(tooOld);
-
         storage.put(sensorName, storedValues);
+        pointers.put(sensorName, index);
 
         // notify any listeners (does this work properly?)
         Uri rowUri = ContentUris.withAppendedId(DataPoint.CONTENT_URI, count - 1);
@@ -182,12 +185,12 @@ public class LocalStorage extends ContentProvider {
         return true;
     }
 
-    private void persist(List<ContentValues> dataPoints) {
-        Log.d(TAG, "Persist " + dataPoints.size() + " data points");
+    private void persist(ContentValues[] storedValues) {
+        Log.d(TAG, "Persist " + storedValues.length + " data points");
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
-            for (ContentValues dataPoint : dataPoints) {
-                db.insert(TABLE_PERSISTANT, DataPoint.SENSOR_NAME, dataPoint);
+            for (ContentValues dataPoint : storedValues) {
+                db.insert(TABLE_PERSISTENT, DataPoint.SENSOR_NAME, dataPoint);
             }
         } catch (Exception e) {
             Log.e(TAG, "Exception persisting recent sensor values to database", e);
@@ -212,12 +215,13 @@ public class LocalStorage extends ContentProvider {
 
             try {
                 // do selection
-                List<ContentValues> selection = select(where, selectionArgs);
+                ContentValues[] selection = select(where, selectionArgs);
 
                 // create new cursor with the query result
                 MatrixCursor result = new MatrixCursor(projection);
+                Object[] row = null;
                 for (ContentValues dataPoint : selection) {
-                    Object[] row = new Object[projection.length];
+                    row = new Object[projection.length];
                     for (int i = 0; i < projection.length; i++) {
                         row[i] = dataPoint.get(projection[i]);
                     }
@@ -234,9 +238,9 @@ public class LocalStorage extends ContentProvider {
 
             try {
                 SQLiteDatabase db = dbHelper.getReadableDatabase();
-                Cursor persistantResult = db.query(TABLE_PERSISTANT, projection, where,
+                Cursor persistentResult = db.query(TABLE_PERSISTENT, projection, where,
                         selectionArgs, null, null, sortOrder);
-                return persistantResult;
+                return persistentResult;
             } catch (Exception e) {
                 Log.e(TAG, "Failed to query the persisted data points", e);
             }
@@ -246,7 +250,7 @@ public class LocalStorage extends ContentProvider {
         }
     }
 
-    private synchronized List<ContentValues> select(String where, String[] selectionArgs) {
+    private synchronized ContentValues[] select(String where, String[] selectionArgs) {
 
         // try to parse the selection criteria
         List<String> sensorNames = ParserUtils.getSelectedSensors(storage.keySet(), where,
@@ -254,16 +258,22 @@ public class LocalStorage extends ContentProvider {
         long[] timeRangeSelect = ParserUtils.getSelectedTimeRange(where, selectionArgs);
         int transmitStateSelect = ParserUtils.getSelectedTransmitState(where, selectionArgs);
 
-        List<ContentValues> selection = new ArrayList<ContentValues>();
+        ContentValues[] selection = new ContentValues[50 * MAX_VOLATILE_VALUES], dataPoints;
+        ContentValues dataPoint;
+        long timestamp = 0;
+        int count = 0, max = 0, transmitState = 0;
         for (String name : sensorNames) {
-            List<ContentValues> dataPoints = storage.get(name);
+            dataPoints = storage.get(name);
             if (null != dataPoints) {
-                for (ContentValues dataPoint : dataPoints) {
-                    long timestamp = dataPoint.getAsLong(DataPoint.TIMESTAMP);
+                max = pointers.get(name);
+                for (int i = 0; i < max; i++) {
+                    dataPoint = dataPoints[i];
+                    timestamp = dataPoint.getAsLong(DataPoint.TIMESTAMP);
                     if (timestamp >= timeRangeSelect[0] && timestamp <= timeRangeSelect[1]) {
-                        int transmitState = dataPoint.getAsInteger(DataPoint.TRANSMIT_STATE);
+                        transmitState = dataPoint.getAsInteger(DataPoint.TRANSMIT_STATE);
                         if (transmitStateSelect == -1 || transmitState == transmitStateSelect) {
-                            selection.add(dataPoint);
+                            selection[count] = dataPoint;
+                            count++;
                         } else {
                             // Log.v(TAG, "Transmit state doesn't match: " + transmitState);
                         }
@@ -276,7 +286,11 @@ public class LocalStorage extends ContentProvider {
             }
         }
 
-        return selection;
+        // copy selection to new array with proper length
+        ContentValues[] result = new ContentValues[count];
+        System.arraycopy(selection, 0, result, 0, count);
+
+        return result;
     }
 
     @Override
@@ -297,7 +311,7 @@ public class LocalStorage extends ContentProvider {
         boolean persist = "true".equals(uri.getQueryParameter("persist"));
 
         // select the correct data points to update
-        List<ContentValues> selection = select(where, selectionArgs);
+        ContentValues[] selection = select(where, selectionArgs);
 
         // do the update
         int result = 0;
