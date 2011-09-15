@@ -155,19 +155,37 @@ public class LocalStorage extends ContentProvider {
             index = 0;
         }
 
-        // add the new data point
-        // Log.v(TAG, "Insert '" + sensorName + "' value in local storage...");
-        if (index < MAX_VOLATILE_VALUES) {
-            storedValues[index] = values;
-            index++;
-        } else {
-            // store older points in the persistent storage
+        // check for buffer overflows
+        if (index >= MAX_VOLATILE_VALUES) {
             Log.d(TAG, "Buffer overflow! More than " + MAX_VOLATILE_VALUES + " points for '"
                     + sensorName + "'. Send to persistent storage...");
-            persist(storedValues);
+
+            // find out how many values have to be put in the persistant storage
+            int persistFrom = -1;
+            for (int i = 0; i < storedValues.length; i++) {
+                if (storedValues[i].getAsInteger(DataPoint.TRANSMIT_STATE) == 0) {
+                    // found the first data point that was not transmitted yet
+                    persistFrom = i;
+                    break;
+                }
+            }
+
+            // persist the data that was not sent yet
+            if (-1 != persistFrom) {
+                ContentValues[] unsent = new ContentValues[MAX_VOLATILE_VALUES - persistFrom];
+                System.arraycopy(storedValues, persistFrom, unsent, 0, unsent.length);
+                persist(unsent);
+            }
+
+            // reset the array and index
             storedValues = new ContentValues[MAX_VOLATILE_VALUES];
             index = 0;
         }
+
+        // add the new data point
+        // Log.v(TAG, "Insert '" + sensorName + "' value in local storage...");
+        storedValues[index] = values;
+        index++;
         storage.put(sensorName, storedValues);
         pointers.put(sensorName, index);
 
