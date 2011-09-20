@@ -7,7 +7,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Message;
 
 public abstract class AbstractStateMonitor extends Service {
 
@@ -21,7 +24,15 @@ public abstract class AbstractStateMonitor extends Service {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            updateState();
+            HandlerThread ht = new HandlerThread("State update thread");
+            ht.start();
+            new Handler(ht.getLooper()) {
+                @Override
+                public void handleMessage(Message msg) {
+                    updateState();
+                    getLooper().quit();
+                }
+            }.sendEmptyMessage(0);
         }
     };
 

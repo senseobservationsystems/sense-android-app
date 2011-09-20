@@ -60,7 +60,7 @@ public class MotionSensor implements SensorEventListener {
     private Runnable motionThread = null;
     private long sampleDelay = 0; // in milliseconds
     private long[] lastLocalSampleTimes = new long[50];
-    private long localBufferTime = 5 * 1000;
+    private long localBufferTime = 15 * 1000;
     private long firstTimeSend = 0;
     private JSONArray[] dataBuffer = new JSONArray[10];
 
@@ -605,7 +605,7 @@ public class MotionSensor implements SensorEventListener {
             Log.e(TAG, e.getMessage());
         }
 
-        if (isEpiMode) {
+        if (isEpiMode || isFallDetectMode) {
             Log.v(TAG, "Stop epi state sensor");
             context.stopService(new Intent(context, EpiStateMonitor.class));
         }

@@ -23,6 +23,8 @@ public class EpiStateMonitor extends AbstractStateMonitor {
      */
     @Override
     protected void updateState() {
+        // Log.d(TAG, "update state");
+
         Cursor fallData = null;
         Cursor epiData = null;
         try {
@@ -37,13 +39,13 @@ public class EpiStateMonitor extends AbstractStateMonitor {
 
             if (null != fallData && fallData.moveToFirst()) {
                 int result = analyzeFallData(fallData);
-                Log.d(TAG, "Fall analysis result: " + result);
+                // Log.d(TAG, "Fall analysis result: " + result);
                 if (result > 0) {
                     sendAlert(fallData);
                     return;
                 }
             } else {
-                Log.d(TAG, "No recent fall data to analyze");
+                // Log.d(TAG, "No recent fall data to analyze");
             }
 
             // query epi acceleration
@@ -51,19 +53,19 @@ public class EpiStateMonitor extends AbstractStateMonitor {
                     DataPoint.TIMESTAMP };
             where = DataPoint.SENSOR_NAME + "='" + SensorData.SensorNames.ACCELEROMETER_EPI + "'"
                     + " AND " + DataPoint.TIMESTAMP + ">"
-                    + (System.currentTimeMillis() - TIME_RANGE);
+                    + (System.currentTimeMillis() - (TIME_RANGE << 1));
             epiData = getContentResolver().query(DataPoint.CONTENT_URI, projection, where, null,
                     null);
 
             if (null != epiData && epiData.moveToFirst()) {
                 int result = analyzeEpiData(epiData);
-                Log.d(TAG, "Epi analysis result: " + result);
+                // Log.d(TAG, "Epi analysis result: " + result);
                 if (result > 0) {
                     sendAlert(epiData);
                     return;
                 }
             } else {
-                Log.d(TAG, "No recent epi data to analyze");
+                // Log.d(TAG, "No recent epi data to analyze");
             }
 
         } catch (JSONException e) {
@@ -83,7 +85,7 @@ public class EpiStateMonitor extends AbstractStateMonitor {
     }
 
     private void sendAlert(Cursor data) {
-        Log.w(TAG, "SEIZURE!!!");
+        Log.w(TAG, "ALERT ALERT!!!! SEIZURE DETECTED!!!");
 
         Intent alert = new Intent("nl.ask.paige.receiver.IntentRx");
         alert.putExtra("sensorName", "epi state");
@@ -101,15 +103,15 @@ public class EpiStateMonitor extends AbstractStateMonitor {
         if (lastAnalyzed < timestamp) {
             lastAnalyzed = timestamp;
         } else {
-            Log.d(TAG, "Already analyzed this one");
+            // Log.d(TAG, "Already analyzed this one");
             return 0;
         }
         String rawValue = data.getString(data.getColumnIndex(DataPoint.VALUE));
         JSONObject value = new JSONObject(rawValue);
         JSONArray array = value.getJSONArray("data");
-        int interval = value.getInt("interval");
 
-        Log.d(TAG, "Found " + array.length() + " epi data points, interval: " + interval + " ms");
+        // Log.d(TAG, "Found " + array.length() + " epi data points, interval: " + interval +
+        // " ms");
 
         // analyze the array of data points
         double total = 0;
@@ -124,7 +126,7 @@ public class EpiStateMonitor extends AbstractStateMonitor {
         }
 
         double avg = total / array.length();
-        Log.d(TAG, "Average acceleration: " + avg);
+        // Log.d(TAG, "Average acceleration: " + avg);
         if (avg > 12) {
             return 1;
         } else {
@@ -139,9 +141,14 @@ public class EpiStateMonitor extends AbstractStateMonitor {
         long timestamp = data.getLong(data.getColumnIndex(DataPoint.TIMESTAMP));
         if (lastAnalyzed < timestamp) {
             lastAnalyzed = timestamp;
-            return 1;
+            if (data.getString(data.getColumnIndex(DataPoint.VALUE)).equals("true")) {
+                return 1;
+            } else {
+                // Log.d(TAG, "No fall");
+                return 0;
+            }
         } else {
-            Log.d(TAG, "Already analyzed this one");
+            // Log.d(TAG, "Already analyzed this one");
             return 0;
         }
     }
