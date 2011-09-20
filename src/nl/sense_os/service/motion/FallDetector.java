@@ -7,8 +7,10 @@
  */
 package nl.sense_os.service.motion;
 
+import android.util.Log;
 
 public class FallDetector {
+
     private class Interrupt {
         boolean FREE_FALL = false;
         boolean ACTIVITY = false;
@@ -21,6 +23,8 @@ public class FallDetector {
         @SuppressWarnings("unused")
         float stopInactivity = 0;
     }
+
+    private static final String TAG = "Fall Detector";
 
     private Interrupt interrupt;
     private long startInterrupt = 0;
@@ -96,7 +100,7 @@ public class FallDetector {
             startInterrupt = 0;
 
         if (interrupt.FREE_FALL) {
-            // Log.v("Fall detection:", "FALL!!!");
+            Log.w(TAG, "FALL!!!");
         }
     }
 
@@ -128,7 +132,7 @@ public class FallDetector {
                 reset();
 
         if (interrupt.ACTIVITY) {
-            // Log.v("Fall detection:", "Activity!!!");
+            Log.w(TAG, "Activity!!!");
         }
     }
 
@@ -153,7 +157,7 @@ public class FallDetector {
         interrupt.FALL = interrupt.INACTIVITY;
 
         if (interrupt.INACTIVITY) {
-            // Log.v("Fall detection:", "Inactivity!!!");
+            Log.w(TAG, "Inactivity!!!");
         }
     }
 

@@ -473,7 +473,7 @@ public class MotionSensor implements SensorEventListener {
 
     private void sendFallMessage(boolean fall) {
         Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-        i.putExtra(MsgHandler.KEY_SENSOR_NAME, "fall detector");
+        i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.FALL_DETECTOR);
         i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, fallDetector.demo ? "demo fall" : "human fall");
         i.putExtra(MsgHandler.KEY_VALUE, fall);
         i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.BOOL);
@@ -514,6 +514,9 @@ public class MotionSensor implements SensorEventListener {
         isFallDetectMode = mainPrefs.getBoolean(Motion.FALL_DETECT, false);
         if (fallDetector.demo = mainPrefs.getBoolean(Motion.FALL_DETECT_DEMO, false)) {
             isFallDetectMode = true;
+
+            Log.v(TAG, "Start epi state sensor");
+            context.startService(new Intent(context, EpiStateMonitor.class));
         }
 
         if (firstStart && isFallDetectMode) {

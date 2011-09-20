@@ -13,7 +13,7 @@ import android.util.Log;
 
 public class EpiStateMonitor extends AbstractStateMonitor {
 
-    private static final long TIME_RANGE = 1000 * 60;
+    private static final long TIME_RANGE = 5000;
     private static final String ACTION_UPDATE_STATE = "nl.sense_os.states.EpiStateUpdate";
     private static final String TAG = "EpiStateMonitor";
     private long lastAnalyzed;
@@ -23,21 +23,44 @@ public class EpiStateMonitor extends AbstractStateMonitor {
      */
     @Override
     protected void updateState() {
-        Cursor data = null;
+        Cursor fallData = null;
+        Cursor epiData = null;
         try {
+            // query fall detector
             String[] projection = new String[] { DataPoint._ID, DataPoint.SENSOR_NAME,
                     DataPoint.VALUE, DataPoint.TIMESTAMP };
-            String where = DataPoint.SENSOR_NAME + "='" + SensorData.SensorNames.ACCELEROMETER_EPI
+            String where = DataPoint.SENSOR_NAME + "='" + SensorData.SensorNames.FALL_DETECTOR
                     + "'" + " AND " + DataPoint.TIMESTAMP + ">"
                     + (System.currentTimeMillis() - TIME_RANGE);
-            data = getContentResolver().query(DataPoint.CONTENT_URI, projection, where, null, null);
+            fallData = getContentResolver().query(DataPoint.CONTENT_URI, projection, where, null,
+                    null);
 
-            if (null != data && data.moveToFirst()) {
-                int result = analyze(data);
+            if (null != fallData && fallData.moveToFirst()) {
+                int result = analyzeFallData(fallData);
+                Log.d(TAG, "Fall analysis result: " + result);
+                if (result > 0) {
+                    sendAlert(fallData);
+                    return;
+                }
+            } else {
+                Log.d(TAG, "No recent fall data to analyze");
+            }
+
+            // query epi acceleration
+            projection = new String[] { DataPoint._ID, DataPoint.SENSOR_NAME, DataPoint.VALUE,
+                    DataPoint.TIMESTAMP };
+            where = DataPoint.SENSOR_NAME + "='" + SensorData.SensorNames.ACCELEROMETER_EPI + "'"
+                    + " AND " + DataPoint.TIMESTAMP + ">"
+                    + (System.currentTimeMillis() - TIME_RANGE);
+            epiData = getContentResolver().query(DataPoint.CONTENT_URI, projection, where, null,
+                    null);
+
+            if (null != epiData && epiData.moveToFirst()) {
+                int result = analyzeEpiData(epiData);
                 Log.d(TAG, "Epi analysis result: " + result);
                 if (result > 0) {
-                    Log.d(TAG, "SEIZURE!!!");
-                    sendAlert(data);
+                    sendAlert(epiData);
+                    return;
                 }
             } else {
                 Log.d(TAG, "No recent epi data to analyze");
@@ -48,14 +71,20 @@ public class EpiStateMonitor extends AbstractStateMonitor {
             return;
 
         } finally {
-            if (null != data) {
-                data.close();
-                data = null;
+            if (null != fallData) {
+                fallData.close();
+                fallData = null;
+            }
+            if (null != epiData) {
+                epiData.close();
+                epiData = null;
             }
         }
     }
 
     private void sendAlert(Cursor data) {
+        Log.w(TAG, "SEIZURE!!!");
+
         Intent alert = new Intent("nl.ask.paige.receiver.IntentRx");
         alert.putExtra("sensorName", "epi state");
         alert.putExtra("value", "SEIZURE!!!");
@@ -63,7 +92,7 @@ public class EpiStateMonitor extends AbstractStateMonitor {
         sendBroadcast(alert);
     }
 
-    private int analyze(Cursor data) throws JSONException {
+    private int analyzeEpiData(Cursor data) throws JSONException {
 
         data.moveToLast();
 
@@ -103,10 +132,24 @@ public class EpiStateMonitor extends AbstractStateMonitor {
         }
     }
 
+    private int analyzeFallData(Cursor data) throws JSONException {
+        data.moveToLast();
+
+        // parse the value
+        long timestamp = data.getLong(data.getColumnIndex(DataPoint.TIMESTAMP));
+        if (lastAnalyzed < timestamp) {
+            lastAnalyzed = timestamp;
+            return 1;
+        } else {
+            Log.d(TAG, "Already analyzed this one");
+            return 0;
+        }
+    }
+
     @Override
     public void onStart(Intent intent, int startId) {
         super.onStart(intent, startId);
-        startMonitoring(ACTION_UPDATE_STATE, 5000);
+        startMonitoring(ACTION_UPDATE_STATE, TIME_RANGE >> 1);
     }
 
     @Override
