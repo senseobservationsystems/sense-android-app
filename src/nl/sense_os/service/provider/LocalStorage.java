@@ -1,10 +1,21 @@
 package nl.sense_os.service.provider;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import nl.sense_os.service.SenseApi;
+import nl.sense_os.service.SensePrefs;
+import nl.sense_os.service.SensePrefs.Auth;
+import nl.sense_os.service.SenseUrls;
 import nl.sense_os.service.SensorData.DataPoint;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -82,8 +93,10 @@ public class LocalStorage extends ContentProvider {
     public static final String AUTHORITY = "nl.sense_os.service.provider.LocalStorage";
     private static final String TABLE_VOLATILE = "recent_values";
     private static final String TABLE_PERSISTENT = "persisted_values";
+    private static final String TABLE_REMOTE = "remote_values";
     private static final int VOLATILE_VALUES_URI = 1;
     private static final int PERSISTED_VALUES_URI = 2;
+    private static final int REMOTE_VALUES_URI = 3;
     private static final int MAX_VOLATILE_VALUES = 100;
 
     private static long count = 0;
@@ -99,6 +112,7 @@ public class LocalStorage extends ContentProvider {
         uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
         uriMatcher.addURI(AUTHORITY, TABLE_VOLATILE, VOLATILE_VALUES_URI);
         uriMatcher.addURI(AUTHORITY, TABLE_PERSISTENT, PERSISTED_VALUES_URI);
+        uriMatcher.addURI(AUTHORITY, TABLE_REMOTE, REMOTE_VALUES_URI);
     }
 
     @Override
@@ -110,6 +124,8 @@ public class LocalStorage extends ContentProvider {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             int result = db.delete(TABLE_PERSISTENT, where, selectionArgs);
             return result;
+        case REMOTE_VALUES_URI:
+            throw new IllegalArgumentException("Cannot delete values from CommonSense!");
         default:
             throw new IllegalArgumentException("Unknown URI " + uri);
         }
@@ -118,12 +134,11 @@ public class LocalStorage extends ContentProvider {
     @Override
     public String getType(Uri uri) {
         Log.v(TAG, "Get content type...");
-        switch (uriMatcher.match(uri)) {
-        case VOLATILE_VALUES_URI:
+        int uriType = uriMatcher.match(uri);
+        if (uriType == VOLATILE_VALUES_URI || uriType == PERSISTED_VALUES_URI
+                || uriType == REMOTE_VALUES_URI) {
             return DataPoint.CONTENT_TYPE;
-        case PERSISTED_VALUES_URI:
-            return DataPoint.CONTENT_TYPE;
-        default:
+        } else {
             throw new IllegalArgumentException("Unknown URI " + uri);
         }
     }
@@ -138,6 +153,9 @@ public class LocalStorage extends ContentProvider {
         case PERSISTED_VALUES_URI:
             throw new IllegalArgumentException(
                     "Cannot insert directly into persistent data point database");
+        case REMOTE_VALUES_URI:
+            throw new IllegalArgumentException(
+                    "Cannot insert into CommonSense through this ContentProvider");
         default:
             throw new IllegalArgumentException("Unknown URI " + uri);
         }
@@ -227,45 +245,124 @@ public class LocalStorage extends ContentProvider {
                     DataPoint.TIMESTAMP, DataPoint.TRANSMIT_STATE };
         }
 
-        // check URI
+        // query based on URI
         switch (uriMatcher.match(uri)) {
         case VOLATILE_VALUES_URI:
-
             try {
-                // do selection
-                ContentValues[] selection = select(where, selectionArgs);
-
-                // create new cursor with the query result
-                MatrixCursor result = new MatrixCursor(projection);
-                Object[] row = null;
-                for (ContentValues dataPoint : selection) {
-                    row = new Object[projection.length];
-                    for (int i = 0; i < projection.length; i++) {
-                        row[i] = dataPoint.get(projection[i]);
-                    }
-                    result.addRow(row);
-                }
-
-                return result;
-
+                return queryVolatile(uri, projection, where, selectionArgs, sortOrder);
             } catch (Exception e) {
                 Log.e(TAG, "Failed to query the recent data points", e);
+                return null;
             }
-
         case PERSISTED_VALUES_URI:
-
             try {
-                SQLiteDatabase db = dbHelper.getReadableDatabase();
-                Cursor persistentResult = db.query(TABLE_PERSISTENT, projection, where,
-                        selectionArgs, null, null, sortOrder);
-                return persistentResult;
+                return queryPersistent(uri, projection, where, selectionArgs, sortOrder);
             } catch (Exception e) {
                 Log.e(TAG, "Failed to query the persisted data points", e);
+                return null;
             }
-
+        case REMOTE_VALUES_URI:
+            try {
+                return queryRemote(uri, projection, where, selectionArgs, sortOrder);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to query the CommonSense data points", e);
+                return null;
+            }
         default:
             throw new IllegalArgumentException("Unknown URI " + uri);
         }
+    }
+
+    private Cursor queryVolatile(Uri uri, String[] projection, String where,
+            String[] selectionArgs, String sortOrder) {
+
+        // do selection
+        ContentValues[] selection = select(where, selectionArgs);
+
+        // create new cursor with the query result
+        MatrixCursor result = new MatrixCursor(projection);
+        Object[] row = null;
+        for (ContentValues dataPoint : selection) {
+            row = new Object[projection.length];
+            for (int i = 0; i < projection.length; i++) {
+                row[i] = dataPoint.get(projection[i]);
+            }
+            result.addRow(row);
+        }
+
+        // Log.d(TAG, "query result: " + result.getCount() + " data points.");
+
+        return result;
+    }
+
+    private Cursor queryPersistent(Uri uri, String[] projection, String where,
+            String[] selectionArgs, String sortOrder) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor persistentResult = db.query(TABLE_PERSISTENT, projection, where, selectionArgs,
+                null, null, sortOrder);
+        return persistentResult;
+    }
+
+    private Cursor queryRemote(Uri uri, String[] projection, String where, String[] selectionArgs,
+            String sortOrder) throws JSONException, URISyntaxException {
+        // Log.v(TAG, "Query remote data points");
+
+        // try to parse the selection criteria
+        List<String> sensorNames = ParserUtils.getSelectedSensors(storage.keySet(), where,
+                selectionArgs);
+        long[] timeRangeSelect = ParserUtils.getSelectedTimeRange(where, selectionArgs);
+
+        if (sensorNames.size() != 1) {
+            throw new IllegalArgumentException("Can only query CommonSense for a single sensor");
+        }
+
+        JSONArray sensors = SenseApi.getAllSensors(getContext());
+
+        if (sensors == null) {
+            Log.w(TAG, "Cannot access sensors from CommonSense");
+            return null;
+        }
+
+        // check if the requested sensor is in the list
+        String id = null;
+        for (int i = 0; i < sensors.length(); i++) {
+            JSONObject sensor = sensors.getJSONObject(i);
+            if (sensor.getString("name").equalsIgnoreCase(sensorNames.get(0))) {
+                // found the right sensor
+                if (null != id) {
+                    Log.w(TAG, "Multiple sensors with the same name");
+                }
+                id = sensor.getString("id");
+            }
+        }
+
+        // get the data for the sensor
+        URI remoteUri = new URI(SenseUrls.SENSOR_DATA.replace("<id>", id) + "?start_date="
+                + (timeRangeSelect[0] / 1000d) + "&end_date=" + (timeRangeSelect[1] / 1000d));
+        String cookie = getContext().getSharedPreferences(SensePrefs.AUTH_PREFS,
+                Context.MODE_PRIVATE).getString(Auth.LOGIN_COOKIE, null);
+        JSONObject response = SenseApi.getJsonObject(getContext(), remoteUri, cookie);
+        JSONArray data = response.getJSONArray("data");
+
+        // fill the result Cursor with sensor data
+        MatrixCursor result = new MatrixCursor(projection, data.length());
+        for (int i = 0; i < data.length(); i++) {
+            Object[] row = new Object[projection.length];
+            JSONObject jsonDataPoint = data.getJSONObject(i);
+            for (int j = 0; j < projection.length; j++) {
+                if (projection[j].equals(DataPoint.VALUE)) {
+                    row[j] = jsonDataPoint.getString("value");
+                } else if (projection[j].equals(DataPoint.TIMESTAMP)) {
+                    double rawDate = jsonDataPoint.getDouble("date");
+                    row[j] = Math.round(rawDate * 1000d);
+                } else if (projection[j].equals(DataPoint.SENSOR_NAME)) {
+                    row[j] = sensorNames.get(0);
+                }
+            }
+            result.addRow(row);
+        }
+
+        return result;
     }
 
     private synchronized ContentValues[] select(String where, String[] selectionArgs) {
@@ -300,7 +397,7 @@ public class LocalStorage extends ContentProvider {
                     }
                 }
             } else {
-                Log.d(TAG, "Could not find values for the selected sensor: '" + name + "'");
+                // Log.d(TAG, "Could not find values for the selected sensor: '" + name + "'");
             }
         }
 
@@ -321,6 +418,8 @@ public class LocalStorage extends ContentProvider {
             break;
         case PERSISTED_VALUES_URI:
             throw new IllegalArgumentException("Cannot update the persisted data points");
+        case REMOTE_VALUES_URI:
+            throw new IllegalArgumentException("Cannot update data points in CommonSense");
         default:
             throw new IllegalArgumentException("Unknown URI " + uri);
         }

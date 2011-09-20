@@ -145,6 +145,72 @@ public class SenseApi {
     }
 
     /**
+     * Gets a list of all sensors for this user at the CommonSense API. Uses caching for increased
+     * performance.
+     * 
+     * @param context
+     *            Application context, used for getting preferences.
+     * @return The list of sensors (can be empty), or <code>null</code> if an error occurred and the
+     *         list could not be retrieved.
+     */
+    public static JSONArray getAllSensors(Context context) {
+
+        final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
+                Context.MODE_PRIVATE);
+
+        // try to get list of sensors from the cache
+        try {
+            String cachedSensors = authPrefs.getString(Auth.SENSOR_LIST_COMPLETE, null);
+            long cacheTime = authPrefs.getLong(Auth.SENSOR_LIST_COMPLETE_TIME, 0);
+            boolean isOutdated = System.currentTimeMillis() - cacheTime > CACHE_REFRESH;
+
+            // return cached list of it is still valid
+            if (false == isOutdated && null != cachedSensors) {
+                return new JSONArray(cachedSensors);
+            }
+
+        } catch (Exception e) {
+            // should not happen, we are only using stuff that was previously cached
+            Log.e(TAG, "Failed to get list of sensors! Exception while checking cache: ", e);
+            return null;
+        }
+
+        // if we make it here, the list was not in the cache
+        // Log.v(TAG, "List of sensor IDs is missing or outdated, refreshing...");
+
+        try {
+            // get fresh list of sensors for this device from CommonSense
+            String cookie = authPrefs.getString(Auth.LOGIN_COOKIE, "NO_COOKIE");
+            boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
+            String rawUrl = devMode ? SenseUrls.DEV_ALL_SENSORS : SenseUrls.ALL_SENSORS;
+            URI uri = new URI(rawUrl);
+            JSONObject response = SenseApi.getJsonObject(context, uri, cookie);
+
+            // parse response and store the list
+            if (response != null) {
+                JSONArray sensorList = response.getJSONArray("sensors");
+
+                // store the new sensor list
+                Editor authEditor = authPrefs.edit();
+                authEditor.putString(Auth.SENSOR_LIST_COMPLETE, sensorList.toString());
+                authEditor.putLong(Auth.SENSOR_LIST_COMPLETE_TIME, System.currentTimeMillis());
+                authEditor.commit();
+
+                return sensorList;
+
+            } else {
+                Log.e(TAG, "Problem getting list of sensors: invalid response from CommonSense");
+                return null;
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Exception in retrieving registered sensors: ", e);
+            return null;
+
+        }
+    }
+
+    /**
      * Gets a list of all registered sensors for this device at the CommonSense API. Uses caching
      * for increased performance.
      * 
