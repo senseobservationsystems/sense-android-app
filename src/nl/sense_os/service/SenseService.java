@@ -20,6 +20,7 @@ import nl.sense_os.service.SensePrefs.Status;
 import nl.sense_os.service.ambience.LightSensor;
 import nl.sense_os.service.ambience.NoiseSensor;
 import nl.sense_os.service.deviceprox.DeviceProximity;
+import nl.sense_os.service.external_sensors.OBD2Dongle;
 import nl.sense_os.service.external_sensors.ZephyrBioHarness;
 import nl.sense_os.service.external_sensors.ZephyrHxM;
 import nl.sense_os.service.location.LocationSensor;
@@ -443,6 +444,7 @@ public class SenseService extends Service {
     private SensePhoneState phoneStateListener;
     private ZephyrBioHarness es_bioHarness;
     private ZephyrHxM es_HxM;
+    private OBD2Dongle es_obd2dongle;
 
     /**
      * Handler on main application thread to display toasts to the user.
@@ -1257,6 +1259,13 @@ public class SenseService extends Service {
                     es_HxM.stopHxM();
                     es_HxM = null;
                 }
+                
+                // check OBD-II dongle presence
+                if (null != es_obd2dongle) {
+                    Log.w(TAG, "OBD-II dongle is already present!");
+                    es_obd2dongle.stop();
+                    es_obd2dongle = null;
+                }
 
                 if (extSensorsThread != null && extSensorsThread.isAlive()) {
                     Log.w(TAG, "Ext. sensors thread is already present! Quitting the thread...");
@@ -1310,6 +1319,11 @@ public class SenseService extends Service {
                             es_HxM = new ZephyrHxM(SenseService.this);
                             es_HxM.startHxM(finalInterval);
                         }
+                        if (mainPrefs.getBoolean(
+                                nl.sense_os.service.SensePrefs.Main.External.OBD2Dongle.MAIN, false)) {
+                            es_obd2dongle = new OBD2Dongle(SenseService.this);
+                            es_obd2dongle.start(finalInterval);
+                        }
                     }
                 });
 
@@ -1327,6 +1341,13 @@ public class SenseService extends Service {
                     Log.w(TAG, "HxM sensor is already present!");
                     es_HxM.stopHxM();
                     es_HxM = null;
+                }
+                
+                // check OBD-II dongle presence
+                if (null != es_obd2dongle) {
+                    Log.w(TAG, "OBD-II dongle is already present!");
+                    es_obd2dongle.stop();
+                    es_obd2dongle = null;
                 }
 
                 if (extSensorsThread != null && extSensorsThread.isAlive()) {
