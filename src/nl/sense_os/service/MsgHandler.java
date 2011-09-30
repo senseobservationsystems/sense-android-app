@@ -104,7 +104,7 @@ public class MsgHandler extends Service {
             try {
                 cookie = msg.getData().getString("cookie");
                 cursor = getUnsentData();
-                if (cursor.getCount() > 0) {
+                if (null != cursor && cursor.moveToFirst()) {
                     transmit();
                 } else {
                     // nothing to transmit
@@ -215,12 +215,13 @@ public class MsgHandler extends Service {
                 while (points < MAX_POST_DATA && !cursor.isAfterLast()) {
 
                     // get the data point details
-                    sensorName = cursor.getString(cursor.getColumnIndex(DataPoint.SENSOR_NAME));
+                    sensorName = cursor.getString(cursor
+                            .getColumnIndexOrThrow(DataPoint.SENSOR_NAME));
                     sensorDesc = cursor.getString(cursor
-                            .getColumnIndex(DataPoint.SENSOR_DESCRIPTION));
-                    dataType = cursor.getString(cursor.getColumnIndex(DataPoint.DATA_TYPE));
-                    value = cursor.getString(cursor.getColumnIndex(DataPoint.VALUE));
-                    timestamp = cursor.getLong(cursor.getColumnIndex(DataPoint.TIMESTAMP));
+                            .getColumnIndexOrThrow(DataPoint.SENSOR_DESCRIPTION));
+                    dataType = cursor.getString(cursor.getColumnIndexOrThrow(DataPoint.DATA_TYPE));
+                    value = cursor.getString(cursor.getColumnIndexOrThrow(DataPoint.VALUE));
+                    timestamp = cursor.getLong(cursor.getColumnIndexOrThrow(DataPoint.TIMESTAMP));
 
                     // "normal" data is added to the map until we reach the max amount of points
                     if (!dataType.equals(SenseDataTypes.FILE)) {
