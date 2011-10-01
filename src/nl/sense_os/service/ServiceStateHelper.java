@@ -1,8 +1,5 @@
 package nl.sense_os.service;
 
-import nl.sense_os.app.R;
-import nl.sense_os.app.appwidget.SenseWidgetProvider;
-import nl.sense_os.service.SensePrefs.Auth;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -13,7 +10,13 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.widget.RemoteViews;
 
+import nl.sense_os.app.R;
+import nl.sense_os.app.appwidget.SenseWidgetProvider;
+import nl.sense_os.service.SensePrefs.Auth;
+
 public class ServiceStateHelper {
+
+    private static ServiceStateHelper instance = null;
 
     /**
      * ID for the notification in the status bar. Used to cancel the notification.
@@ -23,12 +26,78 @@ public class ServiceStateHelper {
     @SuppressWarnings("unused")
     private static final String TAG = "Sense Service State";
 
+    /**
+     * @param context
+     *            Context for lazy creating the ServiceStateHelper. Used to create notifications.
+     * @return Singleton instance of the ServiceStateHelper
+     */
+    public static ServiceStateHelper getInstance(Context context) {
+        if (null != instance) {
+            return instance;
+        } else {
+            return instance = new ServiceStateHelper(context);
+        }
+    }
+
     private final Context context;
+
     private boolean started, foreground, loggedIn, ambienceActive, devProxActive, externalActive,
             locationActive, motionActive, phoneStateActive, quizActive;
 
-    public ServiceStateHelper(Context context) {
+    /**
+     * Private constructor to enforce singleton pattern.
+     * 
+     * @param context
+     * @see ServiceStateHelper#getInstance(Context)
+     */
+    private ServiceStateHelper(Context context) {
         this.context = context;
+    }
+
+    public Notification getStateNotification() {
+
+        // icon and content text depend on the current state
+        int icon = -1;
+        final CharSequence contentTitle = "Sense Platform";
+        CharSequence contentText = null;
+        if (isStarted()) {
+            if (isLoggedIn()) {
+                icon = R.drawable.ic_status_sense;
+                final SharedPreferences authPrefs = context.getSharedPreferences(
+                        SensePrefs.AUTH_PREFS, Context.MODE_PRIVATE);
+                String username = authPrefs.getString(Auth.LOGIN_USERNAME, "UNKNOWN");
+                contentText = "Sensors active, logged in as '" + username + "'";
+            } else {
+                icon = R.drawable.ic_status_sense_alert;
+                contentText = "Sensors active, no connection to CommonSense";
+            }
+        } else {
+            if (isLoggedIn()) {
+                icon = R.drawable.ic_status_sense_disabled;
+                final SharedPreferences authPrefs = context.getSharedPreferences(
+                        SensePrefs.AUTH_PREFS, Context.MODE_PRIVATE);
+                String username = authPrefs.getString(Auth.LOGIN_USERNAME, "UNKNOWN");
+                contentText = "Sensors inactive, logged in as '" + username + "'";
+            } else {
+                icon = R.drawable.ic_status_sense_disabled;
+                contentText = "Sensors inactive, not logged in";
+            }
+        }
+
+        // action to take when the notification is tapped
+        final Intent notifIntent = new Intent("nl.sense_os.app.SenseApp");
+        notifIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        final PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notifIntent, 0);
+
+        // time of the notification
+        final long when = System.currentTimeMillis();
+
+        // create the notification
+        Notification note = new Notification(icon, null, when);
+        note.flags = Notification.FLAG_NO_CLEAR;
+        note.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
+
+        return note;
     }
 
     /**
@@ -182,51 +251,5 @@ public class ServiceStateHelper {
         }
         AppWidgetManager mgr = AppWidgetManager.getInstance(context);
         mgr.updateAppWidget(provider, views);
-    }
-
-    public Notification getStateNotification() {
-
-        // icon and content text depend on the current state
-        int icon = -1;
-        final CharSequence contentTitle = "Sense Platform";
-        CharSequence contentText = null;
-        if (isStarted()) {
-            if (isLoggedIn()) {
-                icon = R.drawable.ic_status_sense;
-                final SharedPreferences authPrefs = context.getSharedPreferences(
-                        SensePrefs.AUTH_PREFS, Context.MODE_PRIVATE);
-                String username = authPrefs.getString(Auth.LOGIN_USERNAME, "UNKNOWN");
-                contentText = "Sensors active, logged in as '" + username + "'";
-            } else {
-                icon = R.drawable.ic_status_sense_alert;
-                contentText = "Sensors active, no connection to CommonSense";
-            }
-        } else {
-            if (isLoggedIn()) {
-                icon = R.drawable.ic_status_sense_disabled;
-                final SharedPreferences authPrefs = context.getSharedPreferences(
-                        SensePrefs.AUTH_PREFS, Context.MODE_PRIVATE);
-                String username = authPrefs.getString(Auth.LOGIN_USERNAME, "UNKNOWN");
-                contentText = "Sensors inactive, logged in as '" + username + "'";
-            } else {
-                icon = R.drawable.ic_status_sense_disabled;
-                contentText = "Sensors inactive, not logged in";
-            }
-        }
-
-        // action to take when the notification is tapped
-        final Intent notifIntent = new Intent("nl.sense_os.app.SenseApp");
-        notifIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        final PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notifIntent, 0);
-
-        // time of the notification
-        final long when = System.currentTimeMillis();
-
-        // create the notification
-        Notification note = new Notification(icon, null, when);
-        note.flags = Notification.FLAG_NO_CLEAR;
-        note.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
-
-        return note;
     }
 }

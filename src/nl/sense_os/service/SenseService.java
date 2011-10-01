@@ -576,7 +576,7 @@ public class SenseService extends Service {
         // Log.v(TAG, "---------->  Sense Platform service is being created...  <----------");
         super.onCreate();
 
-        state = new ServiceStateHelper(this);
+        state = ServiceStateHelper.getInstance(this);
 
         // register broadcast receiver for login in case of Internet connection changes
         IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
