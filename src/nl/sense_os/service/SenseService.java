@@ -7,10 +7,27 @@
  */
 package nl.sense_os.service;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.URI;
-import java.net.URLEncoder;
+import android.app.Activity;
+import android.app.Notification;
+import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.content.pm.PackageInfo;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
+import android.os.Process;
+import android.os.RemoteException;
+import android.util.Log;
+import android.widget.Toast;
 
 import nl.sense_os.service.SensePrefs.Auth;
 import nl.sense_os.service.SensePrefs.Main.Advanced;
@@ -33,29 +50,10 @@ import nl.sense_os.service.phonestate.SensePhoneState;
 
 import org.json.JSONObject;
 
-import android.app.Activity;
-import android.app.AlarmManager;
-import android.app.Notification;
-import android.app.PendingIntent;
-import android.app.Service;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
-import android.content.pm.PackageInfo;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.IBinder;
-import android.os.Looper;
-import android.os.Message;
-import android.os.Process;
-import android.os.RemoteException;
-import android.util.Log;
-import android.widget.Toast;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URLEncoder;
 
 public class SenseService extends Service {
 
@@ -823,17 +821,8 @@ public class SenseService extends Service {
      */
     private void startAliveChecks() {
         // Log.v(TAG, "Start periodic checks if Sense is still alive...");
-
         state.setStarted(true);
-
-        // start the alarms
-        final Intent alarmIntent = new Intent(AliveChecker.ACTION_CHECK_ALIVE);
-        final PendingIntent alarmOp = PendingIntent.getBroadcast(this,
-                AliveChecker.REQ_CHECK_ALIVE, alarmIntent, 0);
-        final long alarmTime = System.currentTimeMillis() + AliveChecker.PERIOD_CHECK_ALIVE;
-        final AlarmManager mgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        mgr.cancel(alarmOp);
-        mgr.set(AlarmManager.RTC_WAKEUP, alarmTime, alarmOp);
+        AliveChecker.scheduleChecks(this);
     }
 
     /**
@@ -933,56 +922,15 @@ public class SenseService extends Service {
      */
     private void startTransmitAlarms() {
         // Log.v(TAG, "Start periodic data transmission alarms...");
-
-        // intent to broadcast for alarm
-        Intent alarm = new Intent(this, DataTransmitter.class);
-        PendingIntent operation = PendingIntent.getBroadcast(this, DataTransmitter.REQID, alarm, 0);
-
-        // alarm manager
-        AlarmManager mgr = (AlarmManager) getSystemService(ALARM_SERVICE);
-        mgr.cancel(operation);
-
-        // determine sync rate
-        SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
-        final int rate = Integer.parseInt(mainPrefs.getString(SensePrefs.Main.SYNC_RATE, "0"));
-
-        // schedule alarms
-        switch (rate) {
-        case -2: // real-time: clear out the buffer once, set eco-mode alarm "just in case"
-            mgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
-                    AlarmManager.INTERVAL_HALF_HOUR, operation);
-            return;
-        case -1: // 60 seconds
-            mgr.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000L * 60,
-                    operation);
-            break;
-        case 0: // 5 minute
-            mgr.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000L * 60 * 5,
-                    operation);
-            break;
-        case 1: // eco-mode
-            mgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
-                    AlarmManager.INTERVAL_HALF_HOUR, operation);
-            break;
-        default:
-            Log.e(TAG, "Unexpected sync rate value: " + rate);
-            return;
-        }
+        DataTransmitter.scheduleTransmissions(this);
     }
 
     /**
      * Stops the periodic checks to keep the service alive.
      */
     private void stopAliveChecks() {
-
         state.setStarted(false);
-
-        // stop the alive check broadcasts
-        final Intent alarmIntent = new Intent(AliveChecker.ACTION_CHECK_ALIVE);
-        final PendingIntent alarmOp = PendingIntent.getBroadcast(this,
-                AliveChecker.REQ_CHECK_ALIVE, alarmIntent, 0);
-        final AlarmManager mgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        mgr.cancel(alarmOp);
+        AliveChecker.stopChecks(this);
     }
 
     /**
@@ -1060,10 +1008,7 @@ public class SenseService extends Service {
      * Stops the periodic alarms to flush the MsgHandler buffer to CommonSense.
      */
     private void stopTransmitAlarms() {
-        Intent alarm = new Intent(this, DataTransmitter.class);
-        PendingIntent operation = PendingIntent.getBroadcast(this, DataTransmitter.REQID, alarm, 0);
-        AlarmManager mgr = (AlarmManager) getSystemService(ALARM_SERVICE);
-        mgr.cancel(operation);
+        DataTransmitter.stopTransmissions(this);
     }
 
     private void toggleAmbience(boolean active) {
@@ -1259,7 +1204,7 @@ public class SenseService extends Service {
                     es_HxM.stopHxM();
                     es_HxM = null;
                 }
-                
+
                 // check OBD-II dongle presence
                 if (null != es_obd2dongle) {
                     Log.w(TAG, "OBD-II dongle is already present!");
@@ -1319,8 +1264,10 @@ public class SenseService extends Service {
                             es_HxM = new ZephyrHxM(SenseService.this);
                             es_HxM.startHxM(finalInterval);
                         }
-                        if (mainPrefs.getBoolean(
-                                nl.sense_os.service.SensePrefs.Main.External.OBD2Dongle.MAIN, false)) {
+                        if (mainPrefs
+                                .getBoolean(
+                                        nl.sense_os.service.SensePrefs.Main.External.OBD2Dongle.MAIN,
+                                        false)) {
                             es_obd2dongle = new OBD2Dongle(SenseService.this);
                             es_obd2dongle.start(finalInterval);
                         }
@@ -1342,7 +1289,7 @@ public class SenseService extends Service {
                     es_HxM.stopHxM();
                     es_HxM = null;
                 }
-                
+
                 // check OBD-II dongle presence
                 if (null != es_obd2dongle) {
                     Log.w(TAG, "OBD-II dongle is already present!");

@@ -1,11 +1,10 @@
 /*
- ************************************************************************************************************
- *     Copyright (C)  2010 Sense Observation Systems, Rotterdam, the Netherlands.  All rights reserved.     *
- ************************************************************************************************************
+ * ************************************************************************************************
+ * Copyright (C) 2010 Sense Observation Systems, Rotterdam, the Netherlands. All rights reserved. *
+ * ************************************************************************************************
  */
 package nl.sense_os.service;
 
-import nl.sense_os.service.SensePrefs.Status;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -14,23 +13,17 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
 
+import nl.sense_os.service.SensePrefs.Status;
+
 public class AliveChecker extends BroadcastReceiver {
 
     private static final String TAG = "Sense AliveChecker";
-    public static final String ACTION_CHECK_ALIVE = "nl.sense_os.service.CheckAlive";
-    public static final int REQ_CHECK_ALIVE = 1;
-    public static final long PERIOD_CHECK_ALIVE = 1000 * 60 * 1;
+    private static final String ACTION = "nl.sense_os.service.CheckAlive";
+    private static final int REQ_CODE = 0x0C471FE1;
+    private static final int REQ_CODE_WAKEUP = 0x0C471FE2;
 
     @Override
     public void onReceive(Context context, Intent intent) {
-
-        /* set the next check broadcast */
-        final Intent alarmIntent = new Intent(AliveChecker.ACTION_CHECK_ALIVE);
-        final PendingIntent alarmOp = PendingIntent.getBroadcast(context,
-                AliveChecker.REQ_CHECK_ALIVE, alarmIntent, 0);
-        final long alarmTime = System.currentTimeMillis() + AliveChecker.PERIOD_CHECK_ALIVE;
-        final AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        mgr.set(AlarmManager.RTC_WAKEUP, alarmTime, alarmOp);
 
         /* check if the Sense service should be alive */
         final SharedPreferences statusPrefs = context.getSharedPreferences(SensePrefs.STATUS_PREFS,
@@ -47,5 +40,43 @@ public class AliveChecker extends BroadcastReceiver {
         } else {
             // Log.v(TAG, "Sense service should NOT be alive. Doing nothing...");
         }
+    }
+
+    /**
+     * Starts periodic checks on Sense Platform service's alive status.
+     * 
+     * @param context
+     *            Context to access AlarmManager
+     */
+    public static void scheduleChecks(Context context) {
+
+        Intent intent = new Intent(AliveChecker.ACTION);
+        AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        // try to check pretty often when the phone is awake
+        PendingIntent operation = PendingIntent.getBroadcast(context, REQ_CODE, intent, 0);
+        long interval = AlarmManager.INTERVAL_FIFTEEN_MINUTES;
+        mgr.cancel(operation);
+        mgr.setInexactRepeating(AlarmManager.RTC, System.currentTimeMillis(), interval, operation);
+
+        // make sure we wake up at least once an hour
+        operation = PendingIntent.getBroadcast(context, REQ_CODE_WAKEUP, intent, 0);
+        interval = AlarmManager.INTERVAL_HOUR;
+        mgr.cancel(operation);
+        mgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + interval,
+                interval, operation);
+    }
+
+    /**
+     * Stops the periodic checks on Sense Platform service's alive status.
+     * 
+     * @param context
+     *            Context to access AlarmManager
+     */
+    public static void stopChecks(Context context) {
+        Intent intent = new Intent(AliveChecker.ACTION);
+        AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        mgr.cancel(PendingIntent.getBroadcast(context, REQ_CODE, intent, 0));
+        mgr.cancel(PendingIntent.getBroadcast(context, REQ_CODE_WAKEUP, intent, 0));
     }
 }

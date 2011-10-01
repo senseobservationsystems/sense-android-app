@@ -2,7 +2,8 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="nl.sense_os.app"
-    android:versionName="2.1.1b2 RDAMCS" android:versionCode="20110915">
+    android:versionName="2.1.1b2 RDAMCS"
+    android:versionCode="20110915">
 
     <uses-feature
         android:name="android.hardware.location.gps"
@@ -130,7 +131,8 @@
             </intent-filter>
         </service>
 
-        <service android:name="nl.sense_os.service.states.EpiStateMonitor"></service><receiver
+        <service android:name="nl.sense_os.service.states.EpiStateMonitor"></service>
+        <receiver
             android:name="nl.sense_os.service.popquiz.PopQuizRx"
             android:process="nl.sense_os.service">
             <intent-filter>
@@ -177,7 +179,12 @@
 
         <receiver
             android:name="nl.sense_os.service.DataTransmitter"
-            android:process="nl.sense_os.service.datatransmitter" />
+            android:process="nl.sense_os.service.datatransmitter">
+            <intent-filter>
+                <action android:name="nl.sense_os.service.StartTransmit" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:label="@string/sense_app_name"
@@ -195,7 +202,7 @@
             android:name="nl.sense_os.service.provider.LocalStorage"
             android:exported="true"
             android:authorities="nl.sense_os.service.provider.LocalStorage" />
-        
+
 
     </application>
 
