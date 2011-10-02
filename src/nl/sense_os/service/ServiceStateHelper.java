@@ -3,15 +3,12 @@ package nl.sense_os.service;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.appwidget.AppWidgetManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.widget.RemoteViews;
 
 import nl.sense_os.app.R;
-import nl.sense_os.app.appwidget.SenseWidgetProvider;
+import nl.sense_os.app.appwidget.SenseWidgetUpdater;
 import nl.sense_os.service.SensePrefs.Auth;
 
 public class ServiceStateHelper {
@@ -104,9 +101,7 @@ public class ServiceStateHelper {
      * @return the current status of the sensing modules
      */
     public int getStatusCode() {
-
         int status = 0;
-
         status = isStarted() ? SenseStatusCodes.RUNNING : status;
         status = isLoggedIn() ? status + SenseStatusCodes.CONNECTED : status;
         status = isPhoneStateActive() ? status + SenseStatusCodes.PHONESTATE : status;
@@ -116,7 +111,6 @@ public class ServiceStateHelper {
         status = isDevProxActive() ? status + SenseStatusCodes.DEVICE_PROX : status;
         status = isExternalActive() ? status + SenseStatusCodes.EXTERNAL : status;
         status = isMotionActive() ? status + SenseStatusCodes.MOTION : status;
-
         return status;
     }
 
@@ -162,10 +156,12 @@ public class ServiceStateHelper {
 
     public void setAmbienceActive(boolean active) {
         ambienceActive = active;
+        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
     }
 
     public void setDevProxActive(boolean active) {
         devProxActive = active;
+        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
     }
 
     public void setExternalActive(boolean active) {
@@ -180,10 +176,12 @@ public class ServiceStateHelper {
             // : "Sense Platform Service is in background...");
             updateNotification();
         }
+        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
     }
 
     public void setLocationActive(boolean active) {
         locationActive = active;
+        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
     }
 
     public void setLoggedIn(boolean loggedIn) {
@@ -193,14 +191,17 @@ public class ServiceStateHelper {
             // : "Sense Platform Service logged out...");
             updateNotification();
         }
+        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
     }
 
     public void setMotionActive(boolean active) {
         motionActive = active;
+        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
     }
 
     public void setPhoneStateActive(boolean active) {
         phoneStateActive = active;
+        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
     }
 
     public void setQuizActive(boolean active) {
@@ -215,6 +216,7 @@ public class ServiceStateHelper {
             // : "Sense Platform Service stopped...");
             updateNotification();
         }
+        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
     }
 
     /**
@@ -232,24 +234,5 @@ public class ServiceStateHelper {
         } else {
             nm.cancel(NOTIF_ID);
         }
-
-        // update app widget
-        ComponentName provider = new ComponentName(context, SenseWidgetProvider.class);
-        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget);
-        if (isStarted()) {
-            if (isLoggedIn()) {
-                views.setImageViewResource(R.id.imageButton1, R.drawable.ic_status_sense);
-            } else {
-                views.setImageViewResource(R.id.imageButton1, R.drawable.ic_status_sense_alert);
-            }
-        } else {
-            if (isLoggedIn()) {
-                views.setImageViewResource(R.id.imageButton1, R.drawable.ic_status_sense_disabled);
-            } else {
-                views.setImageViewResource(R.id.imageButton1, R.drawable.ic_status_sense_disabled);
-            }
-        }
-        AppWidgetManager mgr = AppWidgetManager.getInstance(context);
-        mgr.updateAppWidget(provider, views);
     }
 }

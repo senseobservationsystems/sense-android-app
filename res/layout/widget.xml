@@ -1,20 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:orientation="horizontal" android:gravity="center_vertical">
+    android:id="@+id/widget"
+    android:layout_width="320dp"
+    android:layout_height="100dp">
     <ImageButton
-        android:layout_height="wrap_content"
-        android:src="@android:drawable/checkbox_on_background"
-        android:layout_width="wrap_content"
-        android:id="@+id/imageButton1"></ImageButton>
+        android:id="@+id/widget_phone_state_btn"
+        android:layout_width="70dp"
+        android:layout_height="100dp"
+        android:background="@drawable/widget_selector_left_inactive" />
+    <ImageButton
+        android:id="@+id/widget_location_btn"
+        android:layout_width="60dp"
+        android:layout_height="100dp"
+        android:layout_toRightOf="@id/widget_phone_state_btn"
+        android:background="@drawable/widget_selector_inactive" />
+    <ImageButton
+        android:id="@+id/widget_motion_btn"
+        android:layout_width="60dp"
+        android:layout_height="100dp"
+        android:layout_toRightOf="@id/widget_location_btn"
+        android:background="@drawable/widget_selector_inactive" />
+    <ImageButton
+        android:id="@+id/widget_ambience_btn"
+        android:layout_width="60dp"
+        android:layout_height="100dp"
+        android:layout_toRightOf="@id/widget_motion_btn"
+        android:background="@drawable/widget_selector_inactive" />
+    <ImageButton
+        android:id="@+id/widget_devices_btn"
+        android:layout_width="70dp"
+        android:layout_height="100dp"
+        android:layout_toRightOf="@id/widget_ambience_btn"
+        android:background="@drawable/widget_selector_right_inactive" />
     <TextView
-        android:id="@+id/textView1" android:textAppearance="?android:attr/textAppearanceMedium" android:layout_height="wrap_content" android:layout_width="wrap_content" android:text="@string/sense_app_name" android:layout_weight="1" android:gravity="center"></TextView>
-    <ImageButton
-        android:layout_height="wrap_content"
-        android:src="@android:drawable/checkbox_on_background"
-        android:layout_width="wrap_content"
-        android:id="@+id/ImageButton01"></ImageButton>
-
-</LinearLayout>
+        android:id="@+id/widget_phone_state_txt"
+        android:layout_width="60dp"
+        android:layout_height="100dp"
+        android:layout_marginTop="0dip"
+        android:layout_marginLeft="10dip"
+        android:layout_marginRight="0dip"
+        android:layout_marginBottom="0dip"
+        android:gravity="center"
+        android:text="PHO"
+        style="@style/WidgetText" />
+    <TextView
+        android:id="@+id/widget_location_txt"
+        android:layout_width="60dp"
+        android:layout_height="100dp"
+        android:layout_toRightOf="@id/widget_phone_state_txt"
+        android:layout_marginTop="0dip"
+        android:layout_marginLeft="0dip"
+        android:layout_marginRight="0dip"
+        android:layout_marginBottom="0dip"
+        android:gravity="center"
+        android:text="LOC"
+        style="@style/WidgetText" />
+    <TextView
+        android:id="@+id/widget_motion_txt"
+        android:layout_width="60dp"
+        android:layout_height="100dp"
+        android:layout_toRightOf="@id/widget_location_txt"
+        android:layout_marginTop="0dip"
+        android:layout_marginLeft="0dip"
+        android:layout_marginRight="0dip"
+        android:layout_marginBottom="0dip"
+        android:gravity="center"
+        android:text="MOT"
+        style="@style/WidgetText" />
+    <TextView
+        android:id="@+id/widget_ambience_txt"
+        android:layout_width="60dp"
+        android:layout_height="100dp"
+        android:layout_toRightOf="@id/widget_motion_txt"
+        android:layout_marginTop="0dip"
+        android:layout_marginLeft="0dip"
+        android:layout_marginRight="0dip"
+        android:layout_marginBottom="0dip"
+        android:gravity="center"
+        android:text="AMB"
+        style="@style/WidgetText" />
+    <TextView
+        android:id="@+id/widget_devices_txt"
+        android:layout_width="60dp"
+        android:layout_height="100dp"
+        android:layout_toRightOf="@id/widget_ambience_txt"
+        android:layout_marginTop="0dip"
+        android:layout_marginLeft="0dip"
+        android:layout_marginRight="10dip"
+        android:layout_marginBottom="0dip"
+        android:gravity="center"
+        android:text="DEV"
+        style="@style/WidgetText" />
+</RelativeLayout>

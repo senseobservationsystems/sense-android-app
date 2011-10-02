@@ -1507,7 +1507,7 @@ public class SenseService extends Service {
     private void togglePhoneState(boolean active) {
 
         if (active != state.isPhoneStateActive()) {
-            state.setPhoneStateActive(active);
+            ServiceStateHelper.getInstance(this).setPhoneStateActive(active);
 
             if (true == active) {
 
