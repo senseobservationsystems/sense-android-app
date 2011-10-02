@@ -6,90 +6,37 @@
     android:layout_height="100dp">
     <ImageButton
         android:id="@+id/widget_phone_state_btn"
-        android:layout_width="70dp"
+        android:layout_width="60dp"
         android:layout_height="100dp"
-        android:background="@drawable/widget_selector_left_inactive" />
+        android:background="@drawable/widget_phone_state_inactive_selector" />
     <ImageButton
         android:id="@+id/widget_location_btn"
-        android:layout_width="60dp"
+        android:layout_width="50dp"
         android:layout_height="100dp"
         android:layout_toRightOf="@id/widget_phone_state_btn"
-        android:background="@drawable/widget_selector_inactive" />
+        android:background="@drawable/widget_location_inactive_selector" />
     <ImageButton
         android:id="@+id/widget_motion_btn"
-        android:layout_width="60dp"
+        android:layout_width="50dp"
         android:layout_height="100dp"
         android:layout_toRightOf="@id/widget_location_btn"
-        android:background="@drawable/widget_selector_inactive" />
+        android:background="@drawable/widget_motion_inactive_selector" />
     <ImageButton
         android:id="@+id/widget_ambience_btn"
-        android:layout_width="60dp"
+        android:layout_width="50dp"
         android:layout_height="100dp"
         android:layout_toRightOf="@id/widget_motion_btn"
-        android:background="@drawable/widget_selector_inactive" />
+        android:background="@drawable/widget_ambience_inactive_selector" />
     <ImageButton
         android:id="@+id/widget_devices_btn"
-        android:layout_width="70dp"
+        android:layout_width="50dp"
         android:layout_height="100dp"
         android:layout_toRightOf="@id/widget_ambience_btn"
-        android:background="@drawable/widget_selector_right_inactive" />
-    <TextView
-        android:id="@+id/widget_phone_state_txt"
+        android:background="@drawable/widget_devices_inactive_selector" />
+    <ImageView
+        android:id="@+id/widget_right"
         android:layout_width="60dp"
         android:layout_height="100dp"
-        android:layout_marginTop="0dip"
-        android:layout_marginLeft="10dip"
-        android:layout_marginRight="0dip"
-        android:layout_marginBottom="0dip"
-        android:gravity="center"
-        android:text="PHO"
-        style="@style/WidgetText" />
-    <TextView
-        android:id="@+id/widget_location_txt"
-        android:layout_width="60dp"
-        android:layout_height="100dp"
-        android:layout_toRightOf="@id/widget_phone_state_txt"
-        android:layout_marginTop="0dip"
-        android:layout_marginLeft="0dip"
-        android:layout_marginRight="0dip"
-        android:layout_marginBottom="0dip"
-        android:gravity="center"
-        android:text="LOC"
-        style="@style/WidgetText" />
-    <TextView
-        android:id="@+id/widget_motion_txt"
-        android:layout_width="60dp"
-        android:layout_height="100dp"
-        android:layout_toRightOf="@id/widget_location_txt"
-        android:layout_marginTop="0dip"
-        android:layout_marginLeft="0dip"
-        android:layout_marginRight="0dip"
-        android:layout_marginBottom="0dip"
-        android:gravity="center"
-        android:text="MOT"
-        style="@style/WidgetText" />
-    <TextView
-        android:id="@+id/widget_ambience_txt"
-        android:layout_width="60dp"
-        android:layout_height="100dp"
-        android:layout_toRightOf="@id/widget_motion_txt"
-        android:layout_marginTop="0dip"
-        android:layout_marginLeft="0dip"
-        android:layout_marginRight="0dip"
-        android:layout_marginBottom="0dip"
-        android:gravity="center"
-        android:text="AMB"
-        style="@style/WidgetText" />
-    <TextView
-        android:id="@+id/widget_devices_txt"
-        android:layout_width="60dp"
-        android:layout_height="100dp"
-        android:layout_toRightOf="@id/widget_ambience_txt"
-        android:layout_marginTop="0dip"
-        android:layout_marginLeft="0dip"
-        android:layout_marginRight="10dip"
-        android:layout_marginBottom="0dip"
-        android:gravity="center"
-        android:text="DEV"
-        style="@style/WidgetText" />
+        android:layout_toRightOf="@id/widget_devices_btn"
+        android:src="@drawable/widget_right" />
 </RelativeLayout>

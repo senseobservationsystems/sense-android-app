@@ -6,7 +6,7 @@
     android:variablePadding="false">     
     <item
         android:state_pressed="true"
-        android:drawable="@drawable/widget_entry_active" />
+        android:drawable="@drawable/widget_devices_active" />
     <item 
-        android:drawable="@drawable/widget_entry_inactive" /> 
+        android:drawable="@drawable/widget_devices_inactive" /> 
 </selector>

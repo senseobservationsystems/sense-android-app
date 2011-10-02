@@ -246,57 +246,49 @@ public class SenseWidgetUpdater extends IntentService {
         ComponentName provider = new ComponentName(this, SenseWidgetProvider.class);
         int[] appWidgetIds = appWidgetManager.getAppWidgetIds(provider);
 
-        int activeColor = getResources().getColor(android.R.color.black);
-        int inactiveColor = getResources().getColor(android.R.color.darker_gray);
-
         for (int appWidgetId : appWidgetIds) {
             RemoteViews views = new RemoteViews(getPackageName(), R.layout.widget);
 
             boolean active = ((status & SenseStatusCodes.PHONESTATE) > 0);
-            views.setTextColor(R.id.widget_phone_state_txt, active ? activeColor : inactiveColor);
             views.setInt(R.id.widget_phone_state_btn, "setBackgroundResource",
-                    active ? R.drawable.widget_selector_left_active
-                            : R.drawable.widget_selector_left_inactive);
+                    active ? R.drawable.widget_phone_state_active_selector
+                            : R.drawable.widget_phone_state_inactive_selector);
 
             Intent intent = new Intent(active ? ACTION_STOP_PHONE_STATE : ACTION_START_PHONE_STATE);
             PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, 0);
             views.setOnClickPendingIntent(R.id.widget_phone_state_btn, pendingIntent);
 
             active = ((status & SenseStatusCodes.LOCATION) > 0);
-            views.setTextColor(R.id.widget_location_txt, active ? activeColor : inactiveColor);
             views.setInt(R.id.widget_location_btn, "setBackgroundResource",
-                    active ? R.drawable.widget_selector_active
-                            : R.drawable.widget_selector_inactive);
+                    active ? R.drawable.widget_location_active_selector
+                            : R.drawable.widget_location_inactive_selector);
 
             intent = new Intent(active ? ACTION_STOP_LOCATION : ACTION_START_LOCATION);
             pendingIntent = PendingIntent.getService(this, 0, intent, 0);
             views.setOnClickPendingIntent(R.id.widget_location_btn, pendingIntent);
 
             active = ((status & SenseStatusCodes.MOTION) > 0);
-            views.setTextColor(R.id.widget_motion_txt, active ? activeColor : inactiveColor);
             views.setInt(R.id.widget_motion_btn, "setBackgroundResource",
-                    active ? R.drawable.widget_selector_active
-                            : R.drawable.widget_selector_inactive);
+                    active ? R.drawable.widget_motion_active_selector
+                            : R.drawable.widget_motion_inactive_selector);
 
             intent = new Intent(active ? ACTION_STOP_MOTION : ACTION_START_MOTION);
             pendingIntent = PendingIntent.getService(this, 0, intent, 0);
             views.setOnClickPendingIntent(R.id.widget_motion_btn, pendingIntent);
 
             active = ((status & SenseStatusCodes.AMBIENCE) > 0);
-            views.setTextColor(R.id.widget_ambience_txt, active ? activeColor : inactiveColor);
             views.setInt(R.id.widget_ambience_btn, "setBackgroundResource",
-                    active ? R.drawable.widget_selector_active
-                            : R.drawable.widget_selector_inactive);
+                    active ? R.drawable.widget_ambience_active_selector
+                            : R.drawable.widget_ambience_inactive_selector);
 
             intent = new Intent(active ? ACTION_STOP_AMBIENCE : ACTION_START_AMBIENCE);
             pendingIntent = PendingIntent.getService(this, 0, intent, 0);
             views.setOnClickPendingIntent(R.id.widget_ambience_btn, pendingIntent);
 
             active = ((status & SenseStatusCodes.DEVICE_PROX) > 0);
-            views.setTextColor(R.id.widget_devices_txt, active ? activeColor : inactiveColor);
             views.setInt(R.id.widget_devices_btn, "setBackgroundResource",
-                    active ? R.drawable.widget_selector_right_active
-                            : R.drawable.widget_selector_right_inactive);
+                    active ? R.drawable.widget_devices_active_selector
+                            : R.drawable.widget_devices_inactive_selector);
 
             intent = new Intent(active ? ACTION_STOP_DEVICES : ACTION_START_DEVICES);
             pendingIntent = PendingIntent.getService(this, 0, intent, 0);
