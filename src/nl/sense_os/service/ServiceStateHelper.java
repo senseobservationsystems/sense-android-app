@@ -55,34 +55,32 @@ public class ServiceStateHelper {
 
         // icon and content text depend on the current state
         int icon = -1;
-        final CharSequence contentTitle = "Sense Platform";
-        CharSequence contentText = null;
+        int contentText = -1;
         if (isStarted()) {
             if (isLoggedIn()) {
                 icon = R.drawable.ic_status_sense;
-                final SharedPreferences authPrefs = context.getSharedPreferences(
-                        SensePrefs.AUTH_PREFS, Context.MODE_PRIVATE);
-                String username = authPrefs.getString(Auth.LOGIN_USERNAME, "UNKNOWN");
-                contentText = "Sensors active, logged in as '" + username + "'";
+                contentText = R.string.stat_notify_content_on_loggedin;
             } else {
                 icon = R.drawable.ic_status_sense_alert;
-                contentText = "Sensors active, no connection to CommonSense";
+                contentText = R.string.stat_notify_content_on_loggedout;
             }
         } else {
             if (isLoggedIn()) {
                 icon = R.drawable.ic_status_sense_disabled;
-                final SharedPreferences authPrefs = context.getSharedPreferences(
-                        SensePrefs.AUTH_PREFS, Context.MODE_PRIVATE);
-                String username = authPrefs.getString(Auth.LOGIN_USERNAME, "UNKNOWN");
-                contentText = "Sensors inactive, logged in as '" + username + "'";
+                contentText = R.string.stat_notify_content_off_loggedin;
             } else {
                 icon = R.drawable.ic_status_sense_disabled;
-                contentText = "Sensors inactive, not logged in";
+                contentText = R.string.stat_notify_content_off_loggedout;
             }
         }
 
+        // username will be substituted into the content text
+        final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
+                Context.MODE_PRIVATE);
+        String username = authPrefs.getString(Auth.LOGIN_USERNAME, "UNKNOWN");
+
         // action to take when the notification is tapped
-        final Intent notifIntent = new Intent("nl.sense_os.app.SenseApp");
+        final Intent notifIntent = new Intent(context.getString(R.string.stat_notify_action));
         notifIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         final PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notifIntent, 0);
 
@@ -92,7 +90,8 @@ public class ServiceStateHelper {
         // create the notification
         Notification note = new Notification(icon, null, when);
         note.flags = Notification.FLAG_NO_CLEAR;
-        note.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
+        note.setLatestEventInfo(context, context.getString(R.string.stat_notify_title),
+                context.getString(contentText, username), contentIntent);
 
         return note;
     }

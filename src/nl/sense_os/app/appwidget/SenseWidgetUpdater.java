@@ -123,13 +123,13 @@ public class SenseWidgetUpdater extends IntentService {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.v(TAG, "Creating...");
+        // Log.v(TAG, "Creating...");
         bindToSenseService();
     }
 
     @Override
     public void onDestroy() {
-        Log.v(TAG, "Destroying...");
+        // Log.v(TAG, "Destroying...");
         unbindFromSenseService();
         super.onDestroy();
     }
@@ -301,7 +301,7 @@ public class SenseWidgetUpdater extends IntentService {
     private void unbindFromSenseService() {
 
         if ((true == isBoundOrBinding) && (null != serviceConn)) {
-            Log.v(TAG, "Unbind from Sense Platform service");
+            // Log.v(TAG, "Unbind from Sense Platform service");
             unbindService(serviceConn);
         } else {
             // already unbound
