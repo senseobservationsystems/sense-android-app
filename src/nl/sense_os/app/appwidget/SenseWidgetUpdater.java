@@ -39,14 +39,11 @@ public class SenseWidgetUpdater extends IntentService {
         public void onServiceConnected(ComponentName className, IBinder binder) {
             // Log.v(TAG, "Bound to Sense Platform service...");
             service = ISenseService.Stub.asInterface(binder);
-            checkServiceStatus();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName className) {
             // Log.v(TAG, "Sense Platform service disconnected...");
-
-            /* this is not called when the service is stopped, only when it is suddenly killed! */
             service = null;
             isBoundOrBinding = false;
             checkServiceStatus();
@@ -97,6 +94,18 @@ public class SenseWidgetUpdater extends IntentService {
      * generate a callback that updates the buttons ToggleButtons showing the service's state.
      */
     private void checkServiceStatus() {
+
+        // wait until the service is bound
+        int counter = 0;
+        while (null == service && counter < 5) {
+            try {
+                Thread.sleep(20);
+                counter++;
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+
         // Log.v(TAG, "Checking service status..");
         if (null != service) {
             try {
@@ -114,13 +123,13 @@ public class SenseWidgetUpdater extends IntentService {
     @Override
     public void onCreate() {
         super.onCreate();
-        // Log.v(TAG, "Creating...");
+        Log.v(TAG, "Creating...");
         bindToSenseService();
     }
 
     @Override
     public void onDestroy() {
-        // Log.v(TAG, "Destroying...");
+        Log.v(TAG, "Destroying...");
         unbindFromSenseService();
         super.onDestroy();
     }
@@ -156,20 +165,45 @@ public class SenseWidgetUpdater extends IntentService {
     }
 
     private void setAmbience(boolean active) {
+
+        // wait until the service is bound
+        int counter = 0;
+        while (null == service && counter < 5) {
+            try {
+                Thread.sleep(20);
+                counter++;
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+
+        // Log.d(TAG, "Set ambience: " + active);
         if (null != service) {
             try {
                 // request status report
                 service.toggleAmbience(active);
             } catch (final RemoteException e) {
-                Log.e(TAG, "Error setting device proximity sensor status. ", e);
+                Log.e(TAG, "Error setting ambience sensor status. ", e);
             }
         } else {
-            // Log.v(TAG, "Not bound to Sense Platform service! Assume it's not running...");
-            updateWidgets(0);
+            Log.w(TAG, "Cannot set ambience sensor status! Failed to bind to Sense service!");
         }
     }
 
     private void setDevices(boolean active) {
+
+        // wait until the service is bound
+        int counter = 0;
+        while (null == service && counter < 5) {
+            try {
+                Thread.sleep(20);
+                counter++;
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+
+        // Log.d(TAG, "Set devices: " + active);
         if (null != service) {
             try {
                 // request status report
@@ -178,12 +212,25 @@ public class SenseWidgetUpdater extends IntentService {
                 Log.e(TAG, "Error setting device proximity sensor status. ", e);
             }
         } else {
-            // Log.v(TAG, "Not bound to Sense Platform service! Assume it's not running...");
-            updateWidgets(0);
+            Log.w(TAG,
+                    "Cannot set device proximity sensor status! Failed to bind to Sense service!");
         }
     }
 
     private void setLocation(boolean active) {
+
+        // wait until the service is bound
+        int counter = 0;
+        while (null == service && counter < 5) {
+            try {
+                Thread.sleep(20);
+                counter++;
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+
+        // Log.d(TAG, "Set location: " + active);
         if (null != service) {
             try {
                 // request status report
@@ -192,12 +239,24 @@ public class SenseWidgetUpdater extends IntentService {
                 Log.e(TAG, "Error setting location sensor status. ", e);
             }
         } else {
-            // Log.v(TAG, "Not bound to Sense Platform service! Assume it's not running...");
-            updateWidgets(0);
+            Log.w(TAG, "Cannot set location sensor status! Failed to bind to Sense service!");
         }
     }
 
     private void setMotion(boolean active) {
+
+        // wait until the service is bound
+        int counter = 0;
+        while (null == service && counter < 5) {
+            try {
+                Thread.sleep(20);
+                counter++;
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+
+        // Log.d(TAG, "Set motion: " + active);
         if (null != service) {
             try {
                 // request status report
@@ -206,13 +265,24 @@ public class SenseWidgetUpdater extends IntentService {
                 Log.e(TAG, "Error setting motion sensor status. ", e);
             }
         } else {
-            // Log.v(TAG, "Not bound to Sense Platform service! Assume it's not running...");
-            updateWidgets(0);
+            Log.w(TAG, "Cannot set motion sensor status! Failed to bind to Sense service!");
         }
     }
 
     private void setPhoneState(boolean active) {
-        Log.d(TAG, "Set phone state: " + active);
+
+        // wait until the service is bound
+        int counter = 0;
+        while (null == service && counter < 5) {
+            try {
+                Thread.sleep(20);
+                counter++;
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+
+        // Log.d(TAG, "Set phone state: " + active);
         if (null != service) {
             try {
                 // request status report
@@ -221,8 +291,7 @@ public class SenseWidgetUpdater extends IntentService {
                 Log.e(TAG, "Error setting phone state sensor status. ", e);
             }
         } else {
-            // Log.v(TAG, "Not bound to Sense Platform service! Assume it's not running...");
-            updateWidgets(0);
+            Log.w(TAG, "Cannot set phone state sensor status! Failed to bind to Sense service!");
         }
     }
 
@@ -232,7 +301,7 @@ public class SenseWidgetUpdater extends IntentService {
     private void unbindFromSenseService() {
 
         if ((true == isBoundOrBinding) && (null != serviceConn)) {
-            // Log.v(TAG, "Unbind from Sense Platform service");
+            Log.v(TAG, "Unbind from Sense Platform service");
             unbindService(serviceConn);
         } else {
             // already unbound
@@ -249,46 +318,46 @@ public class SenseWidgetUpdater extends IntentService {
         for (int appWidgetId : appWidgetIds) {
             RemoteViews views = new RemoteViews(getPackageName(), R.layout.widget);
 
+            /* phone state */
             boolean active = ((status & SenseStatusCodes.PHONESTATE) > 0);
-            views.setInt(R.id.widget_phone_state_btn, "setBackgroundResource",
-                    active ? R.drawable.widget_phone_state_active_selector
-                            : R.drawable.widget_phone_state_inactive_selector);
+            views.setImageViewResource(R.id.widget_phone_state_btn,
+                    active ? R.drawable.wi_pst_on_selector : R.drawable.wi_pst_off_selector);
 
             Intent intent = new Intent(active ? ACTION_STOP_PHONE_STATE : ACTION_START_PHONE_STATE);
             PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, 0);
             views.setOnClickPendingIntent(R.id.widget_phone_state_btn, pendingIntent);
 
+            /* location */
             active = ((status & SenseStatusCodes.LOCATION) > 0);
-            views.setInt(R.id.widget_location_btn, "setBackgroundResource",
-                    active ? R.drawable.widget_location_active_selector
-                            : R.drawable.widget_location_inactive_selector);
+            views.setImageViewResource(R.id.widget_location_btn,
+                    active ? R.drawable.wi_loc_on_selector : R.drawable.wi_loc_off_selector);
 
             intent = new Intent(active ? ACTION_STOP_LOCATION : ACTION_START_LOCATION);
             pendingIntent = PendingIntent.getService(this, 0, intent, 0);
             views.setOnClickPendingIntent(R.id.widget_location_btn, pendingIntent);
 
+            /* motion */
             active = ((status & SenseStatusCodes.MOTION) > 0);
-            views.setInt(R.id.widget_motion_btn, "setBackgroundResource",
-                    active ? R.drawable.widget_motion_active_selector
-                            : R.drawable.widget_motion_inactive_selector);
+            views.setImageViewResource(R.id.widget_motion_btn,
+                    active ? R.drawable.wi_mot_on_selector : R.drawable.wi_mot_off_selector);
 
             intent = new Intent(active ? ACTION_STOP_MOTION : ACTION_START_MOTION);
             pendingIntent = PendingIntent.getService(this, 0, intent, 0);
             views.setOnClickPendingIntent(R.id.widget_motion_btn, pendingIntent);
 
+            /* ambience */
             active = ((status & SenseStatusCodes.AMBIENCE) > 0);
-            views.setInt(R.id.widget_ambience_btn, "setBackgroundResource",
-                    active ? R.drawable.widget_ambience_active_selector
-                            : R.drawable.widget_ambience_inactive_selector);
+            views.setImageViewResource(R.id.widget_ambience_btn,
+                    active ? R.drawable.wi_amb_on_selector : R.drawable.wi_amb_off_selector);
 
             intent = new Intent(active ? ACTION_STOP_AMBIENCE : ACTION_START_AMBIENCE);
             pendingIntent = PendingIntent.getService(this, 0, intent, 0);
             views.setOnClickPendingIntent(R.id.widget_ambience_btn, pendingIntent);
 
+            /* devices */
             active = ((status & SenseStatusCodes.DEVICE_PROX) > 0);
-            views.setInt(R.id.widget_devices_btn, "setBackgroundResource",
-                    active ? R.drawable.widget_devices_active_selector
-                            : R.drawable.widget_devices_inactive_selector);
+            views.setImageViewResource(R.id.widget_devices_btn,
+                    active ? R.drawable.wi_dev_on_selector : R.drawable.wi_dev_off_selector);
 
             intent = new Intent(active ? ACTION_STOP_DEVICES : ACTION_START_DEVICES);
             pendingIntent = PendingIntent.getService(this, 0, intent, 0);
