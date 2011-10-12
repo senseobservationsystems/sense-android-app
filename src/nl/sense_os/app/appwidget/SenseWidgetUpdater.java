@@ -1,5 +1,10 @@
 package nl.sense_os.app.appwidget;
 
+import nl.sense_os.app.R;
+import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.ISenseServiceCallback;
+import nl.sense_os.service.SensePrefs.Main;
+import nl.sense_os.service.SenseStatusCodes;
 import android.app.IntentService;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
@@ -10,11 +15,6 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
 import android.widget.RemoteViews;
-
-import nl.sense_os.app.R;
-import nl.sense_os.service.ISenseService;
-import nl.sense_os.service.ISenseServiceCallback;
-import nl.sense_os.service.SenseStatusCodes;
 
 public class SenseWidgetUpdater extends IntentService {
 
@@ -310,7 +310,67 @@ public class SenseWidgetUpdater extends IntentService {
         isBoundOrBinding = false;
     }
 
+    private void updateSensorViews(RemoteViews views, int status) {
+        /* phone state */
+        boolean active = ((status & SenseStatusCodes.PHONESTATE) > 0);
+        views.setImageViewResource(R.id.widget_phone_state_btn,
+                active ? R.drawable.wi_pst_on_selector : R.drawable.wi_pst_off_selector);
+
+        Intent intent = new Intent(active ? ACTION_STOP_PHONE_STATE : ACTION_START_PHONE_STATE);
+        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, 0);
+        views.setOnClickPendingIntent(R.id.widget_phone_state_btn, pendingIntent);
+
+        /* location */
+        active = ((status & SenseStatusCodes.LOCATION) > 0);
+        views.setImageViewResource(R.id.widget_location_btn, active ? R.drawable.wi_loc_on_selector
+                : R.drawable.wi_loc_off_selector);
+
+        intent = new Intent(active ? ACTION_STOP_LOCATION : ACTION_START_LOCATION);
+        pendingIntent = PendingIntent.getService(this, 0, intent, 0);
+        views.setOnClickPendingIntent(R.id.widget_location_btn, pendingIntent);
+
+        /* motion */
+        active = ((status & SenseStatusCodes.MOTION) > 0);
+        views.setImageViewResource(R.id.widget_motion_btn, active ? R.drawable.wi_mot_on_selector
+                : R.drawable.wi_mot_off_selector);
+
+        intent = new Intent(active ? ACTION_STOP_MOTION : ACTION_START_MOTION);
+        pendingIntent = PendingIntent.getService(this, 0, intent, 0);
+        views.setOnClickPendingIntent(R.id.widget_motion_btn, pendingIntent);
+
+        /* ambience */
+        active = ((status & SenseStatusCodes.AMBIENCE) > 0);
+        views.setImageViewResource(R.id.widget_ambience_btn, active ? R.drawable.wi_amb_on_selector
+                : R.drawable.wi_amb_off_selector);
+
+        intent = new Intent(active ? ACTION_STOP_AMBIENCE : ACTION_START_AMBIENCE);
+        pendingIntent = PendingIntent.getService(this, 0, intent, 0);
+        views.setOnClickPendingIntent(R.id.widget_ambience_btn, pendingIntent);
+
+        /* devices */
+        active = ((status & SenseStatusCodes.DEVICE_PROX) > 0);
+        views.setImageViewResource(R.id.widget_devices_btn, active ? R.drawable.wi_dev_on_selector
+                : R.drawable.wi_dev_off_selector);
+
+        intent = new Intent(active ? ACTION_STOP_DEVICES : ACTION_START_DEVICES);
+        pendingIntent = PendingIntent.getService(this, 0, intent, 0);
+        views.setOnClickPendingIntent(R.id.widget_devices_btn, pendingIntent);
+    }
+
     private void updateWidgets(int status) {
+
+        // get the sync and sample rate from the service
+        int sampleRate = 10, syncRate = 10;
+        if (status != 0) {
+            try {
+                sampleRate = Integer.parseInt(service.getPrefString(Main.SAMPLE_RATE, "0"));
+                syncRate = Integer.parseInt(service.getPrefString(Main.SYNC_RATE, "0"));
+            } catch (RemoteException e) {
+                Log.w(TAG, "Could not fetch sync or sample rate preference from the service!");
+                return;
+            }
+        }
+
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
         ComponentName provider = new ComponentName(this, SenseWidgetProvider.class);
         int[] appWidgetIds = appWidgetManager.getAppWidgetIds(provider);
@@ -318,52 +378,49 @@ public class SenseWidgetUpdater extends IntentService {
         for (int appWidgetId : appWidgetIds) {
             RemoteViews views = new RemoteViews(getPackageName(), R.layout.widget);
 
-            /* phone state */
-            boolean active = ((status & SenseStatusCodes.PHONESTATE) > 0);
-            views.setImageViewResource(R.id.widget_phone_state_btn,
-                    active ? R.drawable.wi_pst_on_selector : R.drawable.wi_pst_off_selector);
-
-            Intent intent = new Intent(active ? ACTION_STOP_PHONE_STATE : ACTION_START_PHONE_STATE);
-            PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, 0);
-            views.setOnClickPendingIntent(R.id.widget_phone_state_btn, pendingIntent);
-
-            /* location */
-            active = ((status & SenseStatusCodes.LOCATION) > 0);
-            views.setImageViewResource(R.id.widget_location_btn,
-                    active ? R.drawable.wi_loc_on_selector : R.drawable.wi_loc_off_selector);
-
-            intent = new Intent(active ? ACTION_STOP_LOCATION : ACTION_START_LOCATION);
-            pendingIntent = PendingIntent.getService(this, 0, intent, 0);
-            views.setOnClickPendingIntent(R.id.widget_location_btn, pendingIntent);
-
-            /* motion */
-            active = ((status & SenseStatusCodes.MOTION) > 0);
-            views.setImageViewResource(R.id.widget_motion_btn,
-                    active ? R.drawable.wi_mot_on_selector : R.drawable.wi_mot_off_selector);
-
-            intent = new Intent(active ? ACTION_STOP_MOTION : ACTION_START_MOTION);
-            pendingIntent = PendingIntent.getService(this, 0, intent, 0);
-            views.setOnClickPendingIntent(R.id.widget_motion_btn, pendingIntent);
-
-            /* ambience */
-            active = ((status & SenseStatusCodes.AMBIENCE) > 0);
-            views.setImageViewResource(R.id.widget_ambience_btn,
-                    active ? R.drawable.wi_amb_on_selector : R.drawable.wi_amb_off_selector);
-
-            intent = new Intent(active ? ACTION_STOP_AMBIENCE : ACTION_START_AMBIENCE);
-            pendingIntent = PendingIntent.getService(this, 0, intent, 0);
-            views.setOnClickPendingIntent(R.id.widget_ambience_btn, pendingIntent);
-
-            /* devices */
-            active = ((status & SenseStatusCodes.DEVICE_PROX) > 0);
-            views.setImageViewResource(R.id.widget_devices_btn,
-                    active ? R.drawable.wi_dev_on_selector : R.drawable.wi_dev_off_selector);
-
-            intent = new Intent(active ? ACTION_STOP_DEVICES : ACTION_START_DEVICES);
-            pendingIntent = PendingIntent.getService(this, 0, intent, 0);
-            views.setOnClickPendingIntent(R.id.widget_devices_btn, pendingIntent);
+            updateSensorViews(views, status);
+            updateSampleSyncViews(views, sampleRate, syncRate);
 
             appWidgetManager.updateAppWidget(appWidgetId, views);
+        }
+    }
+
+    private void updateSampleSyncViews(RemoteViews views, int sampleRate, int syncRate) {
+
+        // sample rate button
+        switch (sampleRate) {
+        case -2: // real time
+            views.setImageViewResource(R.id.widget_sample_btn, R.drawable.wi_smp_4_selector);
+            break;
+        case -1: // often
+            views.setImageViewResource(R.id.widget_sample_btn, R.drawable.wi_smp_3_selector);
+            break;
+        case 0: // normal
+            views.setImageViewResource(R.id.widget_sample_btn, R.drawable.wi_smp_2_selector);
+            break;
+        case 1: // rarely
+            views.setImageViewResource(R.id.widget_sample_btn, R.drawable.wi_smp_1_selector);
+            break;
+        default: // no sampling
+            views.setImageViewResource(R.id.widget_sample_btn, R.drawable.wi_smp_0_selector);
+        }
+
+        // sync rate button
+        switch (syncRate) {
+        case -2: // real time
+            views.setImageViewResource(R.id.widget_sync_btn, R.drawable.wi_syn_4_selector);
+            break;
+        case -1: // often
+            views.setImageViewResource(R.id.widget_sync_btn, R.drawable.wi_syn_3_selector);
+            break;
+        case 0: // normal
+            views.setImageViewResource(R.id.widget_sync_btn, R.drawable.wi_syn_2_selector);
+            break;
+        case 1: // rarely
+            views.setImageViewResource(R.id.widget_sync_btn, R.drawable.wi_syn_1_selector);
+            break;
+        default: // no sampling
+            views.setImageViewResource(R.id.widget_sync_btn, R.drawable.wi_syn_0_selector);
         }
     }
 }

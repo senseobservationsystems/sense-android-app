@@ -38,12 +38,12 @@
         android:layout_width="60dp"
         android:layout_height="50dp"
         android:layout_toRightOf="@id/widget_devices_btn"
-        android:src="@drawable/wi_smp_selector" />
+        android:src="@drawable/wi_smp_0_selector" />
     <ImageView
         android:id="@+id/widget_sync_btn"
         android:layout_width="60dp"
         android:layout_height="50dp"
         android:layout_toRightOf="@id/widget_devices_btn"
         android:layout_below="@id/widget_sample_btn"
-        android:src="@drawable/wi_syn_selector" />
+        android:src="@drawable/wi_syn_0_selector" />
 </RelativeLayout>
