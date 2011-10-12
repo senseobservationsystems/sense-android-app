@@ -5,8 +5,13 @@
  */
 package nl.sense_os.service.external_sensors;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
@@ -14,6 +19,7 @@ import nl.sense_os.service.MsgHandler;
 import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensorData.SensorNames;
 
+import org.apache.http.impl.io.SocketInputBuffer;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -24,6 +30,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -34,26 +41,26 @@ import android.util.Log;
  */
 public class OBD2Dongle {
     //static device specifics
-	private static final String TAG = "OBD-II Interface Dongle";
-	private static String deviceName = "TestOBD";
-	private static final String deviceAdress = "";
+	private static final String TAG = "OBD-II";
+	private static String deviceType = "TestOBD";
 	
 	//static connection specifics
 	private static final UUID serial_uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");;
     
 	//device variables
 	private final Context context;
-    private boolean dongleenabled = false;
+    private boolean dongleEnabled = false;
 	private int updateInterval = 0;
     
 	//connection thread variables
     private BluetoothAdapter btAdapter = null;
-    private boolean streamEnabled = false;
+    private boolean connectionActive = false;
 	private final Handler connectHandler = new Handler(Looper.getMainLooper());
     private ConnectThread connectThread = null;
     private BluetoothSocket socket = null;
     
     //update thread variables
+    private boolean updateActive;
     private Handler updateHandler = new Handler(Looper.getMainLooper());
     private UpdateThread updateThread = null;
     private long lastSampleTime = 0;
@@ -69,11 +76,12 @@ public class OBD2Dongle {
 	 * @param interval in milliseconds
 	 */
 	public void start(int interval){
+        Log.e(TAG, "Starting dongle:");
 		this.setUpdateInterval(interval);
-		this.setDongleEnabled(true);
+		dongleEnabled = true;
 
 		Thread t = new Thread() {
-            @Override
+			@Override
             public void run() {
                 // No check on android version, assume 2.1 or higher
                 connectHandler.post(connectThread = new ConnectThread());
@@ -86,7 +94,9 @@ public class OBD2Dongle {
      * stop reading the OBD2Dongle, also removing its threads from the connectHandler
      */
 	public void stop() {
-        this.setDongleEnabled(false);
+        this.dongleEnabled = false;
+		this.connectionActive = false;
+        this.updateActive = false;
         try {
         	// No check on android version, assume 2.1 or higher
        		if (connectThread != null) {
@@ -96,22 +106,6 @@ public class OBD2Dongle {
         } catch (Exception e) {
             Log.e(TAG, "Exception in stopping Bluetooth scan thread:", e);
         }
-    }
-
-	/**
-	 * 
-	 * @return whether or not the OBD2Dongcheckle should be read
-	 */
-	public boolean dongleEnabled() {
-        return dongleenabled;
-    }
-
-    /**
-     * 
-     * @param enable whether or not the OBD2Dongle should be read
-     */
-    public void setDongleEnabled(boolean enable) {
-        this.dongleenabled = enable;
     }
 	
     /**
@@ -136,7 +130,7 @@ public class OBD2Dongle {
             @Override
             public void onReceive(Context context, Intent intent) {
 
-                if (!dongleEnabled()) {
+                if (!dongleEnabled) {
                     return;
                 }
 
@@ -168,27 +162,45 @@ public class OBD2Dongle {
 
         @Override
         public void run() {
-            if (dongleEnabled()) {
-            	streamEnabled = false;            	
+        	Log.v(TAG, ">>>>>>>>>> RUN CONNECT THREAD <<<<<<<<");
+        	
+            if (dongleEnabled) {
+            	connectionActive = false;            	
             	if (btAdapter.isEnabled()){
             		boolean foundDevice = false;
 
 	                // check if there is a paired device with the name BioHarness
 	                Set<android.bluetooth.BluetoothDevice> pairedDevices = btAdapter.getBondedDevices();
-	                // If there are paired devices                    
+	                // If there are paired devices
 	                if (pairedDevices.size() > 0) {
 	                    // Search for the correct Bluetooth Devices
 	                    for (BluetoothDevice device : pairedDevices) {
-							// TODO make device name and address device specific 
-	                        if (device.getName().startsWith("") && device.getAddress().startsWith("00:07:80")) {
-	                            // Get a BluetoothSocket to connect with the given BluetoothDevice
+							// device name specific
+	                        if (device.getName().contains("OBDII")) {
+	                        	Log.v(TAG, ">>>>>>>>>> Found OBDII device <<<<<<<<");
+	                        	// Get a BluetoothSocket to connect with the given BluetoothDevice
 	                            try {
 	                                socket = device.createRfcommSocketToServiceRecord(serial_uuid);
 	                                socket.connect();
-	                                updateHandler.post(updateThread = new UpdateThread());
+	                                connectionActive = true;
+	                            } catch (Exception e1) {
+	                            	Log.e(TAG, "Error creating socket to " + device.getName() + ", attempting workaround ");
+	                                //if creating the socket did not work, try the workaround
+	                                try{
+	                                	Method m = device.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
+	                                    socket = (BluetoothSocket) m.invoke(device, 1);
+	                                    socket.connect();
+		                                connectionActive = true;
+	                                }
+	                                catch(Exception e2){
+		                            	Log.e(TAG, "Error creating socket to " + device.getName() + " in workaround", e2);	                                	
+	                                }
+	                            }
+	                            if(connectionActive){
+	                                deviceType = device.getName();
+		                            updateHandler.post(updateThread = new UpdateThread());
 	                                foundDevice = true;
-	                            } catch (Exception e) {
-	                                Log.e(TAG, "Error connecting to OBD2Dongle device: " + e.getMessage());
+	                                break;
 	                            }
 	                        }
 	                    }
@@ -218,14 +230,20 @@ public class OBD2Dongle {
         }
 
         public void stop() {
+            connectionActive = false;
+            updateActive = false;
             try {
-                // Log.v(TAG, "Stopping the BioHarness service");
-                updateHandler.removeCallbacks(updateThread);
-                socket.close();
-
+                if(updateHandler != null)
+                	updateHandler.removeCallbacks(updateThread);
+                if(socket != null)
+                	socket.close();
                 context.unregisterReceiver(btReceiver);
 
-            } catch (Exception e) {
+            }
+            catch (IllegalArgumentException e){
+            	//ignore
+            }
+            catch (Exception e) {
                 Log.e(TAG, "Error in stopping OBD2Dongle service" + e.getMessage());
             }
         }
@@ -253,21 +271,26 @@ public class OBD2Dongle {
                 }
                 sockInputStream = tempInputStream;
                 sockOutputStream = tempOutputStream;
+                Log.v(TAG, "socket: " + socket);
+                Log.v(TAG, "socketInputStream: " + sockInputStream);
+                Log.v(TAG, "socketOutputStream: " + sockOutputStream);
             }
         }
         
         
         @Override
         public void run() {
-        	if(dongleEnabled()){
+        	Log.v(TAG, ">>>>>>>>>> RUN UPDATE THREAD <<<<<<<<");
+        	if(dongleEnabled && connectionActive){
         		try{
-        			if(!streamEnabled){
+        			if(!updateActive){
         				//initialize the datastream by checking available PIDs and VIN
-        				streamEnabled = initializeDataStream();
+        				bruteForceTryOut();
+        				updateActive = initializeDataStream();
         				updateHandler.post(updateThread = new UpdateThread());
         			}
         			//TODO not necessary to check connection alive now, is it?
-                    if (System.currentTimeMillis() > lastSampleTime + updateInterval) {
+        			else if (System.currentTimeMillis() > lastSampleTime + updateInterval) {
                     	//invoke dynamic data gathering subroutines
                     	updateDTCStatus();
                     	updateFuelStatus();
@@ -291,8 +314,7 @@ public class OBD2Dongle {
                     //update a new upDateThread every second
                     updateHandler.postDelayed(updateThread = new UpdateThread(), 1000);
         		} catch (Exception e) {
-        			Log.e(TAG, "Error in receiving BioHarness data:" + e.getMessage());
-        			e.printStackTrace();
+        			Log.e(TAG, "Error in update cycle while reading OBDII data: ", e);
         			// re-connect
         			connectHandler.postDelayed(connectThread = new ConnectThread(), 1000);
         		}
@@ -304,61 +326,356 @@ public class OBD2Dongle {
 			public void cancel() {
 			    try {
 			        Log.i(TAG, "Stopping the OBD2Dongle service");
-		            socket.close();
+		            updateActive = false;
+			        socket.close();
 			    } catch (Exception e) {
 			        Log.e(TAG, e.getMessage());
 			    }
 			}
+			
+			private final Handler inputHandler = new Handler(Looper.getMainLooper());
+			
+			protected void bruteForceTryOut(){
+				//create and start a listening thread
+				inputHandler.post(new listeningThread()); 
+				
+				//start sending queries (without listening, this is done by listening thread)
+				for(int mode = 0; mode<10; mode++){
+					for(int PID = 0; PID<100; PID++){
+						askByte(mode, PID);
+					}
+				}
+			}
+			
+			protected void askByte(int mode, int PID){
+	        	try {
+	        		//request data, first encode it from char to byte
+	        		byte[] request = new byte[]{
+	        				Byte.MIN_VALUE + 0x02, 
+	        				(byte) (Byte.MIN_VALUE + mode), 
+	        				(byte) (Byte.MIN_VALUE + PID), 
+	        				Byte.MIN_VALUE + 0x00, 
+	        				Byte.MIN_VALUE + 0x00, 
+	        				Byte.MIN_VALUE + 0x00, 
+	        				Byte.MIN_VALUE + 0x00, 
+	        				Byte.MIN_VALUE + 0x00};
+	        		sockOutputStream.write(request);
+	        		String message = "askByte (int): 0x02,"+mode+","+PID+",0x00,0x00,0x00,0x00,0x00";
+	        		Log.w(TAG, message);
+	        		message = "askByte (byte): ";
+                	for(int b:request)
+                		message += (b + ",");
+	        		Log.w(TAG, message);
+	        		//writeToFile(request);
+	        	}
+	        	catch (Exception e){
+	        		Log.e(TAG, "error in askByte: ",e);
+	        	}
+			}
+			
+			public class listeningThread extends Thread{
 
-        
+				public listeningThread(){}
+				
+				public int decryptByte(byte b){
+					if (b<0)
+						return Byte.MAX_VALUE - b;
+					else
+						return (int) b;
+				}
+				
+				public byte encryptByte(int i){
+					if(i>Byte.MAX_VALUE)
+						return (byte) - (i - Byte.MAX_VALUE);
+					else
+						return (byte) i;
+				}
+				
+				/*
+		        public void intrun() {
+		        	Log.v(TAG, ">>>>>>>>RUN Listening Thread<<<<<<<<");
+					int[] dataframe = null;
+					int resultIndex = 0;
+					int currentByte = -1;
+					//listen to the datainputstream
+					//TODO: set the variable in the while loop to a changeable variable
+					while(connectionActive && updateActive){
+						try{
+							currentByte = sockInputStream.read();
+							//sleep for a while if no input is available
+							if(currentByte == -1){
+								Thread.sleep(500);
+								Log.v(TAG, "LT: Sleeping, while sockInputStream.available = "+sockInputStream.available()+" and currentByte = "+currentByte );
+							}
+							Log.v(TAG, "LT: encrypted currentByte = "+currentByte);
+							currentByte = decryptByte(currentByte);
+							Log.v(TAG, "LT: decrypted currentByte = "+currentByte);
+							//if the current Byte read has a value > 0 and no result array has been created,
+							//it indicates the start of a data-frame, first byte names its size
+							if(dataframe == null && currentByte > 0  && currentByte <8){
+								dataframe = new int[currentByte];
+								Log.v(TAG, "LT: Created new dataframe of size "+dataframe.length);
+							}
+							//while reading values, fill the result array
+							else if(dataframe != null && resultIndex<dataframe.length && currentByte>0){
+								dataframe[resultIndex] = currentByte;
+								resultIndex++;
+								//check if data-frame has been collected, if so, post it
+								if(resultIndex==dataframe.length){
+									//post the data-frame
+									processDataFrame(dataframe);
+									//reset the data-frame
+									dataframe = null; resultIndex = 0;
+									Log.v(TAG, "LT: dataframe has been sent and reset");
+								}
+							}
+						} catch (Exception e){
+							Log.e(TAG, "LT: problem in running listeningThread: ", e);
+						}
+					}						
+				}
+		        */
+		        
+		        public void run() {
+		        	Log.v(TAG, ">>>>>>>>RUN Listening Thread<<<<<<<<");
+					byte[] buffer = new byte[15];
+					byte[] dataframe = new byte[8];
+					int offset = 0, bytesread = 0;
+					int dataframestart = 0;
+					//make it possible to write a logfile
+					initWriteToFile();
+					//TODO: set the variable in the while loop to a changeable variable
+					while(connectionActive && updateActive){
+						try{
+							bytesread = sockInputStream.read(buffer, offset, buffer.length - offset);
+							//sleep for a while if no input is available
+							if(bytesread == -1){
+								Thread.sleep(500);
+								Log.v(TAG, "LT: Sleeping, while bytesread = "+bytesread+" and buffer "+buffer);
+							}
+							else{
+								offset +=bytesread;
+							}
+							if(offset == buffer.length){
+								//locate the start of the dataframe in the buffer
+								while(buffer[dataframestart] == 0 && dataframestart < buffer.length){
+									dataframestart++;
+								}
+								//shift the dataframe to the front of the buffer
+								if(dataframestart > 0){
+									//shift dataframe to the front of the buffer
+									System.arraycopy(buffer.clone(), dataframestart, buffer, 0, buffer.length - dataframestart);
+									//set the pointer to start of frame to 0
+									dataframestart = 0;
+									//adjust the offset
+									offset -= dataframestart;
+									//reset the last #datastart bytes of the buffer
+									System.arraycopy(new byte[dataframestart], 0, buffer, buffer.length-1-dataframestart, dataframestart);
+								}
+								//if possible, extract the dataframe from the buffer (first 8 bytes in buffer)
+								if(dataframestart < buffer.length - 9 && buffer[0] <8){									
+									//extract dataframe (first 8 bytes according to protocol) from the buffer
+									System.arraycopy(buffer, 0, dataframe, 0, 8);
+									//remove dataframe from the buffer
+									System.arraycopy(buffer.clone(), 8, buffer, 0, buffer.length - 8);
+									//adjust the offset
+									offset -= 8;
+									//reset the last 8 bytes of the buffer
+									System.arraycopy(new byte[8], 0, buffer, buffer.length-1-8, 8);
+									//process the dataframe
+									int[] decodedDataFrame = decodeDataFrame(dataframe);
+									processDataFrame(decodedDataFrame);
+									//reset the data-frame
+									dataframe = new byte[8];
+									Log.v(TAG, "LT: dataframe has been sent and reset");									
+								}
+							}
+						} catch (Exception e){
+							Log.e(TAG, "LT: problem in running listeningThread: ", e);
+						}
+					}						
+				}
+		        
+		        
+		        
+		        public void cancel() {
+			        updateActive= false;
+		        	Log.i(TAG, "Cancel method of listeningThread called");
+		        }
+			
+				protected int[] decodeDataFrame(byte[] data){
+					int[] readable = new int[data.length];
+					for(byte i = 0; i<readable.length; i++){
+						if(data[i] < 0)
+							readable[i] = Math.abs(data[i]) + Byte.MAX_VALUE;
+						else
+							readable[i] = data[i];
+					}
+					//alternative method 1
+					/*for(byte i = 0; i<readable.length; i++){
+						if(data[i] == Byte.MIN_VALUE)
+							readable[i] = 128;
+						else if(data[i] < 0)
+							readable[i] = Math.abs(data[i]) + Byte.MAX_VALUE+1;
+						else
+							readable[i] = data[i];
+					}*/
+					return readable;
+				}
+				
+				protected void processDataFrame (int[] readable){
+					if(readable[0]>=2){
+						int mode = readable[0];
+						int PID = readable[1];
+						String message = "dataframe found: <mode: "+mode+", PID: "+PID+", data: ";
+						for(int i = 2; i<readable.length; i++)
+							message += ";" + readable[i];
+						message += ">";
+						writeToFile(readable, "decoded dataframe ");
+						Log.v(TAG, message);
+					}
+					else
+						Log.e(TAG, "dataframe invalid");
+				}
+				
+				
+			}
+
 	        /**
 	         * 
 	         * @return whether or not the initialization was successful
 	         */
 	        private boolean initializeDataStream(){
-	        	//initialize pidAvailable
-	        	pidAvailable = new boolean[(byte) 0x60 + 1];
-	        	
-	        	boolean[] current;
-	        	//Mode01, PID00/PID20/PID40 : check if PIDs 0x01 - 0x60 are available
-	        	for(byte index = 0x00; index <= 0x60; index += 0x20){
-	        		current = queryBit((byte) 0x01, (byte) 0x00);
-	        		if(current!=null) pidAvailable[index] = true;
-	        		System.arraycopy(current, 0, pidAvailable, index + 1, current.length);
+	        	try{
+		        	//initialize pidAvailable
+		        	pidAvailable = new boolean[(byte) 0x60 + 1];
+		        	
+		        	boolean[] current;
+		        	//Mode01, PID00/PID20/PID40 : check if PIDs 0x01 - 0x60 are available
+		        	for(char index: new char[]{0x00, 0x20, 0x60}){
+		        		Log.v(TAG, "initializing, index: " + index);
+		        		current = queryBit((char) 0x01, index);
+		        		if(current!=null){
+		        			pidAvailable[index] = true;
+		        			System.arraycopy(current, 0, pidAvailable, index + 1, current.length);
+		        		}
+		        	}
+		        	String message = ">>>>>>>>>>>>>>>>>>>>>> pidAvailable: ";
+		        	for(boolean activePID: pidAvailable){
+		        		if(activePID)
+		        			message += "T,";
+		        		else
+		        			message += "F,";
+		        	}
+		        	Log.i(TAG, message);
+		        	
+		        	//deviceType += " (" + getOBDStandards() + ")";
+		        	
+		        	//TODO add code to find out about the VIN
+		        	//found at mode 09, PID 01 and 02
+		        	//using the ISO 15765-2 protocol 
+		        	
+		        	return true;
 	        	}
-	        	
-	        	deviceName += " (" + getOBDStandards() + ")";
-	        	
-	        	//TODO add code to find out about the VIN
-	        	//found at mode 09, PID 01 and 02
-	        	//using the ISO 15765-2 protocol 
-	        	
-	        	return true;
+	        	catch(Exception e){
+        			Log.e(TAG, "Error in initialization of data stream: ", e);
+        			return false;
+	        	}
 	        }
-        
+	        
+	        private String strStoragePath = Environment.getExternalStorageDirectory().getAbsolutePath();
+	        private String strFileDestination = "/sense/datalog.log";
+	        
+	        private void initWriteToFile(){
+	        	Log.v(TAG, ">>>>>>>> INITIALIZING WRITE TO FILE <<<<<<<<");
+	        	try{
+	                //try creating the file if it not already exists
+	        		new File(strStoragePath + strFileDestination).createNewFile();
+	        		String command = "chmod 666 " + strStoragePath + strFileDestination;
+	                Runtime.getRuntime().exec(command);
+	        		Log.i(TAG, "Initialized file: " + strStoragePath + strFileDestination);
+	        	}
+	        	catch(Exception e){
+	                Log.e(TAG, "Error in initializing the file: " + strStoragePath + strFileDestination, e);
+	        	}
+	        }
+	        
+	        private void writeToFile(int[] buffer, String identifier){
+	        	Log.v(TAG, ">>>>>>>> WRITING TO FILE <<<<<<<<");
+	        	try{
+	        		FileOutputStream fos = new FileOutputStream(strStoragePath + strFileDestination);
+	        		for(int i: buffer){
+	        			fos.write(i);
+	        		}
+	        		fos.close();
+	        		Log.i(TAG, " wrote " + identifier + buffer.toString() + " to file " + strStoragePath + strFileDestination);
+	        	}
+	        	catch(Exception e){
+	                Log.e(TAG, "Error in logging to file: " + strStoragePath + strFileDestination, e);
+	        	}
+	        }
+	        
 	        /**
 			 * 
 			 * @param mode indicating mode of operation as described in the latest OBD-II standard SAE J1979
 			 * @param PID coded standard OBD-II PID as defined by SAE J1979
 			 * @return the data bytes found in the OBD-II response
 			 */
-	        private byte[] queryByte(byte mode, byte PID){
+	        private char[] queryByte(char mode, char PID){
+	        	if(!(mode <= Byte.MAX_VALUE) || !(PID <= Byte.MAX_VALUE)){
+	        		Log.e(TAG, "queryByte received invalid mode ("+ mode +") or PID ("+ PID +")" );
+	        		return null;
+	        	}
 	        	try {
-	                sockOutputStream.write(new byte[]{0x02, mode, PID, 0x00, 0x00, 0x00, 0x00, 0x00});
-	                byte[] buffer = new byte[8];
-	                sockInputStream.read(buffer);
-	                if((buffer[1] - (byte) 0x40) == mode && buffer[2] == PID && buffer[0]>2){
-	                	byte[] result = new byte[buffer[0]-2];
-	                	for(byte i = 0; i<result.length; i++){
-	                		result[i] = buffer[i+3];
-	                	}
+	        		//request data, first encode it from char to byte
+	        		byte[] request = new byte[]{
+	        				Byte.MIN_VALUE + 0x02, 
+	        				(byte) (Byte.MIN_VALUE + mode), 
+	        				(byte) (Byte.MIN_VALUE + PID), 
+	        				Byte.MIN_VALUE + 0x00, 
+	        				Byte.MIN_VALUE + 0x00, 
+	        				Byte.MIN_VALUE + 0x00, 
+	        				Byte.MIN_VALUE + 0x00, 
+	        				Byte.MIN_VALUE + 0x00};
+	        		sockOutputStream.write(request);
+                	String message = "queryByte request (byte): ";
+                	for(byte b:request)
+                		message += (b + ",");
+	        		Log.w(TAG, message);
+	        		//writeToFile(request);
+	        		
+	        		//read the response, sleep while waiting
+	                /*while(sockInputStream.available()<8){
+	                	Thread.sleep(500);
+	                }*/
+	        		byte[] encodedresponse = new byte[8];
+	                sockInputStream.read(encodedresponse);
+	                char[] response = new char[encodedresponse.length];
+	                message = "queryByte response (byte): ";
+	                for(int i = 0; i<encodedresponse.length; i++){
+	                	response[i] = (char) (encodedresponse[i] - Byte.MIN_VALUE);
+                		message += (encodedresponse[i] + ",");
+	                }
+	        		Log.w(TAG, message);
+                	//writeToFile(encodedresponse);
+	                
+	                Log.e(TAG, "buffer (mode="+mode+", PID="+PID+") found: " + response[0] + "," + response[1] + "," + response[2] + "," + response[3] + "," + response[4] + "," + response[5] + "," + response[6] + "," + response[7]);
+	                Log.v(TAG, "buffer[1] - (byte) 0x40 = " + (response[1] - (byte) 0x40));
+	                Log.v(TAG, "buffer[2] = " + response[2]);
+	                if(response[1] == mode && response[2] == PID && response[0]>=2){
+	                	char[] result = new char[response[0]-2];
+	                    System.arraycopy(response, 2, result, 0, result.length);
+	                	Log.w(TAG, "correct buffer read for mode="+mode+",PID="+PID+", result.length="+result.length);
 	                	return result;
 	                }
+	                else{
+		                Log.w(TAG, "No valid response gotten in queryByte(mode="+mode+",PID="+PID+")");
+	                	return null;
+	                }
 	            } catch (Exception e) {
-	                Log.e(TAG, "Error in exchanging data:" + e.getMessage());
+	                Log.e(TAG, "Error in exchanging data: ", e);
 	                return null;
 	            }
-	            return null;
 	        }
 	        
 	        /**
@@ -367,15 +684,21 @@ public class OBD2Dongle {
 			 * @param PID coded standard OBD-II PID as defined by SAE J1979
 			 * @return the bit representation of the data found in the OBD-II response
 	         */
-	        private boolean[] queryBit(byte mode, byte PID){
-	        	byte[] input = queryByte(mode, PID);
-	        	boolean[] result = new boolean[input.length * 8];
-	        	for(byte byteIndex = 0; byteIndex<input.length; byteIndex++){
-	        		for(byte bitIndex = 0; bitIndex<8; bitIndex++){
-	        			result[byteIndex*8+bitIndex] = ((input[byteIndex] & (byte) (bitIndex+1)^2) != (byte) 0x00); 
-	        		}
+	        private boolean[] queryBit(char mode, char PID){
+	        	char[] input = queryByte(mode, PID);
+	        	if(input!=null){
+	        		Log.e(TAG, "queryBit got " + input.length + " bytes (in a char[]) from queryByte");
+		        	boolean[] result = new boolean[input.length * 8];
+		        	for(byte byteIndex = 0; byteIndex<input.length; byteIndex++){
+		        		for(byte bitIndex = 0; bitIndex<8; bitIndex++){
+		        			result[byteIndex*8+bitIndex] = ((input[byteIndex] & (byte) (bitIndex+1)^2) != (byte) 0x00); 
+		        		}
+		        	}
+		        	return result;
 	        	}
-	        	return result;
+	        	else{
+	        		return null;
+	        	}
 	        }
 	        
 	        /**
@@ -386,7 +709,7 @@ public class OBD2Dongle {
 	        private void sendIntent(String sensor_name, JSONObject value){
                 Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
                 i.putExtra(MsgHandler.KEY_SENSOR_NAME, sensor_name);
-                i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "OBD2Dongle " + deviceName);
+                i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, deviceType);
                 i.putExtra(MsgHandler.KEY_VALUE, value.toString());
                 i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
                 i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
@@ -399,8 +722,8 @@ public class OBD2Dongle {
 	    	 * @return whether or not the call was successful
 	    	 */
 	        private boolean updateDTCStatus(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x01;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x01;
 	        	//Check whether or not query of this PID is possible 
 	        	if(pidAvailable[PID]){
 		        	//Query for "monitor status since DTCs cleared".
@@ -468,8 +791,8 @@ public class OBD2Dongle {
 	    	 * @return whether or not the call was successful
 	    	 */
 	    	private boolean updateFuelStatus(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x03;
+	    		char mode = (char) 0x01;
+	        	char PID = (char) 0x03;
 	        	//Check whether or not query of this PID is possible 
 	        	if(pidAvailable[PID]){
 	        		boolean[] response = queryBit(mode, PID);
@@ -526,11 +849,11 @@ public class OBD2Dongle {
 	    	 * @return whether or not the call was successful
 	    	 */
 	    	private boolean updateEngineLoad(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x04;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x04;
 	        	//Check whether or not query of this PID is possible 
 	        	if(pidAvailable[PID]){
-	        		byte[] response = queryByte(mode, PID);
+	        		char[] response = queryByte(mode, PID);
 	        		if(response!=null){
 	        			try{
 	        				JSONObject result = new JSONObject();
@@ -548,11 +871,11 @@ public class OBD2Dongle {
 	    	}
     	
 	    	private boolean updateEngineCoolant(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x05;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x05;
 	        	//Check whether or not query of this PID is possible 
 	        	if(pidAvailable[PID]){
-	        		byte[] response = queryByte(mode, PID);
+	        		char[] response = queryByte(mode, PID);
 	        		if(response!=null){
 	        			try{
 	        				JSONObject result = new JSONObject();
@@ -570,12 +893,12 @@ public class OBD2Dongle {
 	    	}
 
 	    	private boolean updateFuelPercentTrim(){
-	        	byte mode = (byte) 0x01;
-	        	byte[] PIDs = new byte[]{0x06, 0x07, 0x08, 0x09};
+	        	char mode = (char) 0x01;
+	        	char[] PIDs = new char[]{0x06, 0x07, 0x08, 0x09};
 	        	JSONObject result = new JSONObject();
-	        	for(byte PID : PIDs){
+	        	for(char PID : PIDs){
 		        	if(pidAvailable[PID]){
-		        		byte[] response = queryByte(mode, PID);
+		        		char[] response = queryByte(mode, PID);
 		        		if(response!=null){
 		        			try{
 		        				double value = (((double) response[0]) - 128d) * (100d/128d);
@@ -604,11 +927,11 @@ public class OBD2Dongle {
 	    	}	    	
 	    	
 	    	private boolean updateFuelPressure(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x0A;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x0A;
 	        	//Check whether or not query of this PID is possible 
 	        	if(pidAvailable[PID]){
-	        		byte[] response = queryByte(mode, PID);
+	        		char[] response = queryByte(mode, PID);
 	        		if(response!=null){
 	        			try{
 	        				JSONObject result = new JSONObject();
@@ -626,15 +949,15 @@ public class OBD2Dongle {
 	    	}
 	    	
 	    	private boolean updateIntakeManifoldPressure(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x0B;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x0B;
 	        	//Check whether or not query of this PID is possible 
 	        	if(pidAvailable[PID]){
-	        		byte[] response = queryByte(mode, PID);
+	        		char[] response = queryByte(mode, PID);
 	        		if(response!=null){
 	        			try{
 	        				JSONObject result = new JSONObject();
-		        			byte value = response[0];
+		        			char value = response[0];
 		    				result.put("Fuel pressure (kPa (gauge))", value);
 		    				sendIntent(SensorNames.INTAKE_PRESSURE, result);
 		                    return true;
@@ -648,11 +971,11 @@ public class OBD2Dongle {
 	    	}
 
 	    	private boolean updateEngineRPM(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x0C;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x0C;
 	        	//Check whether or not query of this PID is possible 
 	        	if(pidAvailable[PID]){
-	        		byte[] response = queryByte(mode, PID);
+	        		char[] response = queryByte(mode, PID);
 	        		if(response!=null){
 	        			try{
 	        				JSONObject result = new JSONObject();
@@ -670,15 +993,15 @@ public class OBD2Dongle {
 	    	}
 	    	
 	    	private boolean updateVehicleSpeed(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x0D;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x0D;
 	        	//Check whether or not query of this PID is possible 
 	        	if(pidAvailable[PID]){
-	        		byte[] response = queryByte(mode, PID);
+	        		char[] response = queryByte(mode, PID);
 	        		if(response!=null){
 	        			try{
 	        				JSONObject result = new JSONObject();
-		        			byte value = response[0];
+		        			char value = response[0];
 		    				result.put("Vehicle speed (km/h)", value);
 		    				sendIntent(SensorNames.VEHICLE_SPEED, result);
 		                    return true;
@@ -692,11 +1015,11 @@ public class OBD2Dongle {
 	    	}
 	    	
 	    	private boolean updateTimingAdvance(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x0E;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x0E;
 	        	//Check whether or not query of this PID is possible 
 	        	if(pidAvailable[PID]){
-	        		byte[] response = queryByte(mode, PID);
+	        		char[] response = queryByte(mode, PID);
 	        		if(response!=null){
 	        			try{
 		        			JSONObject result = new JSONObject();
@@ -714,11 +1037,11 @@ public class OBD2Dongle {
 	    	}
 	    	
 	    	private boolean updateIntakeAirTemperature(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x0F;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x0F;
 	        	//Check whether or not query of this PID is possible 
 	        	if(pidAvailable[PID]){
-	        		byte[] response = queryByte(mode, PID);
+	        		char[] response = queryByte(mode, PID);
 	        		if(response!=null){
 	        			try{
 	        				JSONObject result = new JSONObject();
@@ -736,11 +1059,11 @@ public class OBD2Dongle {
 	    	}
 
 	    	private boolean updateMAFAirFlowRate(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x10;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x10;
 	        	//Check whether or not query of this PID is possible 
 	        	if(pidAvailable[PID]){
-	        		byte[] response = queryByte(mode, PID);
+	        		char[] response = queryByte(mode, PID);
 	        		if(response!=null){
 	        			try{
 	        				JSONObject result = new JSONObject();
@@ -758,11 +1081,11 @@ public class OBD2Dongle {
 	    	}
 	    	
 	    	private boolean updateThrottlePosition(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x11;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x11;
 	        	//Check whether or not query of this PID is possible 
 	        	if(pidAvailable[PID]){
-	        		byte[] response = queryByte(mode, PID);
+	        		char[] response = queryByte(mode, PID);
 	        		if(response!=null){
 	        			try{
 	        				JSONObject result = new JSONObject();
@@ -780,8 +1103,8 @@ public class OBD2Dongle {
 	    	}
 	    	
 	    	private boolean updateCommandedSecondaryAirStatus(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x12;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x12;
 	        	//Check whether or not query of this PID is possible 
 	        	if(pidAvailable[PID]){
 	        		boolean[] response = queryBit(mode, PID);
@@ -824,8 +1147,8 @@ public class OBD2Dongle {
 	    	}
 	    	
 	    	private boolean updateOxygenSensors(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x13;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x13;
 	        	if(pidAvailable[PID]){
 	        		boolean[] sensorspresent = queryBit(mode, PID);
 	        		if(sensorspresent != null){
@@ -833,7 +1156,7 @@ public class OBD2Dongle {
 	        				JSONObject result = new JSONObject();
 		        			for(byte index = 0; index<8; index++){
 		        				if(sensorspresent[index]){
-		        					byte[] current = queryByte(mode, (byte) (PID+index+0x01));
+		        					char[] current = queryByte(mode, (char) (PID+index+0x01));
 		        					if(current!=null){
 			        					int bank = index<4?1:2;
 				        				int sensor = index % 4;
@@ -862,11 +1185,11 @@ public class OBD2Dongle {
 	    	}
 	    	
 	    	private String getOBDStandards(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x1C;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x1C;
 	        	//Check whether or not query of this PID is possible 
 	        	if(pidAvailable[PID]){
-	        		byte[] response = queryByte(mode, PID);
+	        		char[] response = queryByte(mode, PID);
 	        		if(response != null){
 	        			String value;
 	        			switch (response[0]){
@@ -906,8 +1229,8 @@ public class OBD2Dongle {
 	    	}
 	    	
 	    	private boolean updateAuxiliaryInput(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x1E;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x1E;
 	        	if(pidAvailable[PID]){
 	        		boolean[] response = queryBit(mode, PID);
 	        		if(response != null){
@@ -926,10 +1249,10 @@ public class OBD2Dongle {
 	    	}
 
 	    	private boolean updateRunTime(){
-	        	byte mode = (byte) 0x01;
-	        	byte PID = (byte) 0x1F;
+	        	char mode = (char) 0x01;
+	        	char PID = (char) 0x1F;
 	        	if(pidAvailable[PID]){
-	        		byte[] response = queryByte(mode, PID);
+	        		char[] response = queryByte(mode, PID);
 	        		if(response != null){
 	        			try{
 	        				JSONObject result = new JSONObject();
