@@ -6,7 +6,7 @@
     android:variablePadding="false">     
     <item
         android:state_pressed="true"
-        android:drawable="@drawable/wi_syn_pressed" />
+        android:drawable="@drawable/wi_syn_2_pressed" />
     <item 
-        android:drawable="@drawable/wi_syn" /> 
+        android:drawable="@drawable/wi_syn_2" /> 
 </selector>

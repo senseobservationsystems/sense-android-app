@@ -145,7 +145,10 @@ public class ZephyrHxM {
                 // received general data
                 if (buffer[0] == 0x02 && buffer[1] == 0x26 && buffer[2] == 55) {
                     // send heart rate
-                    if (prefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM.HEART_RATE, true)) {
+                    if (prefs
+                            .getBoolean(
+                                    nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM.HEART_RATE,
+                                    true)) {
                         int heartRate = Byte.valueOf(buffer[12]).intValue();
                         if (heartRate < 0)
                             heartRate = (heartRate + 255);
@@ -162,7 +165,8 @@ public class ZephyrHxM {
                         context.startService(heartRateIntent);
                     }
                     // send speed
-                    if (prefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM.SPEED, true)) {
+                    if (prefs.getBoolean(
+                            nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM.SPEED, true)) {
                         int speed = (((int) buffer[52]) | (((int) buffer[53]) << 8));
                         float speedF = (float) speed / 256f;
 
@@ -176,7 +180,8 @@ public class ZephyrHxM {
                         context.startService(speedIntent);
                     }
                     // send distance
-                    if (prefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM.DISTANCE, true)) {
+                    if (prefs.getBoolean(
+                            nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM.DISTANCE, true)) {
                         int distance = (((int) buffer[50]) | (((int) buffer[51]) << 8));
                         float distanceF = (float) distance / 16F;
 
@@ -191,7 +196,8 @@ public class ZephyrHxM {
                         context.startService(distanceIntent);
                     }
                     // send battery charge
-                    if (prefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM.BATTERY, true)) {
+                    if (prefs.getBoolean(
+                            nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM.BATTERY, true)) {
                         Short battery = (short) buffer[11];
 
                         // Log.v(TAG, "Battery charge:" + battery.intValue());
@@ -219,7 +225,8 @@ public class ZephyrHxM {
                         }
                     }
                     // send strides count
-                    if (prefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM.STRIDES, true)) {
+                    if (prefs.getBoolean(
+                            nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM.STRIDES, true)) {
                         Short strides = (short) (0x000000FF & (int) buffer[54]);
                         // Short strides = (short)buffer[54];
 
@@ -673,6 +680,7 @@ public class ZephyrHxM {
     private Handler updateHandler = new Handler(Looper.getMainLooper());
     private int updateInterval = 0;
     private UpdateThread updateThread = null;
+    @SuppressWarnings("unused")
     private long lastSampleTime = 0;
     private HxMConnectThread2_1 hxmConnectThread2_1 = null;
     private HxMConnectThread1_6 hxmConnectThread1_6 = null;
@@ -681,6 +689,7 @@ public class ZephyrHxM {
     private BluetoothSocket btSocket2_1 = null;
     private it.gerdavax.android.bluetooth.BluetoothSocket btSocket1_6 = null;
     private ProcessZephyrHxMMessage processZHxMMessage = null;
+    @SuppressWarnings("unused")
     private boolean notifyOnNoConnection = true;
     private boolean notifyOnEmptyBattery = true;
     private int connectionErrorCount = 0;

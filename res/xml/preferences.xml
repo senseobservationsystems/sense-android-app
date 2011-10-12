@@ -230,6 +230,12 @@
                 </PreferenceCategory>
             </PreferenceScreen>
             <CheckBoxPreference
+                android:title="OBD-II Dongle"
+                android:defaultValue="False"
+                android:enabled="false"
+                android:key="obd2dongle"
+                android:summary="Use a paired OBD-II dongle" />
+            <CheckBoxPreference
                 android:enabled="False"
                 android:title="MyGlucoHealth"
                 android:summary="Use the MyGlucoHealth MBH-BT1"
