@@ -82,7 +82,7 @@ public class SenseWidgetUpdater extends IntentService {
         // start the service if it was not running already
         if (!isBoundOrBinding) {
             // Log.v(TAG, "Try to bind to Sense Platform service");
-            final Intent serviceIntent = new Intent(ISenseService.class.getName());
+            final Intent serviceIntent = new Intent(getString(R.string.action_sense_service));
             isBoundOrBinding = bindService(serviceIntent, serviceConn, 0);
         } else {
             // already bound

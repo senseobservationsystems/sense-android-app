@@ -2,6 +2,7 @@ package nl.sense_os.service.provider;
 
 import java.util.HashMap;
 
+import nl.sense_os.service.R;
 import nl.sense_os.service.SensorData.BufferedData;
 import nl.sense_os.service.SensorData.DataPoint;
 import android.content.ContentProvider;
@@ -136,7 +137,10 @@ public class LocalStorageSql extends ContentProvider {
 
         long rowId = db.insert(VALUES_TABLE_NAME, BufferedData.ACTIVE, values);
         if (rowId > 0) {
-            Uri rowUri = ContentUris.withAppendedId(DataPoint.CONTENT_URI, rowId);
+            Uri contentUri = Uri.parse("content://"
+                    + getContext().getString(R.string.local_storage_authority)
+                    + DataPoint.CONTENT_URI_PATH);
+            Uri rowUri = ContentUris.withAppendedId(contentUri, rowId);
             getContext().getContentResolver().notifyChange(rowUri, null);
             return rowUri;
         }

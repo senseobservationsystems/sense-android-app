@@ -8,6 +8,7 @@ package nl.sense_os.service.phonestate;
 import java.util.List;
 
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensorData.SensorNames;
 import android.content.Context;
@@ -68,7 +69,7 @@ public class ProximitySensor implements SensorEventListener {
             jsonString += "}";
 
             // pass message to the MsgHandler
-            Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
+            Intent i = new Intent(context.getString(R.string.action_sense_new_data));
             i.putExtra(MsgHandler.KEY_SENSOR_NAME, sensorName);
             i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());
             i.putExtra(MsgHandler.KEY_VALUE, jsonString);

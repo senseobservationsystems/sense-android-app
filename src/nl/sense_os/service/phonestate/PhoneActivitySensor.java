@@ -6,6 +6,7 @@
 package nl.sense_os.service.phonestate;
 
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensorData.SensorNames;
 
@@ -49,7 +50,7 @@ public class PhoneActivitySensor {
                         Log.e(TAG, "JSONException preparing screen activity data");
                     }
 
-                    Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
+                    Intent i = new Intent(context.getString(R.string.action_sense_new_data));
                     i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
                     i.putExtra(MsgHandler.KEY_VALUE, json.toString());
                     i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.SCREEN_ACTIVITY);

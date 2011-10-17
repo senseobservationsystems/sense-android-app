@@ -416,7 +416,7 @@ public class SenseService extends Service {
     /**
      * Intent action to force a re-login attempt when the service is started.
      */
-    public static final String ACTION_RELOGIN = "action_relogin";
+    public static final String INTENT_EXTRA_RELOGIN = "action_relogin";
 
     /**
      * Intent action for broadcasts that the service state has changed.
@@ -644,7 +644,8 @@ public class SenseService extends Service {
         stopTransmitAlarms();
 
         // completely stop the MsgHandler service
-        stopService(new Intent(MsgHandler.ACTION_SEND_DATA));
+        stopService(new Intent(getString(R.string.action_sense_new_data)));
+        stopService(new Intent(getString(R.string.action_sense_send_data)));
     }
 
     private void onSampleRateChange() {
@@ -723,7 +724,7 @@ public class SenseService extends Service {
                     // intent is null when the Service is recreated by Android after it was killed
                     boolean relogin = true;
                     if (null != intent) {
-                        relogin = intent.getBooleanExtra(ACTION_RELOGIN, false);
+                        relogin = intent.getBooleanExtra(INTENT_EXTRA_RELOGIN, false);
                     }
 
                     // try to login immediately
@@ -1403,7 +1404,7 @@ public class SenseService extends Service {
             // properly start the service to start sensing
             if (!state.isStarted()) {
                 Log.i(TAG, "Start service...");
-                startService(new Intent(ISenseService.class.getName()));
+                startService(new Intent(getString(R.string.action_sense_service)));
             }
 
         } else {

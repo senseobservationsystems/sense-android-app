@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Vector;
 
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensorData.SensorNames;
 
@@ -81,7 +82,7 @@ public class BluetoothDeviceProximity {
                         deviceJson.put("rssi", rbtDevice.getRSSI());
 
                         // pass device data to the MsgHandler
-                        Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
+                        Intent i = new Intent(context.getString(R.string.action_sense_new_data));
                         i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.BLUETOOTH_DISCOVERY);
                         i.putExtra(MsgHandler.KEY_VALUE, deviceJson.toString());
                         i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
@@ -202,7 +203,7 @@ public class BluetoothDeviceProximity {
                             deviceJson.put("rssi", value.entrySet().iterator().next().getValue());
 
                             // pass message to the MsgHandler
-                            Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
+                            Intent i = new Intent(context.getString(R.string.action_sense_new_data));
                             i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.BLUETOOTH_DISCOVERY);
                             i.putExtra(MsgHandler.KEY_VALUE, deviceJson.toString());
                             i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);

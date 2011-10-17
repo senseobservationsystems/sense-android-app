@@ -5,6 +5,7 @@
  */
 package nl.sense_os.service;
 
+import nl.sense_os.service.SensePrefs.Status;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -13,12 +14,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import nl.sense_os.service.SensePrefs.Status;
-
 public class AliveChecker extends BroadcastReceiver {
 
     private static final String TAG = "Sense AliveChecker";
-    private static final String ACTION = "nl.sense_os.service.CheckAlive";
     private static final int REQ_CODE = 0x0C471FE1;
     private static final int REQ_CODE_WAKEUP = 0x0C471FE2;
 
@@ -33,7 +31,8 @@ public class AliveChecker extends BroadcastReceiver {
         /* if it should be alive, check if it really is still alive */
         if (true == alive) {
             // Log.v(TAG, "Sense should be alive, poke...");
-            final Intent serviceIntent = new Intent(ISenseService.class.getName());
+            final Intent serviceIntent = new Intent(
+                    context.getString(R.string.action_sense_service));
             if (null == context.startService(serviceIntent)) {
                 Log.w(TAG, "Could not start Sense service!");
             }
@@ -50,7 +49,7 @@ public class AliveChecker extends BroadcastReceiver {
      */
     public static void scheduleChecks(Context context) {
 
-        Intent intent = new Intent(AliveChecker.ACTION);
+        Intent intent = new Intent(context.getString(R.string.action_sense_alive_check_alarm));
         AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 
         // try to check pretty often when the phone is awake
@@ -74,7 +73,7 @@ public class AliveChecker extends BroadcastReceiver {
      *            Context to access AlarmManager
      */
     public static void stopChecks(Context context) {
-        Intent intent = new Intent(AliveChecker.ACTION);
+        Intent intent = new Intent(context.getString(R.string.action_sense_alive_check_alarm));
         AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         mgr.cancel(PendingIntent.getBroadcast(context, REQ_CODE, intent, 0));
         mgr.cancel(PendingIntent.getBroadcast(context, REQ_CODE_WAKEUP, intent, 0));

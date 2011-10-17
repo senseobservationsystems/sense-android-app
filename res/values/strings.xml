@@ -28,7 +28,7 @@
     <string name="dialog_update_title">Announcement</string>    
     <string name="dialog_welcome_title">Welcome to Sense</string> 
     <string name="dialog_welcome_msg">The Sense platform gathers data about your activities and shares it with the CommonSense data storage.\n\nOver time, it will learn to recognize your behaviour and current status. This makes it possible for your phone to help you avoid repetitive or stupid tasks, and alert you about interesting events.\n\nPlease login, or register a free CommonSense account.</string>
-    <string name="stat_notify_action">nl.sense_os.app.SenseApp</string>
+    <string name="stat_notify_action">nl.sense_os.platform.SenseApp</string>
     <string name="stat_notify_title">Sense Platform</string>
     <string name="stat_notify_content_off_loggedin">Sensors inactive, logged in as \'%s\'</string> 
     <string name="stat_notify_content_off_loggedout">Sensors inactive, no connection to CommonSense</string>  

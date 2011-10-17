@@ -319,7 +319,7 @@ public class SenseApp extends Activity {
         // start the service if it was not running already
         if (!isServiceBound) {
             // Log.v(TAG, "Try to bind to Sense Platform service");
-            final Intent serviceIntent = new Intent(ISenseService.class.getName());
+            final Intent serviceIntent = new Intent(getString(R.string.action_sense_service));
             isServiceBound = bindService(serviceIntent, serviceConn, BIND_AUTO_CREATE);
         } else {
             // already bound
@@ -482,7 +482,7 @@ public class SenseApp extends Activity {
             }
             break;
         case R.id.prefs_field:
-            startActivity(new Intent("nl.sense_os.app.Settings"));
+            startActivity(new Intent(getString(R.string.action_sense_settings)));
             break;
         default:
             Log.e(TAG, "Unknown button pressed!");
@@ -543,7 +543,7 @@ public class SenseApp extends Activity {
     protected void onDestroy() {
         // stop the service if it is not running anymore
         if (false == ((CheckBox) findViewById(R.id.main_cb)).isChecked()) {
-            stopService(new Intent(ISenseService.class.getName()));
+            stopService(new Intent(getString(R.string.action_sense_service)));
         }
         unbindFromSenseService();
         super.onDestroy();
@@ -556,7 +556,7 @@ public class SenseApp extends Activity {
             showDialog(Dialogs.FAQ);
             break;
         case MenuItems.SETTINGS:
-            startActivity(new Intent("nl.sense_os.app.Settings"));
+            startActivity(new Intent(getString(R.string.action_sense_settings)));
             break;
         case MenuItems.LOGIN:
             showDialog(Dialogs.LOGIN);

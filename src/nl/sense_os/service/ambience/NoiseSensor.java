@@ -9,6 +9,7 @@ import java.io.File;
 import java.math.BigDecimal;
 
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensorData.SensorNames;
 import android.app.AlarmManager;
@@ -143,7 +144,8 @@ public class NoiseSensor extends PhoneStateListener {
                             // Log.v(TAG, "Sampled noise level: " + dB);
 
                             // pass message to the MsgHandler
-                            Intent sensorData = new Intent(MsgHandler.ACTION_NEW_MSG);
+                            Intent sensorData = new Intent(
+                                    context.getString(R.string.action_sense_new_data));
                             sensorData.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.NOISE);
                             sensorData.putExtra(MsgHandler.KEY_VALUE, BigDecimal.valueOf(dB)
                                     .setScale(2, 0).floatValue());
@@ -215,7 +217,8 @@ public class NoiseSensor extends PhoneStateListener {
                                 SoundStreamJob tmp = soundStreamJob;
 
                                 // pass message to the MsgHandler
-                                Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
+                                Intent i = new Intent(context
+                                        .getString(R.string.action_sense_new_data));
                                 i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.MIC);
                                 i.putExtra(MsgHandler.KEY_VALUE, fileName);
                                 i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.FILE);

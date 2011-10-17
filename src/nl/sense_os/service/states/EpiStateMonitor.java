@@ -1,5 +1,6 @@
 package nl.sense_os.service.states;
 
+import nl.sense_os.service.R;
 import nl.sense_os.service.SensorData;
 import nl.sense_os.service.SensorData.DataPoint;
 
@@ -9,6 +10,7 @@ import org.json.JSONObject;
 
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.Uri;
 import android.util.Log;
 
 public class EpiStateMonitor extends AbstractStateMonitor {
@@ -29,13 +31,14 @@ public class EpiStateMonitor extends AbstractStateMonitor {
         Cursor epiData = null;
         try {
             // query fall detector
+            Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
+                    + DataPoint.CONTENT_URI_PATH);
             String[] projection = new String[] { DataPoint._ID, DataPoint.SENSOR_NAME,
                     DataPoint.VALUE, DataPoint.TIMESTAMP };
             String where = DataPoint.SENSOR_NAME + "='" + SensorData.SensorNames.FALL_DETECTOR
                     + "'" + " AND " + DataPoint.TIMESTAMP + ">"
                     + (System.currentTimeMillis() - TIME_RANGE);
-            fallData = getContentResolver().query(DataPoint.CONTENT_URI, projection, where, null,
-                    null);
+            fallData = getContentResolver().query(contentUri, projection, where, null, null);
 
             if (null != fallData && fallData.moveToFirst()) {
                 int result = analyzeFallData(fallData);
@@ -54,8 +57,7 @@ public class EpiStateMonitor extends AbstractStateMonitor {
             where = DataPoint.SENSOR_NAME + "='" + SensorData.SensorNames.ACCELEROMETER_EPI + "'"
                     + " AND " + DataPoint.TIMESTAMP + ">"
                     + (System.currentTimeMillis() - (TIME_RANGE << 1));
-            epiData = getContentResolver().query(DataPoint.CONTENT_URI, projection, where, null,
-                    null);
+            epiData = getContentResolver().query(contentUri, projection, where, null, null);
 
             if (null != epiData && epiData.moveToFirst()) {
                 int result = analyzeEpiData(epiData);

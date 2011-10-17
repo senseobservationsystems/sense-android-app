@@ -26,13 +26,13 @@ public class BootRx extends BroadcastReceiver {
         // automatically start the Sense service if this is set in the preferences
         if (true == autostart) {
             Log.i(TAG, "Autostart Sense Platform service");
-            Intent startService = new Intent("nl.sense_os.service.ISenseService");
+            Intent startService = new Intent(context.getString(R.string.action_sense_service));
             ComponentName service = context.startService(startService);
             if (null == service) {
                 Log.w(TAG, "Failed to start Sense Platform service");
             }
         } else {
-            Log.e(TAG, "Sense Platform service should not be started at boot");
+            // Log.d(TAG, "Sense Platform service should not be started at boot");
         }
     }
 }

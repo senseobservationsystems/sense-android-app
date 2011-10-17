@@ -173,8 +173,9 @@ public class MsgHandler extends Service {
 
                 // if un-authorized: relogin
                 if (statusCode.compareToIgnoreCase("403") == 0) {
-                    final Intent serviceIntent = new Intent(ISenseService.class.getName());
-                    serviceIntent.putExtra(SenseService.ACTION_RELOGIN, true);
+                    final Intent serviceIntent = new Intent(
+                            getString(R.string.action_sense_service));
+                    serviceIntent.putExtra(SenseService.INTENT_EXTRA_RELOGIN, true);
                     context.startService(serviceIntent);
                 }
 
@@ -304,8 +305,9 @@ public class MsgHandler extends Service {
         @Override
         protected Cursor getUnsentData() {
             String where = DataPoint.TRANSMIT_STATE + "=0";
-            Cursor unsent = getContentResolver().query(DataPoint.CONTENT_PERSISTED_URI, null,
-                    where, null, null);
+            Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
+                    + DataPoint.CONTENT_PERSISTED_URI_PATH);
+            Cursor unsent = getContentResolver().query(contentUri, null, where, null, null);
             if (null != unsent && unsent.moveToFirst()) {
                 Log.v(TAG, "Found " + unsent.getCount()
                         + " unsent data points in persistant storage");
@@ -357,8 +359,10 @@ public class MsgHandler extends Service {
                         + max;
 
                 // delete the data from the storage
-                int deleted = getContentResolver().delete(DataPoint.CONTENT_PERSISTED_URI, where,
-                        null);
+                Uri contentUri = Uri.parse("content://"
+                        + getString(R.string.local_storage_authority)
+                        + DataPoint.CONTENT_PERSISTED_URI_PATH);
+                int deleted = getContentResolver().delete(contentUri, where, null);
                 if (deleted == dataPoints.length()) {
                     Log.v(TAG, "Deleted all " + deleted + " '" + sensorName
                             + "' points from the persistant storage");
@@ -385,8 +389,9 @@ public class MsgHandler extends Service {
         @Override
         protected Cursor getUnsentData() {
             String where = DataPoint.TRANSMIT_STATE + "=0";
-            Cursor unsent = getContentResolver().query(DataPoint.CONTENT_URI, null, where, null,
-                    null);
+            Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
+                    + DataPoint.CONTENT_URI_PATH);
+            Cursor unsent = getContentResolver().query(contentUri, null, where, null, null);
             if (null != unsent && unsent.moveToFirst()) {
                 Log.v(TAG, "Found " + unsent.getCount() + " unsent data points in local storage");
                 return unsent;
@@ -440,8 +445,9 @@ public class MsgHandler extends Service {
                         + DataPoint.TIMESTAMP + ">=" + min + " AND " + DataPoint.TIMESTAMP + " <="
                         + max;
 
-                int updated = getContentResolver().update(DataPoint.CONTENT_URI, values, where,
-                        null);
+                Uri contentUri = Uri.parse("content://"
+                        + getString(R.string.local_storage_authority) + DataPoint.CONTENT_URI_PATH);
+                int updated = getContentResolver().update(contentUri, values, where, null);
                 if (updated == dataPoints.length()) {
                     Log.v(TAG, "Updated all " + updated + " '" + sensorName
                             + "' data points in the local storage");
@@ -514,8 +520,9 @@ public class MsgHandler extends Service {
                     // if un-authorized: relogin
                     if (response != null
                             && response.get("http response code").compareToIgnoreCase("403") == 0) {
-                        final Intent serviceIntent = new Intent(ISenseService.class.getName());
-                        serviceIntent.putExtra(SenseService.ACTION_RELOGIN, true);
+                        final Intent serviceIntent = new Intent(
+                                getString(R.string.action_sense_service));
+                        serviceIntent.putExtra(SenseService.INTENT_EXTRA_RELOGIN, true);
                         context.startService(serviceIntent);
                     }
 
@@ -568,7 +575,9 @@ public class MsgHandler extends Service {
                     + DataPoint.TIMESTAMP + ">=" + min + " AND " + DataPoint.TIMESTAMP + " <="
                     + max;
 
-            int updated = getContentResolver().update(DataPoint.CONTENT_URI, values, where, null);
+            Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
+                    + DataPoint.CONTENT_URI_PATH);
+            int updated = getContentResolver().update(contentUri, values, where, null);
             if (updated == dataPoints.length()) {
                 // Log.v(TAG, "Updated all " + updated + " rows in the local storage");
             } else {
@@ -737,10 +746,14 @@ public class MsgHandler extends Service {
             String where = DataPoint.SENSOR_NAME + "='" + sensorName + "'" + " AND "
                     + DataPoint.TIMESTAMP + "=" + timestamp;
 
-            int updated = getContentResolver().update(DataPoint.CONTENT_URI, values, where, null);
+            Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
+                    + DataPoint.CONTENT_URI_PATH);
+            int updated = getContentResolver().update(contentUri, values, where, null);
             int deleted = 0;
             if (0 == updated) {
-                deleted = getContentResolver().delete(DataPoint.CONTENT_PERSISTED_URI, where, null);
+                contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
+                        + DataPoint.CONTENT_PERSISTED_URI_PATH);
+                deleted = getContentResolver().delete(contentUri, where, null);
             }
             if (deleted == 1 || updated == 1) {
                 // ok
@@ -759,9 +772,6 @@ public class MsgHandler extends Service {
     }
 
     private static final String TAG = "Sense MsgHandler";
-    public static final String ACTION_NEW_MSG = "nl.sense_os.app.MsgHandler.NEW_MSG";
-    public static final String ACTION_NEW_FILE = "nl.sense_os.app.MsgHandler.NEW_FILE";
-    public static final String ACTION_SEND_DATA = "nl.sense_os.app.MsgHandler.SEND_DATA";
     public static final String KEY_DATA_TYPE = "data_type";
     public static final String KEY_SENSOR_DEVICE = "sensor_device";
     public static final String KEY_SENSOR_NAME = "sensor_name";
@@ -781,9 +791,10 @@ public class MsgHandler extends Service {
     private void emptyBufferToDb() {
         Log.v(TAG, "Emptying buffer to persistant database...");
 
+        Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
+                + DataPoint.CONTENT_URI_PATH + "?persist=true");
         String where = DataPoint.TRANSMIT_STATE + "=" + 0;
-        getContentResolver().update(Uri.parse(DataPoint.CONTENT_URI.toString() + "?persist=true"),
-                new ContentValues(), where, null);
+        getContentResolver().update(contentUri, new ContentValues(), where, null);
     }
 
     /**
@@ -811,9 +822,9 @@ public class MsgHandler extends Service {
      * message or if it wants to send data to CommonSense.
      */
     private void handleIntent(Intent intent, int flags, int startId) {
-        if (ACTION_NEW_MSG.equals(intent.getAction())) {
+        if (getString(R.string.action_sense_new_data).equals(intent.getAction())) {
             handleNewMsgIntent(intent);
-        } else if (ACTION_SEND_DATA.equals(intent.getAction())) {
+        } else if (getString(R.string.action_sense_send_data).equals(intent.getAction())) {
             handleSendIntent(intent);
         } else {
             Log.e(TAG, "Unexpected intent action: " + intent.getAction());
@@ -921,7 +932,9 @@ public class MsgHandler extends Service {
         values.put(DataPoint.VALUE, value);
         values.put(DataPoint.TRANSMIT_STATE, 0);
 
-        getContentResolver().insert(DataPoint.CONTENT_URI, values);
+        Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
+                + DataPoint.CONTENT_URI_PATH);
+        getContentResolver().insert(contentUri, values);
     }
 
     /**

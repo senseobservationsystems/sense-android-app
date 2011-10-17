@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import nl.sense_os.service.R;
 import nl.sense_os.service.SenseApi;
 import nl.sense_os.service.SensePrefs;
 import nl.sense_os.service.SensePrefs.Auth;
@@ -20,7 +21,6 @@ import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -90,7 +90,7 @@ public class LocalStorage extends ContentProvider {
 
     private static final String TAG = "Sense LocalStorage";
 
-    public static final String AUTHORITY = "nl.sense_os.service.provider.LocalStorage";
+    // public static final String AUTHORITY = "nl.sense_os.service.provider.LocalStorage";
     private static final String TABLE_VOLATILE = "recent_values";
     private static final String TABLE_PERSISTENT = "persisted_values";
     private static final String TABLE_REMOTE = "remote_values";
@@ -103,21 +103,24 @@ public class LocalStorage extends ContentProvider {
 
     private DbHelper dbHelper;
 
-    private static UriMatcher uriMatcher;
     private final static Map<String, ContentValues[]> storage = new HashMap<String, ContentValues[]>();
     private final static Map<String, Integer> pointers = new HashMap<String, Integer>();
 
-    static {
-        // set up URI matcher
-        uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
-        uriMatcher.addURI(AUTHORITY, TABLE_VOLATILE, VOLATILE_VALUES_URI);
-        uriMatcher.addURI(AUTHORITY, TABLE_PERSISTENT, PERSISTED_VALUES_URI);
-        uriMatcher.addURI(AUTHORITY, TABLE_REMOTE, REMOTE_VALUES_URI);
+    private int matchUri(Uri uri) {
+        if (DataPoint.CONTENT_URI_PATH.equals(uri.getPath())) {
+            return VOLATILE_VALUES_URI;
+        } else if (DataPoint.CONTENT_PERSISTED_URI_PATH.equals(uri.getPath())) {
+            return PERSISTED_VALUES_URI;
+        } else if (DataPoint.CONTENT_REMOTE_URI_PATH.equals(uri.getPath())) {
+            return REMOTE_VALUES_URI;
+        } else {
+            return -1;
+        }
     }
 
     @Override
     public int delete(Uri uri, String where, String[] selectionArgs) {
-        switch (uriMatcher.match(uri)) {
+        switch (matchUri(uri)) {
         case VOLATILE_VALUES_URI:
             throw new IllegalArgumentException("Cannot delete recent data points!");
         case PERSISTED_VALUES_URI:
@@ -134,7 +137,7 @@ public class LocalStorage extends ContentProvider {
     @Override
     public String getType(Uri uri) {
         Log.v(TAG, "Get content type...");
-        int uriType = uriMatcher.match(uri);
+        int uriType = matchUri(uri);
         if (uriType == VOLATILE_VALUES_URI || uriType == PERSISTED_VALUES_URI
                 || uriType == REMOTE_VALUES_URI) {
             return DataPoint.CONTENT_TYPE;
@@ -147,7 +150,7 @@ public class LocalStorage extends ContentProvider {
     public Uri insert(Uri uri, ContentValues values) {
 
         // check URI
-        switch (uriMatcher.match(uri)) {
+        switch (matchUri(uri)) {
         case VOLATILE_VALUES_URI:
             break;
         case PERSISTED_VALUES_URI:
@@ -208,7 +211,10 @@ public class LocalStorage extends ContentProvider {
         pointers.put(sensorName, index);
 
         // notify any listeners (does this work properly?)
-        Uri rowUri = ContentUris.withAppendedId(DataPoint.CONTENT_URI, count - 1);
+        Uri contentUri = Uri.parse("content://"
+                + getContext().getString(R.string.local_storage_authority)
+                + DataPoint.CONTENT_URI_PATH);
+        Uri rowUri = ContentUris.withAppendedId(contentUri, count - 1);
         getContext().getContentResolver().notifyChange(rowUri, null);
 
         return rowUri;
@@ -246,7 +252,7 @@ public class LocalStorage extends ContentProvider {
         }
 
         // query based on URI
-        switch (uriMatcher.match(uri)) {
+        switch (matchUri(uri)) {
         case VOLATILE_VALUES_URI:
             try {
                 return queryVolatile(uri, projection, where, selectionArgs, sortOrder);
@@ -271,28 +277,6 @@ public class LocalStorage extends ContentProvider {
         default:
             throw new IllegalArgumentException("Unknown URI " + uri);
         }
-    }
-
-    private Cursor queryVolatile(Uri uri, String[] projection, String where,
-            String[] selectionArgs, String sortOrder) {
-
-        // do selection
-        ContentValues[] selection = select(where, selectionArgs);
-
-        // create new cursor with the query result
-        MatrixCursor result = new MatrixCursor(projection);
-        Object[] row = null;
-        for (ContentValues dataPoint : selection) {
-            row = new Object[projection.length];
-            for (int i = 0; i < projection.length; i++) {
-                row[i] = dataPoint.get(projection[i]);
-            }
-            result.addRow(row);
-        }
-
-        // Log.d(TAG, "query result: " + result.getCount() + " data points.");
-
-        return result;
     }
 
     private Cursor queryPersistent(Uri uri, String[] projection, String where,
@@ -365,6 +349,28 @@ public class LocalStorage extends ContentProvider {
         return result;
     }
 
+    private Cursor queryVolatile(Uri uri, String[] projection, String where,
+            String[] selectionArgs, String sortOrder) {
+
+        // do selection
+        ContentValues[] selection = select(where, selectionArgs);
+
+        // create new cursor with the query result
+        MatrixCursor result = new MatrixCursor(projection);
+        Object[] row = null;
+        for (ContentValues dataPoint : selection) {
+            row = new Object[projection.length];
+            for (int i = 0; i < projection.length; i++) {
+                row[i] = dataPoint.get(projection[i]);
+            }
+            result.addRow(row);
+        }
+
+        // Log.d(TAG, "query result: " + result.getCount() + " data points.");
+
+        return result;
+    }
+
     private synchronized ContentValues[] select(String where, String[] selectionArgs) {
 
         // try to parse the selection criteria
@@ -413,7 +419,7 @@ public class LocalStorage extends ContentProvider {
         // Log.v(TAG, "Update local storage...");
 
         // check URI
-        switch (uriMatcher.match(uri)) {
+        switch (matchUri(uri)) {
         case VOLATILE_VALUES_URI:
             break;
         case PERSISTED_VALUES_URI:

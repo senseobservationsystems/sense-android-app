@@ -154,7 +154,8 @@ public class ZephyrHxM {
                             heartRate = (heartRate + 255);
 
                         // Log.v(TAG, "Heart rate:" + heartRate);
-                        Intent heartRateIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
+                        Intent heartRateIntent = new Intent(
+                                context.getString(R.string.action_sense_new_data));
                         heartRateIntent
                                 .putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.HEART_RATE);
                         heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
@@ -171,7 +172,8 @@ public class ZephyrHxM {
                         float speedF = (float) speed / 256f;
 
                         // Log.v(TAG, "Speed:" + speedF);
-                        Intent speedIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
+                        Intent speedIntent = new Intent(
+                                context.getString(R.string.action_sense_new_data));
                         speedIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.SPEED);
                         speedIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
                         speedIntent.putExtra(MsgHandler.KEY_VALUE, speedF);
@@ -186,7 +188,8 @@ public class ZephyrHxM {
                         float distanceF = (float) distance / 16F;
 
                         // Log.v(TAG, "Distance:" + distanceF);
-                        Intent distanceIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
+                        Intent distanceIntent = new Intent(
+                                context.getString(R.string.action_sense_new_data));
                         distanceIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.DISTANCE);
                         distanceIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
                         distanceIntent.putExtra(MsgHandler.KEY_VALUE, distanceF);
@@ -201,7 +204,8 @@ public class ZephyrHxM {
                         Short battery = (short) buffer[11];
 
                         // Log.v(TAG, "Battery charge:" + battery.intValue());
-                        Intent batteryIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
+                        Intent batteryIntent = new Intent(
+                                context.getString(R.string.action_sense_new_data));
                         batteryIntent.putExtra(MsgHandler.KEY_SENSOR_NAME,
                                 SensorNames.BATTERY_CHARGE);
                         batteryIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
@@ -231,7 +235,8 @@ public class ZephyrHxM {
                         // Short strides = (short)buffer[54];
 
                         // Log.v(TAG, "Battery charge:" + battery.intValue());
-                        Intent stridesIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
+                        Intent stridesIntent = new Intent(
+                                context.getString(R.string.action_sense_new_data));
                         stridesIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.STRIDES);
                         stridesIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
                         stridesIntent.putExtra(MsgHandler.KEY_VALUE, strides.intValue());
@@ -662,7 +667,7 @@ public class ZephyrHxM {
         Notification note = new Notification(icon, tickerText, when);
         note.defaults |= Notification.FLAG_ONLY_ALERT_ONCE | Notification.DEFAULT_ALL;
         note.flags |= Notification.FLAG_AUTO_CANCEL | Notification.FLAG_ONLY_ALERT_ONCE;
-        final Intent notifIntent = new Intent("nl.sense_os.app.SenseApp");
+        final Intent notifIntent = new Intent(context.getString(R.string.action_sense_app));
         notifIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notifIntent, 0);
         final CharSequence contentTitle = "Sense Platform";

@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensePrefs;
 import nl.sense_os.service.SensePrefs.Main.Motion;
@@ -229,7 +230,7 @@ public class MotionSensor implements SensorEventListener {
             // send the stuff
             // Log.v(TAG, "Transmit accelerodata: " + dataBuffer[sensor.getType()].length());
             // pass message to the MsgHandler
-            Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
+            Intent i = new Intent(context.getString(R.string.action_sense_new_data));
             i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.ACCELEROMETER_EPI);
             i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());
             i.putExtra(
@@ -458,7 +459,7 @@ public class MotionSensor implements SensorEventListener {
             float value = BigDecimal.valueOf(avgSpeedChange).setScale(3, 0).floatValue();
 
             // prepare intent to send to MsgHandler
-            Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
+            Intent i = new Intent(context.getString(R.string.action_sense_new_data));
             i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.MOTION_ENERGY);
             i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, SensorNames.MOTION_ENERGY);
             i.putExtra(MsgHandler.KEY_VALUE, value);
@@ -472,7 +473,7 @@ public class MotionSensor implements SensorEventListener {
     }
 
     private void sendFallMessage(boolean fall) {
-        Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
+        Intent i = new Intent(context.getString(R.string.action_sense_new_data));
         i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.FALL_DETECTOR);
         i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, fallDetector.demo ? "demo fall" : "human fall");
         i.putExtra(MsgHandler.KEY_VALUE, fall);
@@ -482,7 +483,7 @@ public class MotionSensor implements SensorEventListener {
     }
 
     private void sendNormalMessage(Sensor sensor, String sensorName, JSONObject json) {
-        Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
+        Intent i = new Intent(context.getString(R.string.action_sense_new_data));
         i.putExtra(MsgHandler.KEY_SENSOR_NAME, sensorName);
         i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());
         i.putExtra(MsgHandler.KEY_VALUE, json.toString());
