@@ -418,73 +418,63 @@ public class SenseApp extends Activity {
     public void onClick(View v) {
 
         boolean oldState = false;
-        switch (v.getId()) {
-        case R.id.main_field:
+        if (v.getId() == R.id.main_field) {
             final CheckBox cb = (CheckBox) findViewById(R.id.main_cb);
             oldState = cb.isChecked();
             // cb.setChecked(!oldState);
             toggleMain(!oldState);
-            break;
-        case R.id.device_prox_field:
+        } else if (v.getId() == R.id.device_prox_field) {
             final CheckBox devProx = (CheckBox) findViewById(R.id.device_prox_cb);
             if (devProx.isEnabled()) {
                 oldState = devProx.isChecked();
                 // devProx.setChecked(!oldState);
                 toggleDeviceProx(!oldState);
             }
-            break;
-        case R.id.location_field:
+        } else if (v.getId() == R.id.location_field) {
             final CheckBox location = (CheckBox) findViewById(R.id.location_cb);
             if (location.isEnabled()) {
                 oldState = location.isChecked();
                 // location.setChecked(!oldState);
                 toggleLocation(!oldState);
             }
-            break;
-        case R.id.motion_field:
+        } else if (v.getId() == R.id.motion_field) {
             final CheckBox motion = (CheckBox) findViewById(R.id.motion_cb);
             if (motion.isEnabled()) {
                 oldState = motion.isChecked();
                 // motion.setChecked(!oldState);
                 toggleMotion(!oldState);
             }
-            break;
-        case R.id.external_sensor_field:
+        } else if (v.getId() == R.id.external_sensor_field) {
             final CheckBox external = (CheckBox) findViewById(R.id.external_sensor_cb);
             if (external.isEnabled()) {
                 oldState = external.isChecked();
                 // external.setChecked(!oldState);
                 toggleExternalSensors(!oldState);
             }
-            break;
-        case R.id.ambience_field:
+        } else if (v.getId() == R.id.ambience_field) {
             final CheckBox ambience = (CheckBox) findViewById(R.id.ambience_cb);
             if (ambience.isEnabled()) {
                 oldState = ambience.isChecked();
                 // ambience.setChecked(!oldState);
                 toggleAmbience(!oldState);
             }
-            break;
-        case R.id.phonestate_field:
+        } else if (v.getId() == R.id.phonestate_field) {
             final CheckBox phoneState = (CheckBox) findViewById(R.id.phonestate_cb);
             if (phoneState.isEnabled()) {
                 oldState = phoneState.isChecked();
                 // phoneState.setChecked(!oldState);
                 togglePhoneState(!oldState);
             }
-            break;
-        case R.id.popquiz_field:
+        } else if (v.getId() == R.id.popquiz_field) {
             final CheckBox quiz = (CheckBox) findViewById(R.id.popquiz_cb);
             if (quiz.isEnabled()) {
                 oldState = quiz.isChecked();
                 // quiz.setChecked(!oldState);
                 togglePopQuiz(!oldState);
             }
-            break;
-        case R.id.prefs_field:
+        } else if (v.getId() == R.id.prefs_field) {
             startActivity(new Intent(getString(R.string.action_sense_settings)));
-            break;
-        default:
+        } else {
             Log.e(TAG, "Unknown button pressed!");
         }
     }
