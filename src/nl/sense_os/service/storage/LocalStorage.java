@@ -1,23 +1,11 @@
-package nl.sense_os.service.provider;
+package nl.sense_os.service.storage;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import nl.sense_os.service.R;
-import nl.sense_os.service.SenseApi;
-import nl.sense_os.service.SensePrefs;
-import nl.sense_os.service.SensePrefs.Auth;
-import nl.sense_os.service.SenseUrls;
 import nl.sense_os.service.SensorData.DataPoint;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -30,10 +18,9 @@ import android.provider.BaseColumns;
 import android.util.Log;
 
 /**
- * ContentProvider that encapsulates recent sensor data. The data is stored in the devices RAM
- * memory, so this implementation is more energy efficient than storing everything in flash. This
- * does mean that parsing the selection queries is quite a challenge. Only a very limited set of
- * queries will work:
+ * Storage for recent sensor data. The data is stored in the devices RAM memory, so this
+ * implementation is more energy efficient than storing everything in flash. This does mean that
+ * parsing the selection queries is quite a challenge. Only a very limited set of queries will work:
  * <ul>
  * <li>sensor_name = 'foo'</li>
  * <li>sensor_name != 'foo'</li>
@@ -49,7 +36,7 @@ import android.util.Log;
  * @see ParserUtils
  * @see DataPoint
  */
-public class LocalStorage extends ContentProvider {
+public class LocalStorage {
 
     /**
      * Inner class that handles the creation of the SQLite3 database with the desired tables and
@@ -83,7 +70,7 @@ public class LocalStorage extends ContentProvider {
             Log.w(TAG, "Upgrading '" + DATABASE_NAME + "' database from version " + oldVers
                     + " to " + newVers + ", which will destroy all old data");
 
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_VOLATILE);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_PERSISTENT);
             onCreate(db);
         }
     }
@@ -101,24 +88,34 @@ public class LocalStorage extends ContentProvider {
 
     private static long count = 0;
 
+    private static LocalStorage instance;
+
+    private Context context;
     private DbHelper dbHelper;
 
     private final static Map<String, ContentValues[]> storage = new HashMap<String, ContentValues[]>();
     private final static Map<String, Integer> pointers = new HashMap<String, Integer>();
 
-    private int matchUri(Uri uri) {
-        if (DataPoint.CONTENT_URI_PATH.equals(uri.getPath())) {
-            return VOLATILE_VALUES_URI;
-        } else if (DataPoint.CONTENT_PERSISTED_URI_PATH.equals(uri.getPath())) {
-            return PERSISTED_VALUES_URI;
-        } else if (DataPoint.CONTENT_REMOTE_URI_PATH.equals(uri.getPath())) {
-            return REMOTE_VALUES_URI;
+    /**
+     * @param context
+     *            Context for lazy creating the LocalStorage.
+     * @return Singleton instance of the LocalStorage
+     */
+    public static LocalStorage getInstance(Context context) {
+        if (null != instance) {
+            return instance;
         } else {
-            return -1;
+            instance = new LocalStorage(context);
+            return instance;
         }
     }
 
-    @Override
+    private LocalStorage(Context context) {
+        Log.v(TAG, "Create local storage...");
+        dbHelper = new DbHelper(context);
+        this.context = context;
+    }
+
     public int delete(Uri uri, String where, String[] selectionArgs) {
         switch (matchUri(uri)) {
         case VOLATILE_VALUES_URI:
@@ -134,7 +131,6 @@ public class LocalStorage extends ContentProvider {
         }
     }
 
-    @Override
     public String getType(Uri uri) {
         Log.v(TAG, "Get content type...");
         int uriType = matchUri(uri);
@@ -146,7 +142,6 @@ public class LocalStorage extends ContentProvider {
         }
     }
 
-    @Override
     public Uri insert(Uri uri, ContentValues values) {
 
         // check URI
@@ -212,19 +207,23 @@ public class LocalStorage extends ContentProvider {
 
         // notify any listeners (does this work properly?)
         Uri contentUri = Uri.parse("content://"
-                + getContext().getString(R.string.local_storage_authority)
-                + DataPoint.CONTENT_URI_PATH);
+                + context.getString(R.string.local_storage_authority) + DataPoint.CONTENT_URI_PATH);
         Uri rowUri = ContentUris.withAppendedId(contentUri, count - 1);
-        getContext().getContentResolver().notifyChange(rowUri, null);
+        context.getContentResolver().notifyChange(rowUri, null);
 
         return rowUri;
     }
 
-    @Override
-    public boolean onCreate() {
-        Log.v(TAG, "Create local storage...");
-        dbHelper = new DbHelper(getContext());
-        return true;
+    private int matchUri(Uri uri) {
+        if (DataPoint.CONTENT_URI_PATH.equals(uri.getPath())) {
+            return VOLATILE_VALUES_URI;
+        } else if (DataPoint.CONTENT_PERSISTED_URI_PATH.equals(uri.getPath())) {
+            return PERSISTED_VALUES_URI;
+        } else if (DataPoint.CONTENT_REMOTE_URI_PATH.equals(uri.getPath())) {
+            return REMOTE_VALUES_URI;
+        } else {
+            return -1;
+        }
     }
 
     private void persist(ContentValues[] storedValues) {
@@ -239,7 +238,6 @@ public class LocalStorage extends ContentProvider {
         }
     }
 
-    @Override
     public Cursor query(Uri uri, String[] projection, String where, String[] selectionArgs,
             String sortOrder) {
         // Log.v(TAG, "Query local storage...");
@@ -268,12 +266,13 @@ public class LocalStorage extends ContentProvider {
                 return null;
             }
         case REMOTE_VALUES_URI:
-            try {
-                return queryRemote(uri, projection, where, selectionArgs, sortOrder);
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to query the CommonSense data points", e);
-                return null;
-            }
+            // try {
+            Log.d(TAG, "Querying remote data points is not supported!");
+            // return queryRemote(uri, projection, where, selectionArgs, sortOrder);
+            // } catch (Exception e) {
+            // Log.e(TAG, "Failed to query the CommonSense data points", e);
+            return null;
+            // }
         default:
             throw new IllegalArgumentException("Unknown URI " + uri);
         }
@@ -287,67 +286,46 @@ public class LocalStorage extends ContentProvider {
         return persistentResult;
     }
 
-    private Cursor queryRemote(Uri uri, String[] projection, String where, String[] selectionArgs,
-            String sortOrder) throws JSONException, URISyntaxException {
-        // Log.v(TAG, "Query remote data points");
-
-        // try to parse the selection criteria
-        List<String> sensorNames = ParserUtils.getSelectedSensors(storage.keySet(), where,
-                selectionArgs);
-        long[] timeRangeSelect = ParserUtils.getSelectedTimeRange(where, selectionArgs);
-
-        if (sensorNames.size() != 1) {
-            throw new IllegalArgumentException("Can only query CommonSense for a single sensor");
-        }
-
-        JSONArray sensors = SenseApi.getAllSensors(getContext());
-
-        if (sensors == null) {
-            Log.w(TAG, "Cannot access sensors from CommonSense");
-            return null;
-        }
-
-        // check if the requested sensor is in the list
-        String id = null;
-        for (int i = 0; i < sensors.length(); i++) {
-            JSONObject sensor = sensors.getJSONObject(i);
-            if (sensor.getString("name").equalsIgnoreCase(sensorNames.get(0))) {
-                // found the right sensor
-                if (null != id) {
-                    Log.w(TAG, "Multiple sensors with the same name");
-                }
-                id = sensor.getString("id");
-            }
-        }
-
-        // get the data for the sensor
-        URI remoteUri = new URI(SenseUrls.SENSOR_DATA.replace("<id>", id) + "?start_date="
-                + (timeRangeSelect[0] / 1000d) + "&end_date=" + (timeRangeSelect[1] / 1000d));
-        String cookie = getContext().getSharedPreferences(SensePrefs.AUTH_PREFS,
-                Context.MODE_PRIVATE).getString(Auth.LOGIN_COOKIE, null);
-        JSONObject response = SenseApi.getJsonObject(getContext(), remoteUri, cookie);
-        JSONArray data = response.getJSONArray("data");
-
-        // fill the result Cursor with sensor data
-        MatrixCursor result = new MatrixCursor(projection, data.length());
-        for (int i = 0; i < data.length(); i++) {
-            Object[] row = new Object[projection.length];
-            JSONObject jsonDataPoint = data.getJSONObject(i);
-            for (int j = 0; j < projection.length; j++) {
-                if (projection[j].equals(DataPoint.VALUE)) {
-                    row[j] = jsonDataPoint.getString("value");
-                } else if (projection[j].equals(DataPoint.TIMESTAMP)) {
-                    double rawDate = jsonDataPoint.getDouble("date");
-                    row[j] = Math.round(rawDate * 1000d);
-                } else if (projection[j].equals(DataPoint.SENSOR_NAME)) {
-                    row[j] = sensorNames.get(0);
-                }
-            }
-            result.addRow(row);
-        }
-
-        return result;
-    }
+    /*
+     * private Cursor queryRemote(Uri uri, String[] projection, String where, String[]
+     * selectionArgs, String sortOrder) throws JSONException, URISyntaxException { // Log.v(TAG,
+     * "Query remote data points");
+     * 
+     * // try to parse the selection criteria List<String> sensorNames =
+     * ParserUtils.getSelectedSensors(storage.keySet(), where, selectionArgs); long[]
+     * timeRangeSelect = ParserUtils.getSelectedTimeRange(where, selectionArgs);
+     * 
+     * if (sensorNames.size() != 1) { throw new
+     * IllegalArgumentException("Can only query CommonSense for a single sensor"); }
+     * 
+     * JSONArray sensors = SenseApi.getAllSensors(context);
+     * 
+     * if (sensors == null) { Log.w(TAG, "Cannot access sensors from CommonSense"); return null; }
+     * 
+     * // check if the requested sensor is in the list String id = null; for (int i = 0; i <
+     * sensors.length(); i++) { JSONObject sensor = sensors.getJSONObject(i); if
+     * (sensor.getString("name").equalsIgnoreCase(sensorNames.get(0))) { // found the right sensor
+     * if (null != id) { Log.w(TAG, "Multiple sensors with the same name"); } id =
+     * sensor.getString("id"); } }
+     * 
+     * // get the data for the sensor URI remoteUri = new URI(SenseUrls.SENSOR_DATA.replace("<id>",
+     * id) + "?start_date=" + timeRangeSelect[0] / 1000d + "&end_date=" + timeRangeSelect[1] /
+     * 1000d); String cookie = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
+     * Context.MODE_PRIVATE) .getString(Auth.LOGIN_COOKIE, null); JSONObject response =
+     * SenseApi.getJsonObject(context, remoteUri, cookie); JSONArray data =
+     * response.getJSONArray("data");
+     * 
+     * // fill the result Cursor with sensor data MatrixCursor result = new MatrixCursor(projection,
+     * data.length()); for (int i = 0; i < data.length(); i++) { Object[] row = new
+     * Object[projection.length]; JSONObject jsonDataPoint = data.getJSONObject(i); for (int j = 0;
+     * j < projection.length; j++) { if (projection[j].equals(DataPoint.VALUE)) { row[j] =
+     * jsonDataPoint.getString("value"); } else if (projection[j].equals(DataPoint.TIMESTAMP)) {
+     * double rawDate = jsonDataPoint.getDouble("date"); row[j] = Math.round(rawDate * 1000d); }
+     * else if (projection[j].equals(DataPoint.SENSOR_NAME)) { row[j] = sensorNames.get(0); } }
+     * result.addRow(row); }
+     * 
+     * return result; }
+     */
 
     private Cursor queryVolatile(Uri uri, String[] projection, String where,
             String[] selectionArgs, String sortOrder) {
@@ -414,7 +392,6 @@ public class LocalStorage extends ContentProvider {
         return result;
     }
 
-    @Override
     public int update(Uri uri, ContentValues newValues, String where, String[] selectionArgs) {
         // Log.v(TAG, "Update local storage...");
 
@@ -449,7 +426,7 @@ public class LocalStorage extends ContentProvider {
         }
 
         // notify content observers
-        getContext().getContentResolver().notifyChange(uri, null);
+        context.getContentResolver().notifyChange(uri, null);
 
         return result;
     }

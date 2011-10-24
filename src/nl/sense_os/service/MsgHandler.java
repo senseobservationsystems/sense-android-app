@@ -23,6 +23,7 @@ import java.util.Map.Entry;
 import nl.sense_os.service.SensePrefs.Auth;
 import nl.sense_os.service.SensePrefs.Main;
 import nl.sense_os.service.SensorData.DataPoint;
+import nl.sense_os.service.storage.LocalStorage;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -304,16 +305,24 @@ public class MsgHandler extends Service {
 
         @Override
         protected Cursor getUnsentData() {
-            String where = DataPoint.TRANSMIT_STATE + "=0";
-            Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
-                    + DataPoint.CONTENT_PERSISTED_URI_PATH);
-            Cursor unsent = getContentResolver().query(contentUri, null, where, null, null);
-            if (null != unsent && unsent.moveToFirst()) {
-                Log.v(TAG, "Found " + unsent.getCount()
-                        + " unsent data points in persistant storage");
-                return unsent;
-            } else {
-                Log.v(TAG, "No unsent data points in the persistant storage");
+            try {
+                String where = DataPoint.TRANSMIT_STATE + "=0";
+                Uri contentUri = Uri.parse("content://"
+                        + getString(R.string.local_storage_authority)
+                        + DataPoint.CONTENT_PERSISTED_URI_PATH);
+                Cursor unsent = LocalStorage.getInstance(MsgHandler.this).query(contentUri, null,
+                        where, null, null);
+
+                if (null != unsent && unsent.moveToFirst()) {
+                    Log.v(TAG, "Found " + unsent.getCount()
+                            + " unsent data points in persistant storage");
+                    return unsent;
+                } else {
+                    Log.v(TAG, "No unsent data points in the persistant storage");
+                    return new MatrixCursor(new String[] {});
+                }
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "Error querying Local Storage!", e);
                 return new MatrixCursor(new String[] {});
             }
         }
@@ -359,17 +368,22 @@ public class MsgHandler extends Service {
                         + max;
 
                 // delete the data from the storage
-                Uri contentUri = Uri.parse("content://"
-                        + getString(R.string.local_storage_authority)
-                        + DataPoint.CONTENT_PERSISTED_URI_PATH);
-                int deleted = getContentResolver().delete(contentUri, where, null);
-                if (deleted == dataPoints.length()) {
-                    Log.v(TAG, "Deleted all " + deleted + " '" + sensorName
-                            + "' points from the persistant storage");
-                } else {
-                    Log.w(TAG, "Wrong number of '" + sensorName
-                            + "' data points deleted after transmission! " + deleted + " vs. "
-                            + dataPoints.length());
+                try {
+                    Uri contentUri = Uri.parse("content://"
+                            + getString(R.string.local_storage_authority)
+                            + DataPoint.CONTENT_PERSISTED_URI_PATH);
+                    int deleted = LocalStorage.getInstance(MsgHandler.this).delete(contentUri,
+                            where, null);
+                    if (deleted == dataPoints.length()) {
+                        Log.v(TAG, "Deleted all " + deleted + " '" + sensorName
+                                + "' points from the persistant storage");
+                    } else {
+                        Log.w(TAG, "Wrong number of '" + sensorName
+                                + "' data points deleted after transmission! " + deleted + " vs. "
+                                + dataPoints.length());
+                    }
+                } catch (IllegalArgumentException e) {
+                    Log.e(TAG, "Error deleting points from Local Storage!", e);
                 }
             }
         }
@@ -388,15 +402,22 @@ public class MsgHandler extends Service {
 
         @Override
         protected Cursor getUnsentData() {
-            String where = DataPoint.TRANSMIT_STATE + "=0";
-            Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
-                    + DataPoint.CONTENT_URI_PATH);
-            Cursor unsent = getContentResolver().query(contentUri, null, where, null, null);
-            if (null != unsent && unsent.moveToFirst()) {
-                Log.v(TAG, "Found " + unsent.getCount() + " unsent data points in local storage");
-                return unsent;
-            } else {
-                Log.v(TAG, "No unsent recent data points");
+            try {
+                String where = DataPoint.TRANSMIT_STATE + "=0";
+                Uri contentUri = Uri.parse("content://"
+                        + getString(R.string.local_storage_authority) + DataPoint.CONTENT_URI_PATH);
+                Cursor unsent = LocalStorage.getInstance(MsgHandler.this).query(contentUri, null,
+                        where, null, null);
+                if (null != unsent && unsent.moveToFirst()) {
+                    Log.v(TAG, "Found " + unsent.getCount()
+                            + " unsent data points in local storage");
+                    return unsent;
+                } else {
+                    Log.v(TAG, "No unsent recent data points");
+                    return new MatrixCursor(new String[] {});
+                }
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "Error querying Local Storage!", e);
                 return new MatrixCursor(new String[] {});
             }
         }
@@ -445,16 +466,23 @@ public class MsgHandler extends Service {
                         + DataPoint.TIMESTAMP + ">=" + min + " AND " + DataPoint.TIMESTAMP + " <="
                         + max;
 
-                Uri contentUri = Uri.parse("content://"
-                        + getString(R.string.local_storage_authority) + DataPoint.CONTENT_URI_PATH);
-                int updated = getContentResolver().update(contentUri, values, where, null);
-                if (updated == dataPoints.length()) {
-                    Log.v(TAG, "Updated all " + updated + " '" + sensorName
-                            + "' data points in the local storage");
-                } else {
-                    Log.w(TAG, "Wrong number of '" + sensorName
-                            + "' data points updated after transmission! " + updated + " vs. "
-                            + dataPoints.length());
+                // update points in local storage
+                try {
+                    Uri contentUri = Uri.parse("content://"
+                            + getString(R.string.local_storage_authority)
+                            + DataPoint.CONTENT_URI_PATH);
+                    int updated = LocalStorage.getInstance(MsgHandler.this).update(contentUri,
+                            values, where, null);
+                    if (updated == dataPoints.length()) {
+                        Log.v(TAG, "Updated all " + updated + " '" + sensorName
+                                + "' data points in the local storage");
+                    } else {
+                        Log.w(TAG, "Wrong number of '" + sensorName
+                                + "' data points updated after transmission! " + updated + " vs. "
+                                + dataPoints.length());
+                    }
+                } catch (IllegalArgumentException e) {
+                    Log.e(TAG, "Error updating points in Local Storage!", e);
                 }
             }
         }
@@ -575,14 +603,19 @@ public class MsgHandler extends Service {
                     + DataPoint.TIMESTAMP + ">=" + min + " AND " + DataPoint.TIMESTAMP + " <="
                     + max;
 
-            Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
-                    + DataPoint.CONTENT_URI_PATH);
-            int updated = getContentResolver().update(contentUri, values, where, null);
-            if (updated == dataPoints.length()) {
-                // Log.v(TAG, "Updated all " + updated + " rows in the local storage");
-            } else {
-                Log.w(TAG, "Wrong number of local storage points updated! " + updated + " vs. "
-                        + dataPoints.length());
+            try {
+                Uri contentUri = Uri.parse("content://"
+                        + getString(R.string.local_storage_authority) + DataPoint.CONTENT_URI_PATH);
+                int updated = LocalStorage.getInstance(MsgHandler.this).update(contentUri, values,
+                        where, null);
+                if (updated == dataPoints.length()) {
+                    // Log.v(TAG, "Updated all " + updated + " rows in the local storage");
+                } else {
+                    Log.w(TAG, "Wrong number of local storage points updated! " + updated + " vs. "
+                            + dataPoints.length());
+                }
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "Error updating points in Local Storage!", e);
             }
         }
 
@@ -746,20 +779,27 @@ public class MsgHandler extends Service {
             String where = DataPoint.SENSOR_NAME + "='" + sensorName + "'" + " AND "
                     + DataPoint.TIMESTAMP + "=" + timestamp;
 
-            Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
-                    + DataPoint.CONTENT_URI_PATH);
-            int updated = getContentResolver().update(contentUri, values, where, null);
-            int deleted = 0;
-            if (0 == updated) {
-                contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
-                        + DataPoint.CONTENT_PERSISTED_URI_PATH);
-                deleted = getContentResolver().delete(contentUri, where, null);
-            }
-            if (deleted == 1 || updated == 1) {
-                // ok
-            } else {
-                Log.w(TAG,
-                        "Failed to update the local storage after a file was successfully sent to CommonSense!");
+            try {
+                Uri contentUri = Uri.parse("content://"
+                        + getString(R.string.local_storage_authority) + DataPoint.CONTENT_URI_PATH);
+                int updated = LocalStorage.getInstance(MsgHandler.this).update(contentUri, values,
+                        where, null);
+                int deleted = 0;
+                if (0 == updated) {
+                    contentUri = Uri.parse("content://"
+                            + getString(R.string.local_storage_authority)
+                            + DataPoint.CONTENT_PERSISTED_URI_PATH);
+                    deleted = LocalStorage.getInstance(MsgHandler.this).delete(contentUri, where,
+                            null);
+                }
+                if (deleted == 1 || updated == 1) {
+                    // ok
+                } else {
+                    Log.w(TAG,
+                            "Failed to update the local storage after a file was successfully sent to CommonSense!");
+                }
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "Error updating points in Local Storage!", e);
             }
 
         }
@@ -790,11 +830,14 @@ public class MsgHandler extends Service {
      */
     private void emptyBufferToDb() {
         Log.v(TAG, "Emptying buffer to persistant database...");
-
-        Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
-                + DataPoint.CONTENT_URI_PATH + "?persist=true");
-        String where = DataPoint.TRANSMIT_STATE + "=" + 0;
-        getContentResolver().update(contentUri, new ContentValues(), where, null);
+        try {
+            Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
+                    + DataPoint.CONTENT_URI_PATH + "?persist=true");
+            String where = DataPoint.TRANSMIT_STATE + "=" + 0;
+            LocalStorage.getInstance(this).update(contentUri, new ContentValues(), where, null);
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "Error updating Local Storage!", e);
+        }
     }
 
     /**
@@ -932,9 +975,13 @@ public class MsgHandler extends Service {
         values.put(DataPoint.VALUE, value);
         values.put(DataPoint.TRANSMIT_STATE, 0);
 
-        Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
-                + DataPoint.CONTENT_URI_PATH);
-        getContentResolver().insert(contentUri, values);
+        try {
+            Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
+                    + DataPoint.CONTENT_URI_PATH);
+            LocalStorage.getInstance(this).insert(contentUri, values);
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "Error inserting points in Local Storage!", e);
+        }
     }
 
     /**

@@ -3,6 +3,7 @@ package nl.sense_os.service.states;
 import nl.sense_os.service.R;
 import nl.sense_os.service.SensorData;
 import nl.sense_os.service.SensorData.DataPoint;
+import nl.sense_os.service.storage.LocalStorage;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,6 +31,8 @@ public class EpiStateMonitor extends AbstractStateMonitor {
         Cursor fallData = null;
         Cursor epiData = null;
         try {
+            LocalStorage storage = LocalStorage.getInstance(this);
+
             // query fall detector
             Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
                     + DataPoint.CONTENT_URI_PATH);
@@ -38,7 +41,7 @@ public class EpiStateMonitor extends AbstractStateMonitor {
             String where = DataPoint.SENSOR_NAME + "='" + SensorData.SensorNames.FALL_DETECTOR
                     + "'" + " AND " + DataPoint.TIMESTAMP + ">"
                     + (System.currentTimeMillis() - TIME_RANGE);
-            fallData = getContentResolver().query(contentUri, projection, where, null, null);
+            fallData = storage.query(contentUri, projection, where, null, null);
 
             if (null != fallData && fallData.moveToFirst()) {
                 int result = analyzeFallData(fallData);
@@ -57,7 +60,7 @@ public class EpiStateMonitor extends AbstractStateMonitor {
             where = DataPoint.SENSOR_NAME + "='" + SensorData.SensorNames.ACCELEROMETER_EPI + "'"
                     + " AND " + DataPoint.TIMESTAMP + ">"
                     + (System.currentTimeMillis() - (TIME_RANGE << 1));
-            epiData = getContentResolver().query(contentUri, projection, where, null, null);
+            epiData = storage.query(contentUri, projection, where, null, null);
 
             if (null != epiData && epiData.moveToFirst()) {
                 int result = analyzeEpiData(epiData);

@@ -214,7 +214,7 @@
         </service>
 
         <provider
-            android:name="nl.sense_os.service.provider.LocalStorage"
+            android:name="nl.sense_os.service.provider.SensorDataProvider"
             android:exported="true"
             android:authorities="nl.sense_os.platform.provider.LocalStorage" />
 

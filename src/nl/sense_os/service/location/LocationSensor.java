@@ -11,6 +11,7 @@ import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensePrefs;
 import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.SensorData.SensorNames;
+import nl.sense_os.service.storage.LocalStorage;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -272,7 +273,7 @@ public class LocationSensor {
             String selection = DataPoint.SENSOR_NAME + "='" + SensorNames.LIN_ACCELERATION + "'"
                     + " AND " + DataPoint.TIMESTAMP + ">"
                     + (System.currentTimeMillis() - timerange);
-            data = context.getContentResolver().query(uri, projection, selection, null, null);
+            data = LocalStorage.getInstance(context).query(uri, projection, selection, null, null);
 
             if (null == data || data.getCount() == 0) {
                 // no movement measurements: assume the device is moving
@@ -361,7 +362,7 @@ public class LocationSensor {
                     DataPoint.VALUE };
             String selection = DataPoint.SENSOR_NAME + "='" + SensorNames.LOCATION + "'" + " AND "
                     + DataPoint.TIMESTAMP + ">" + (System.currentTimeMillis() - timerange);
-            data = context.getContentResolver().query(uri, projection, selection, null, null);
+            data = LocalStorage.getInstance(context).query(uri, projection, selection, null, null);
 
             if (null == data || data.getCount() < 2) {
                 // no position changes: assume the device is moving

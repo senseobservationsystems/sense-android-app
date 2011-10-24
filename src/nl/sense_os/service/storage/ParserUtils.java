@@ -1,4 +1,4 @@
-package nl.sense_os.service.provider;
+package nl.sense_os.service.storage;
 
 import java.util.ArrayList;
 import java.util.List;
