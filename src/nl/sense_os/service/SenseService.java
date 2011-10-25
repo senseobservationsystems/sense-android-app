@@ -12,7 +12,6 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URLEncoder;
 
-import nl.sense_os.app.appwidget.SenseWidgetUpdater;
 import nl.sense_os.service.SensePrefs.Auth;
 import nl.sense_os.service.SensePrefs.Main.Advanced;
 import nl.sense_os.service.SensePrefs.Main.Ambience;
@@ -664,7 +663,7 @@ public class SenseService extends Service {
         }
 
         // update any widgets
-        startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
+        startService(new Intent(getString(R.string.action_widget_update)));
     }
 
     /**

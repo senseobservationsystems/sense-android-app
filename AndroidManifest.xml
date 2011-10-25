@@ -168,47 +168,47 @@
         
         <service android:name=".appwidget.SenseWidgetUpdater">
             <intent-filter>
-                <action android:name="nl.sense_os.app.AppWidgetUpdate" />
+                <action android:name="nl.sense_os.platform.AppWidgetUpdate" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="nl.sense_os.app.StartPhoneState" />
+                <action android:name="nl.sense_os.platform.StartPhoneState" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="nl.sense_os.app.StopPhoneState" />
+                <action android:name="nl.sense_os.platform.StopPhoneState" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="nl.sense_os.app.StartLocation" />
+                <action android:name="nl.sense_os.platform.StartLocation" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="nl.sense_os.app.StopLocation" />
+                <action android:name="nl.sense_os.platform.StopLocation" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="nl.sense_os.app.StartMotion" />
+                <action android:name="nl.sense_os.platform.StartMotion" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="nl.sense_os.app.StopMotion" />
+                <action android:name="nl.sense_os.platform.StopMotion" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="nl.sense_os.app.StartAmbience" />
+                <action android:name="nl.sense_os.platform.StartAmbience" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="nl.sense_os.app.StopAmbience" />
+                <action android:name="nl.sense_os.platform.StopAmbience" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="nl.sense_os.app.StartDevices" />
+                <action android:name="nl.sense_os.platform.StartDevices" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="nl.sense_os.app.StopDevices" />
+                <action android:name="nl.sense_os.platform.StopDevices" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
