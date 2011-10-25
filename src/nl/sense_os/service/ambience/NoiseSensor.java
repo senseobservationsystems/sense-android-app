@@ -453,7 +453,7 @@ public class NoiseSensor extends PhoneStateListener {
     /**
      * Stops the recording and releases the AudioRecord object, making it unusable.
      */
-    private void stopRecording() {
+    private synchronized void stopRecording() {
 
         if (audioRecord != null && audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
 
