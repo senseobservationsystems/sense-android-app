@@ -290,8 +290,8 @@ public class SenseApi {
         }
     }
 
-    public static String getSensorId(Context context, String sensorName, String sensorValue,
-            String dataType, String deviceType) {
+    public static String getSensorId(Context context, String sensorName, String displayName,
+            String sensorValue, String dataType, String deviceType) {
 
         try {
             // get list of all registered sensors for this device
@@ -318,7 +318,8 @@ public class SenseApi {
             }
 
             // Sensor not found in current list of sensors, create it at CommonSense
-            return registerSensor(context, sensorName, deviceType, dataType, sensorValue);
+            return registerSensor(context, sensorName, displayName, deviceType, dataType,
+                    sensorValue);
 
         } catch (Exception e) {
             Log.e(TAG, "Failed to get ID for sensor '" + sensorName + "': Exception occurred:", e);
@@ -330,11 +331,12 @@ public class SenseApi {
      * This method returns the URL to which the data must be send, it does this based on the sensor
      * name and device_type. If the sensor cannot be found, then it will be created.
      */
-    public static String getSensorUrl(Context context, String sensorName, String sensorValue,
-            String dataType, String deviceType) {
+    public static String getSensorUrl(Context context, String sensorName, String displayName,
+            String sensorValue, String dataType, String deviceType) {
 
         try {
-            String id = getSensorId(context, sensorName, sensorValue, dataType, deviceType);
+            String id = getSensorId(context, sensorName, displayName, sensorValue, dataType,
+                    deviceType);
 
             if (id == null) {
                 Log.e(TAG, "Failed to get URL for sensor '" + sensorName
@@ -509,8 +511,8 @@ public class SenseApi {
      *            sensors.
      * @return The new sensor ID at CommonSense, or <code>null</code> if the registration failed.
      */
-    public static String registerSensor(Context context, String sensorName, String deviceType,
-            String dataType, String sensorValue) {
+    public static String registerSensor(Context context, String sensorName, String displayName,
+            String deviceType, String dataType, String sensorValue) {
 
         final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
                 Context.MODE_PRIVATE);
@@ -524,6 +526,7 @@ public class SenseApi {
             JSONObject sensor = new JSONObject();
             sensor.put("name", sensorName);
             sensor.put("device_type", deviceType);
+            sensor.put("display_name", displayName);
             sensor.put("pager_type", "");
             sensor.put("data_type", dataType);
             if (dataType.compareToIgnoreCase("json") == 0) {

@@ -15,9 +15,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
 
-import nl.sense_os.service.MsgHandler;
 import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
+import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.SensorData.SensorNames;
 
 import org.json.JSONException;
@@ -83,10 +83,10 @@ public class BluetoothDeviceProximity {
 
                         // pass device data to the MsgHandler
                         Intent i = new Intent(context.getString(R.string.action_sense_new_data));
-                        i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.BLUETOOTH_DISCOVERY);
-                        i.putExtra(MsgHandler.KEY_VALUE, deviceJson.toString());
-                        i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
-                        i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+                        i.putExtra(DataPoint.SENSOR_NAME, SensorNames.BLUETOOTH_DISCOVERY);
+                        i.putExtra(DataPoint.VALUE, deviceJson.toString());
+                        i.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.JSON);
+                        i.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                         BluetoothDeviceProximity.this.context.startService(i);
                     }
                 } catch (JSONException e) {
@@ -204,10 +204,10 @@ public class BluetoothDeviceProximity {
 
                             // pass message to the MsgHandler
                             Intent i = new Intent(context.getString(R.string.action_sense_new_data));
-                            i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.BLUETOOTH_DISCOVERY);
-                            i.putExtra(MsgHandler.KEY_VALUE, deviceJson.toString());
-                            i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
-                            i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+                            i.putExtra(DataPoint.SENSOR_NAME, SensorNames.BLUETOOTH_DISCOVERY);
+                            i.putExtra(DataPoint.VALUE, deviceJson.toString());
+                            i.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.JSON);
+                            i.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                             BluetoothDeviceProximity.this.context.startService(i);
                         }
 

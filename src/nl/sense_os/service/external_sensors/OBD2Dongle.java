@@ -13,9 +13,9 @@ import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.UUID;
 
-import nl.sense_os.service.MsgHandler;
 import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
+import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.SensorData.SensorNames;
 
 import org.json.JSONException;
@@ -687,11 +687,11 @@ public class OBD2Dongle {
          */
         private void sendIntent(String sensor_name, JSONObject value) {
             Intent i = new Intent(context.getString(R.string.action_sense_new_data));
-            i.putExtra(MsgHandler.KEY_SENSOR_NAME, sensor_name);
-            i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, deviceType);
-            i.putExtra(MsgHandler.KEY_VALUE, value.toString());
-            i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
-            i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+            i.putExtra(DataPoint.SENSOR_NAME, sensor_name);
+            i.putExtra(DataPoint.SENSOR_DESCRIPTION, deviceType);
+            i.putExtra(DataPoint.VALUE, value.toString());
+            i.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.JSON);
+            i.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
             context.startService(i);
         }
 

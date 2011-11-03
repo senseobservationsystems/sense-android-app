@@ -11,9 +11,9 @@ import java.util.Enumeration;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import nl.sense_os.service.MsgHandler;
 import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
+import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.SensorData.SensorNames;
 
 import org.json.JSONException;
@@ -74,71 +74,65 @@ public class SensePhoneState extends PhoneStateListener {
                 // IP address
                 if (null != lastIp) {
                     // Log.d(TAG, "Transmit IP address...");
-                    Intent ipAddress = new Intent(context.getString(R.string.action_sense_new_data));
-                    ipAddress.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.IP_ADDRESS);
-                    ipAddress.putExtra(MsgHandler.KEY_VALUE, lastIp);
-                    ipAddress.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.STRING);
-                    ipAddress.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
-                    context.startService(ipAddress);
+                    sendDataPoint(SensorNames.IP_ADDRESS, lastIp, SenseDataTypes.STRING);
                     lastIp = null;
                 }
 
                 // data connection state
                 if (null != lastDataConnectionState) {
                     // Log.d(TAG, "Transmit data connection state...");
-                    Intent dataConnection = new Intent(
-                            context.getString(R.string.action_sense_new_data));
-                    dataConnection.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.DATA_CONN);
-                    dataConnection.putExtra(MsgHandler.KEY_VALUE, lastDataConnectionState);
-                    dataConnection.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.STRING);
-                    dataConnection.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
-                    context.startService(dataConnection);
+                    sendDataPoint(SensorNames.DATA_CONN, lastDataConnectionState,
+                            SenseDataTypes.STRING);
                     lastDataConnectionState = null;
                 }
 
                 // message waiting indicator
                 if (msgIndicatorUpdated) {
                     // Log.d(TAG, "Transmit unread messages indicator...");
-                    Intent msgIndicator = new Intent(
-                            context.getString(R.string.action_sense_new_data));
-                    msgIndicator.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.UNREAD_MSG);
-                    msgIndicator.putExtra(MsgHandler.KEY_VALUE, lastMsgIndicatorState);
-                    msgIndicator.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.BOOL);
-                    msgIndicator.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
-                    context.startService(msgIndicator);
+                    sendDataPoint(SensorNames.UNREAD_MSG, lastMsgIndicatorState,
+                            SenseDataTypes.BOOL);
                     msgIndicatorUpdated = false;
                 }
 
                 // service state
                 if (null != lastServiceState) {
                     // Log.d(TAG, "Transmit service state...");
-                    Intent serviceState = new Intent(
-                            context.getString(R.string.action_sense_new_data));
-                    serviceState.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.SERVICE_STATE);
-                    serviceState.putExtra(MsgHandler.KEY_VALUE, lastServiceState);
-                    serviceState.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
-                    serviceState.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
-                    context.startService(serviceState);
+                    sendDataPoint(SensorNames.SERVICE_STATE, lastServiceState, SenseDataTypes.JSON);
                     lastServiceState = null;
                 }
 
                 // signal strength
                 if (null != lastSignalStrength) {
                     // Log.d(TAG, "Transmit signal strength...");
-                    Intent signalStrength = new Intent(
-                            context.getString(R.string.action_sense_new_data));
-                    signalStrength
-                            .putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.SIGNAL_STRENGTH);
-                    signalStrength.putExtra(MsgHandler.KEY_VALUE, lastSignalStrength);
-                    signalStrength.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
-                    signalStrength.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
-                    context.startService(signalStrength);
+                    sendDataPoint(SensorNames.SIGNAL_STRENGTH, lastSignalStrength,
+                            SenseDataTypes.JSON);
                     lastSignalStrength = null;
                 }
 
                 getLooper().quit();
             }
         }.sendEmptyMessage(0);
+    }
+
+    private void sendDataPoint(String sensorName, Object value, String dataType) {
+        Intent intent = new Intent(context.getString(R.string.action_sense_new_data));
+        intent.putExtra(DataPoint.SENSOR_NAME, sensorName);
+        intent.putExtra(DataPoint.DATA_TYPE, dataType);
+        if (dataType.equals(SenseDataTypes.BOOL)) {
+            intent.putExtra(DataPoint.VALUE, (Boolean) value);
+        } else if (dataType.equals(SenseDataTypes.FLOAT)) {
+            intent.putExtra(DataPoint.VALUE, (Float) value);
+        } else if (dataType.equals(SenseDataTypes.INT)) {
+            intent.putExtra(DataPoint.VALUE, (Integer) value);
+        } else if (dataType.equals(SenseDataTypes.JSON)) {
+            intent.putExtra(DataPoint.VALUE, (String) value);
+        } else if (dataType.equals(SenseDataTypes.STRING)) {
+            intent.putExtra(DataPoint.VALUE, (String) value);
+        } else {
+            Log.w(TAG, "Error sending data point: unexpected data type! '" + dataType + "'");
+        }
+        intent.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
+        context.startService(intent);
     }
 
     /**
@@ -207,12 +201,7 @@ public class SensePhoneState extends PhoneStateListener {
         }
 
         // pass message immediately to the MsgHandler
-        Intent i = new Intent(context.getString(R.string.action_sense_new_data));
-        i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.CALL_STATE);
-        i.putExtra(MsgHandler.KEY_VALUE, json.toString());
-        i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
-        i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
-        context.startService(i);
+        sendDataPoint(SensorNames.CALL_STATE, json.toString(), SenseDataTypes.JSON);
     }
 
     @Override
@@ -291,13 +280,7 @@ public class SensePhoneState extends PhoneStateListener {
             previousConnectionType = type;
 
             // pass message immediately to the MsgHandler
-            Intent msg = new Intent(context.getString(R.string.action_sense_new_data));
-            msg.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.CONN_TYPE);
-            msg.putExtra(MsgHandler.KEY_SENSOR_DEVICE, SensorNames.CONN_TYPE);
-            msg.putExtra(MsgHandler.KEY_VALUE, typeName);
-            msg.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.STRING);
-            msg.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
-            context.startService(msg);
+            sendDataPoint(SensorNames.CONN_TYPE, typeName, SenseDataTypes.STRING);
         }
     }
 

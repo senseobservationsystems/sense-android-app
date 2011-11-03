@@ -474,7 +474,14 @@ public class SenseService extends Service {
 
         // save new username and password in the preferences
         editor.putString(Auth.LOGIN_USERNAME, username);
-        editor.putString(Auth.LOGIN_PASS, SenseApi.hashPassword(password));
+
+        boolean skipHash = getPackageName().equals("nl.sense_os.ivitality");
+        if (!skipHash) {
+            editor.putString(Auth.LOGIN_PASS, SenseApi.hashPassword(password));
+        } else {
+            Log.w(TAG, "Skip password hashing!");
+            editor.putString(Auth.LOGIN_PASS, password);
+        }
 
         // remove old session data
         editor.remove(Auth.DEVICE_ID);
@@ -1589,18 +1596,23 @@ public class SenseService extends Service {
 
                     @Override
                     public void run() {
-                        phoneStateListener = new SensePhoneState(SenseService.this);
-                        proximitySensor = new ProximitySensor(SenseService.this);
-                        batterySensor = new BatterySensor(SenseService.this);
-                        pressureSensor = new PressureSensor(SenseService.this);
-                        phoneActivitySensor = new PhoneActivitySensor(SenseService.this);
+                        try {
+                            phoneStateListener = new SensePhoneState(SenseService.this);
+                            proximitySensor = new ProximitySensor(SenseService.this);
+                            batterySensor = new BatterySensor(SenseService.this);
+                            pressureSensor = new PressureSensor(SenseService.this);
+                            phoneActivitySensor = new PhoneActivitySensor(SenseService.this);
 
-                        // start sensing
-                        phoneStateListener.startSensing(finalInterval);
-                        proximitySensor.startProximitySensing(finalInterval);
-                        batterySensor.startBatterySensing(finalInterval);
-                        pressureSensor.startPressureSensing(finalInterval);
-                        phoneActivitySensor.startPhoneActivitySensing(finalInterval);
+                            // start sensing
+                            phoneStateListener.startSensing(finalInterval);
+                            proximitySensor.startProximitySensing(finalInterval);
+                            batterySensor.startBatterySensing(finalInterval);
+                            pressureSensor.startPressureSensing(finalInterval);
+                            phoneActivitySensor.startPhoneActivitySensing(finalInterval);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Phone state thread failed to start!");
+                            togglePhoneState(false);
+                        }
                     }
                 });
 

@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import nl.sense_os.service.MsgHandler;
 import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
+import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.SensorData.SensorNames;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -146,12 +147,11 @@ public class NoiseSensor extends PhoneStateListener {
                             // pass message to the MsgHandler
                             Intent sensorData = new Intent(
                                     context.getString(R.string.action_sense_new_data));
-                            sensorData.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.NOISE);
-                            sensorData.putExtra(MsgHandler.KEY_VALUE, BigDecimal.valueOf(dB)
-                                    .setScale(2, 0).floatValue());
-                            sensorData.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.FLOAT);
-                            sensorData.putExtra(MsgHandler.KEY_TIMESTAMP,
-                                    System.currentTimeMillis());
+                            sensorData.putExtra(DataPoint.SENSOR_NAME, SensorNames.NOISE);
+                            sensorData.putExtra(DataPoint.VALUE,
+                                    BigDecimal.valueOf(dB).setScale(2, 0).floatValue());
+                            sensorData.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.FLOAT);
+                            sensorData.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                             context.startService(sensorData);
                         }
 
@@ -219,10 +219,10 @@ public class NoiseSensor extends PhoneStateListener {
                                 // pass message to the MsgHandler
                                 Intent i = new Intent(context
                                         .getString(R.string.action_sense_new_data));
-                                i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.MIC);
-                                i.putExtra(MsgHandler.KEY_VALUE, fileName);
-                                i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.FILE);
-                                i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+                                i.putExtra(DataPoint.SENSOR_NAME, SensorNames.MIC);
+                                i.putExtra(DataPoint.VALUE, fileName);
+                                i.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.FILE);
+                                i.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                                 context.startService(i);
 
                                 if (isEnabled && listenInterval == -1 && tmp.equals(soundStreamJob)) {

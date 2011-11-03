@@ -211,7 +211,7 @@ public class MsgHandler extends Service {
 
                 // organize the data into a hash map sorted by sensor
                 sensorDataMap = new HashMap<String, JSONObject>();
-                String sensorName, sensorDesc, dataType, value;
+                String sensorName, displayName, sensorDesc, dataType, value;
                 long timestamp;
                 int points = 0;
                 while (points < MAX_POST_DATA && !cursor.isAfterLast()) {
@@ -219,6 +219,8 @@ public class MsgHandler extends Service {
                     // get the data point details
                     sensorName = cursor.getString(cursor
                             .getColumnIndexOrThrow(DataPoint.SENSOR_NAME));
+                    displayName = cursor.getString(cursor
+                            .getColumnIndexOrThrow(DataPoint.DISPLAY_NAME));
                     sensorDesc = cursor.getString(cursor
                             .getColumnIndexOrThrow(DataPoint.SENSOR_DESCRIPTION));
                     dataType = cursor.getString(cursor.getColumnIndexOrThrow(DataPoint.DATA_TYPE));
@@ -240,7 +242,7 @@ public class MsgHandler extends Service {
                         if (sensorEntry == null) {
                             sensorEntry = new JSONObject();
                             sensorEntry.put("sensor_id", SenseApi.getSensorId(context, sensorName,
-                                    value, dataType, sensorDesc));
+                                    displayName, value, dataType, sensorDesc));
                             data = new JSONArray();
                         } else {
                             data = sensorEntry.getJSONArray("data");
@@ -267,7 +269,7 @@ public class MsgHandler extends Service {
                         dataArray.put(data);
                         sensorData.put("data", dataArray);
 
-                        sendSensorData(sensorName, sensorData, dataType, sensorDesc);
+                        sendSensorData(sensorName, displayName, sensorData, dataType, sensorDesc);
                     }
 
                     cursor.moveToNext();
@@ -492,18 +494,21 @@ public class MsgHandler extends Service {
 
         private final String cookie;
         private final String sensorName;
+        private final String displayName;
         private final String deviceType;
         private final String dataType;
         private final Context context;
         private final JSONObject data;
         private WakeLock wakeLock;
 
-        public SendDataThread(String cookie, JSONObject data, String sensorName, String dataType,
-                String deviceType, Context context, Looper looper) {
+        public SendDataThread(String cookie, JSONObject data, String sensorName,
+                String displayName, String dataType, String deviceType, Context context,
+                Looper looper) {
             super(looper);
             this.cookie = cookie;
             this.data = data;
             this.sensorName = sensorName;
+            this.displayName = displayName;
             this.dataType = dataType;
             this.deviceType = deviceType != null ? deviceType : sensorName;
             this.context = context;
@@ -514,8 +519,8 @@ public class MsgHandler extends Service {
             try {
                 String sensorValue = (String) ((JSONObject) ((JSONArray) data.get("data")).get(0))
                         .get("value");
-                url = MsgHandler.this.getSensorUrl(context, sensorName, sensorValue, dataType,
-                        deviceType);
+                url = MsgHandler.this.getSensorUrl(context, sensorName, displayName, sensorValue,
+                        dataType, deviceType);
             } catch (Exception e) {
                 Log.e(TAG, "Exception retrieving sensor URL from API", e);
             }
@@ -631,17 +636,20 @@ public class MsgHandler extends Service {
         private final String cookie;
         private final JSONObject data;
         private final String sensorName;
+        private final String displayName;
         private final String dataType;
         private final String deviceType;
         private final Context context;
         private WakeLock wakeLock;
 
-        public SendFileThread(String cookie, JSONObject data, String sensorName, String dataType,
-                String deviceType, Context context, Looper looper) {
+        public SendFileThread(String cookie, JSONObject data, String sensorName,
+                String displayName, String dataType, String deviceType, Context context,
+                Looper looper) {
             super(looper);
             this.cookie = cookie;
             this.data = data;
             this.sensorName = sensorName;
+            this.displayName = displayName;
             this.dataType = dataType;
             this.deviceType = deviceType;
             this.context = context;
@@ -653,8 +661,8 @@ public class MsgHandler extends Service {
                 final String f_deviceType = deviceType != null ? deviceType : sensorName;
                 String dataStructure = (String) ((JSONObject) ((JSONArray) data.get("data")).get(0))
                         .get("value");
-                url = SenseApi.getSensorUrl(context, sensorName, dataStructure, dataType,
-                        f_deviceType);
+                url = MsgHandler.this.getSensorUrl(context, sensorName, displayName, dataStructure,
+                        dataType, f_deviceType);
             } catch (Exception e) {
                 Log.e(TAG, "Exception retrieving sensor URL from API", e);
             }
@@ -812,11 +820,6 @@ public class MsgHandler extends Service {
     }
 
     private static final String TAG = "Sense MsgHandler";
-    public static final String KEY_DATA_TYPE = "data_type";
-    public static final String KEY_SENSOR_DEVICE = "sensor_device";
-    public static final String KEY_SENSOR_NAME = "sensor_name";
-    public static final String KEY_TIMESTAMP = "timestamp";
-    public static final String KEY_VALUE = "value";
     private static final int MAX_NR_OF_SEND_MSG_THREADS = 50;
     private static final int MAX_POST_DATA = 100;
     private int nrOfSendMessageThreads = 0;
@@ -847,8 +850,9 @@ public class MsgHandler extends Service {
      * @return The URL of the sensor at CommonSense, or null if an error occurred.
      */
     private synchronized String getSensorUrl(Context context, String sensorName,
-            String sensorValue, String dataType, String deviceType) {
-        String url = SenseApi.getSensorUrl(context, sensorName, sensorValue, dataType, deviceType);
+            String displayName, String sensorValue, String dataType, String deviceType) {
+        String url = SenseApi.getSensorUrl(context, sensorName, displayName, sensorValue, dataType,
+                deviceType);
         return url;
     }
 
@@ -881,31 +885,39 @@ public class MsgHandler extends Service {
             NumberFormat formatter = new DecimalFormat("##########.###", otherSymbols);
 
             // get data point details from Intent
-            String sensorName = intent.getStringExtra(KEY_SENSOR_NAME);
-            String dataType = intent.getStringExtra(KEY_DATA_TYPE);
-            long timestamp = intent.getLongExtra(KEY_TIMESTAMP, System.currentTimeMillis());
+            String sensorName = intent.getStringExtra(DataPoint.SENSOR_NAME);
+            String displayName = intent.getStringExtra(DataPoint.DISPLAY_NAME);
+            String dataType = intent.getStringExtra(DataPoint.DATA_TYPE);
+            long timestamp = intent.getLongExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
             String timeInSecs = formatter.format(timestamp / 1000.0d);
-            String deviceType = intent.getStringExtra(KEY_SENSOR_DEVICE);
+            String deviceType = intent.getStringExtra(DataPoint.SENSOR_DESCRIPTION);
+
+            // defaults
             deviceType = deviceType != null ? deviceType : sensorName;
+            displayName = displayName != null ? displayName : sensorName;
+
+            Log.d(TAG, "name: '" + sensorName + "', display: '" + displayName + "', description: '"
+                    + deviceType + "', data type: '" + dataType + "'");
 
             // convert sensor value to String
             String sensorValue = "";
             if (dataType.equals(SenseDataTypes.BOOL)) {
-                sensorValue += intent.getBooleanExtra(KEY_VALUE, false);
+                sensorValue += intent.getBooleanExtra(DataPoint.VALUE, false);
             } else if (dataType.equals(SenseDataTypes.FLOAT)) {
-                sensorValue += intent.getFloatExtra(KEY_VALUE, Float.MIN_VALUE);
+                sensorValue += intent.getFloatExtra(DataPoint.VALUE, Float.MIN_VALUE);
             } else if (dataType.equals(SenseDataTypes.INT)) {
-                sensorValue += intent.getIntExtra(KEY_VALUE, Integer.MIN_VALUE);
+                sensorValue += intent.getIntExtra(DataPoint.VALUE, Integer.MIN_VALUE);
             } else if (dataType.equals(SenseDataTypes.JSON)
                     || dataType.equals(SenseDataTypes.JSON_TIME_SERIE)) {
-                sensorValue += new JSONObject(intent.getStringExtra(KEY_VALUE)).toString();
+                sensorValue += new JSONObject(intent.getStringExtra(DataPoint.VALUE)).toString();
             } else if (dataType.equals(SenseDataTypes.STRING)
                     || dataType.equals(SenseDataTypes.FILE)) {
-                sensorValue += intent.getStringExtra(KEY_VALUE);
+                sensorValue += intent.getStringExtra(DataPoint.VALUE);
             }
 
             // put the data point in the local storage
-            insertToLocalStorage(sensorName, deviceType, dataType, timestamp, sensorValue);
+            insertToLocalStorage(sensorName, displayName, deviceType, dataType, timestamp,
+                    sensorValue);
 
             // check if we can send the data point immediately
             SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
@@ -924,7 +936,7 @@ public class MsgHandler extends Service {
                 dataArray.put(data);
                 sensorData.put("data", dataArray);
 
-                sendSensorData(sensorName, sensorData, dataType, deviceType);
+                sendSensorData(sensorName, displayName, sensorData, dataType, deviceType);
             }
 
         } catch (Exception e) {
@@ -958,17 +970,19 @@ public class MsgHandler extends Service {
      * automatically.
      * 
      * @param sensorName
+     * @param displayName
      * @param sensorDescription
      * @param dataType
      * @param timestamp
      * @param value
      */
-    private void insertToLocalStorage(String sensorName, String sensorDescription, String dataType,
-            long timestamp, String value) {
+    private void insertToLocalStorage(String sensorName, String displayName,
+            String sensorDescription, String dataType, long timestamp, String value) {
 
         // new value
         ContentValues values = new ContentValues();
         values.put(DataPoint.SENSOR_NAME, sensorName);
+        values.put(DataPoint.DISPLAY_NAME, displayName);
         values.put(DataPoint.SENSOR_DESCRIPTION, sensorDescription);
         values.put(DataPoint.DATA_TYPE, dataType);
         values.put(DataPoint.TIMESTAMP, timestamp);
@@ -1048,8 +1062,8 @@ public class MsgHandler extends Service {
         return START_NOT_STICKY;
     }
 
-    private void sendSensorData(final String sensorName, final JSONObject sensorData,
-            final String dataType, final String deviceType) {
+    private void sendSensorData(final String sensorName, final String displayName,
+            final JSONObject sensorData, final String dataType, final String deviceType) {
 
         try {
             if (nrOfSendMessageThreads < MAX_NR_OF_SEND_MSG_THREADS) {
@@ -1066,15 +1080,15 @@ public class MsgHandler extends Service {
                         // create handler thread and run task on there
                         HandlerThread ht = new HandlerThread("sendFileThread");
                         ht.start();
-                        new SendFileThread(cookie, sensorData, sensorName, dataType, deviceType,
-                                this, ht.getLooper()).sendEmptyMessage(0);
+                        new SendFileThread(cookie, sensorData, sensorName, displayName, dataType,
+                                deviceType, this, ht.getLooper()).sendEmptyMessage(0);
 
                     } else {
                         // create handler thread and run task on there
                         HandlerThread ht = new HandlerThread("sendDataPointThread");
                         ht.start();
-                        new SendDataThread(cookie, sensorData, sensorName, dataType, deviceType,
-                                this, ht.getLooper()).sendEmptyMessage(0);
+                        new SendDataThread(cookie, sensorData, sensorName, displayName, dataType,
+                                deviceType, this, ht.getLooper()).sendEmptyMessage(0);
 
                     }
                 } else {

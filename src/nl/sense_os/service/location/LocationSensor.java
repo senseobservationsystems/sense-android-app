@@ -5,7 +5,6 @@
  */
 package nl.sense_os.service.location;
 
-import nl.sense_os.service.MsgHandler;
 import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensePrefs;
@@ -68,10 +67,10 @@ public class LocationSensor {
 
             // pass message to the MsgHandler
             Intent i = new Intent(context.getString(R.string.action_sense_new_data));
-            i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.LOCATION);
-            i.putExtra(MsgHandler.KEY_VALUE, json.toString());
-            i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
-            i.putExtra(MsgHandler.KEY_TIMESTAMP, fix.getTime());
+            i.putExtra(DataPoint.SENSOR_NAME, SensorNames.LOCATION);
+            i.putExtra(DataPoint.VALUE, json.toString());
+            i.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.JSON);
+            i.putExtra(DataPoint.TIMESTAMP, fix.getTime());
             context.startService(i);
         }
 

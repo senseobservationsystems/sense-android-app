@@ -45,7 +45,7 @@ public class LocalStorage {
     private static class DbHelper extends SQLiteOpenHelper {
 
         protected static final String DATABASE_NAME = "persitent_storage.sqlite3";
-        protected static final int DATABASE_VERSION = 1;
+        protected static final int DATABASE_VERSION = 2;
 
         DbHelper(Context context) {
             super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -56,6 +56,7 @@ public class LocalStorage {
             final StringBuilder sb = new StringBuilder("CREATE TABLE " + TABLE_PERSISTENT + "(");
             sb.append(BaseColumns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT");
             sb.append(", " + DataPoint.SENSOR_NAME + " STRING");
+            sb.append(", " + DataPoint.DISPLAY_NAME + " STRING");
             sb.append(", " + DataPoint.SENSOR_DESCRIPTION + " STRING");
             sb.append(", " + DataPoint.DATA_TYPE + " STRING");
             sb.append(", " + DataPoint.TIMESTAMP + " INTEGER");

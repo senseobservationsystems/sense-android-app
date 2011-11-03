@@ -70,7 +70,7 @@ public class FeedbackChecker extends IntentService {
         String dataType = "json";
         String deviceType = sensor_name;
 
-        return SenseApi.getSensorUrl(this, sensorName, sensorValue, dataType, deviceType);
+        return SenseApi.getSensorUrl(this, sensorName, "", sensorValue, dataType, deviceType);
     }
 
     /**
