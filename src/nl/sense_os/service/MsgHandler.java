@@ -896,8 +896,8 @@ public class MsgHandler extends Service {
             deviceType = deviceType != null ? deviceType : sensorName;
             displayName = displayName != null ? displayName : sensorName;
 
-            Log.d(TAG, "name: '" + sensorName + "', display: '" + displayName + "', description: '"
-                    + deviceType + "', data type: '" + dataType + "'");
+            // Log.d(TAG, "name: '" + sensorName + "', display: '" + displayName +
+            // "', description: '" + deviceType + "', data type: '" + dataType + "'");
 
             // convert sensor value to String
             String sensorValue = "";

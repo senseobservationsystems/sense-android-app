@@ -19,6 +19,8 @@ public class BootRx extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        Log.v(TAG, "Received broadcast...");
+
         SharedPreferences statusPrefs = context.getSharedPreferences(SensePrefs.STATUS_PREFS,
                 Context.MODE_PRIVATE);
         final boolean autostart = statusPrefs.getBoolean(Status.AUTOSTART, false);

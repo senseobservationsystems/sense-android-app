@@ -22,6 +22,7 @@ public class AliveChecker extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        Log.v(TAG, "Received broadcast...");
 
         /* check if the Sense service should be alive */
         final SharedPreferences statusPrefs = context.getSharedPreferences(SensePrefs.STATUS_PREFS,
