@@ -219,8 +219,13 @@ public class MsgHandler extends Service {
                     // get the data point details
                     sensorName = cursor.getString(cursor
                             .getColumnIndexOrThrow(DataPoint.SENSOR_NAME));
-                    displayName = cursor.getString(cursor
-                            .getColumnIndexOrThrow(DataPoint.DISPLAY_NAME));
+                    try {
+                        // TODO ugly solution
+                        displayName = cursor.getString(cursor
+                                .getColumnIndexOrThrow(DataPoint.DISPLAY_NAME));
+                    } catch (IllegalArgumentException e) {
+                        displayName = sensorName;
+                    }
                     sensorDesc = cursor.getString(cursor
                             .getColumnIndexOrThrow(DataPoint.SENSOR_DESCRIPTION));
                     dataType = cursor.getString(cursor.getColumnIndexOrThrow(DataPoint.DATA_TYPE));
