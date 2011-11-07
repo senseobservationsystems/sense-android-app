@@ -5,7 +5,13 @@ import java.util.List;
 import java.util.Map;
 
 import nl.sense_os.service.R;
+import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensorData.DataPoint;
+import nl.sense_os.service.SensorData.SensorNames;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -209,7 +215,7 @@ public class LocalStorage {
         }
 
         // add the new data point
-        // Log.v(TAG, "Insert '" + sensorName + "' value in local storage...");
+        Log.v(TAG, "Inserting '" + sensorName + "' value in local storage...");
         storedValues[index] = values;
         index++;
         storage.put(sensorName, storedValues);
@@ -287,6 +293,7 @@ public class LocalStorage {
             return null;
             // }
         default:
+            Log.e(TAG, "Unknown URI: " + uri);
             throw new IllegalArgumentException("Unknown URI " + uri);
         }
     }
@@ -357,7 +364,7 @@ public class LocalStorage {
             result.addRow(row);
         }
 
-        // Log.d(TAG, "query result: " + result.getCount() + " data points.");
+        Log.d(TAG, "query result: " + result.getCount() + " data points.");
 
         return result;
     }
@@ -394,7 +401,24 @@ public class LocalStorage {
                     }
                 }
             } else {
-                // Log.d(TAG, "Could not find values for the selected sensor: '" + name + "'");
+                Log.d(TAG, "Could not find values for the selected sensor: '" + name + "'");
+
+                if (name.equals(SensorNames.LOCATION)) {
+                    try {
+                        Log.w(TAG, "Returning dummy location!");
+                        ContentValues dummyValues = new ContentValues();
+                        dummyValues.put(DataPoint.SENSOR_NAME, SensorNames.LOCATION);
+                        dummyValues.put(DataPoint.DATA_TYPE, SenseDataTypes.JSON);
+                        JSONObject json = new JSONObject();
+                        json.put("latitude", 51.90306);
+                        json.put("longitude", 4.4601);
+                        dummyValues.put(DataPoint.VALUE, json.toString());
+                        selection[0] = dummyValues;
+                        count++;
+                    } catch (JSONException e) {
+                        Log.e(TAG, "failed to create dummy sensor value", e);
+                    }
+                }
             }
         }
 
