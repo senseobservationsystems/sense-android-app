@@ -1,17 +1,5 @@
 package nl.sense_os.service.storage;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import nl.sense_os.service.R;
-import nl.sense_os.service.SenseDataTypes;
-import nl.sense_os.service.SensorData.DataPoint;
-import nl.sense_os.service.SensorData.SensorNames;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -22,6 +10,13 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.provider.BaseColumns;
 import android.util.Log;
+
+import nl.sense_os.service.R;
+import nl.sense_os.service.SensorData.DataPoint;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Storage for recent sensor data. The data is stored in the devices RAM memory, so this
@@ -109,27 +104,17 @@ public class LocalStorage {
      * @return Singleton instance of the LocalStorage
      */
     public static LocalStorage getInstance(Context context) {
-        if (null != instance) {
-            return instance;
-        } else {
-            instance = new LocalStorage(context);
-            return instance;
+        // Log.v(TAG, "Get local storage instance...");
+        if (null == instance) {
+            instance = new LocalStorage(context.getApplicationContext());
         }
+        return instance;
     }
 
     private LocalStorage(Context context) {
-        Log.v(TAG, "Create local storage...");
+        Log.v(TAG, "Construct new local storage instance...");
         this.context = context;
         dbHelper = new DbHelper(context);
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-
-        // get the count
-        Cursor c = db.query(TABLE_PERSISTENT, new String[] { DataPoint._ID }, "1", null, null,
-                null, null);
-        Log.d(TAG, c.getCount() + " points in persistant storage");
-        count = c.getCount();
-        c.close();
-        db.close();
     }
 
     public int delete(Uri uri, String where, String[] selectionArgs) {
@@ -246,6 +231,16 @@ public class LocalStorage {
         Log.d(TAG, "Persist " + storedValues.length + " data points");
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+            // do not store data points that are more than 90 minutes old
+            String where = DataPoint.TIMESTAMP + "<"
+                    + (System.currentTimeMillis() - 1000 * 60 * 90);
+            int deleted = db.delete(TABLE_PERSISTENT, where, null);
+            if (deleted > 0) {
+                Log.v(TAG, "Deleted " + deleted + " old data points from persistent storage");
+            }
+
+            // insert new points to persistent storage
             for (ContentValues dataPoint : storedValues) {
                 // strip the _ID column to dodge SQL exceptions
                 dataPoint.remove(DataPoint._ID);
@@ -364,7 +359,7 @@ public class LocalStorage {
             result.addRow(row);
         }
 
-        Log.d(TAG, "query result: " + result.getCount() + " data points.");
+        // Log.d(TAG, "query result: " + result.getCount() + " data points.");
 
         return result;
     }
@@ -401,24 +396,7 @@ public class LocalStorage {
                     }
                 }
             } else {
-                Log.d(TAG, "Could not find values for the selected sensor: '" + name + "'");
-
-                if (name.equals(SensorNames.LOCATION)) {
-                    try {
-                        Log.w(TAG, "Returning dummy location!");
-                        ContentValues dummyValues = new ContentValues();
-                        dummyValues.put(DataPoint.SENSOR_NAME, SensorNames.LOCATION);
-                        dummyValues.put(DataPoint.DATA_TYPE, SenseDataTypes.JSON);
-                        JSONObject json = new JSONObject();
-                        json.put("latitude", 51.90306);
-                        json.put("longitude", 4.4601);
-                        dummyValues.put(DataPoint.VALUE, json.toString());
-                        selection[0] = dummyValues;
-                        count++;
-                    } catch (JSONException e) {
-                        Log.e(TAG, "failed to create dummy sensor value", e);
-                    }
-                }
+                // Log.d(TAG, "Could not find values for the selected sensor: '" + name + "'");
             }
         }
 
