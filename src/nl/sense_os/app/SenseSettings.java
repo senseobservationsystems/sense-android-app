@@ -486,7 +486,6 @@ public class SenseSettings extends PreferenceActivity {
         }
 
         prefs.registerOnSharedPreferenceChangeListener(changeListener);
-
     }
 
     @Override
