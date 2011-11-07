@@ -474,8 +474,6 @@ public class SenseSettings extends PreferenceActivity {
             // advanced settings
             editor.putBoolean(Auth.DEV_MODE, service.getPrefBool(Auth.DEV_MODE, false));
             editor.putBoolean(Advanced.COMPRESS, service.getPrefBool(Advanced.COMPRESS, true));
-            editor.putBoolean(Advanced.LOCAL_STORAGE,
-                    service.getPrefBool(Advanced.LOCAL_STORAGE, true));
             editor.putBoolean(Advanced.USE_COMMONSENSE,
                     service.getPrefBool(Advanced.USE_COMMONSENSE, true));
             editor.putBoolean("agostino_mode", service.getPrefBool("agostino_mode", false));

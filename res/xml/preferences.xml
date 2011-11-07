@@ -308,11 +308,6 @@
                     android:defaultValue="true"
                     android:key="compression" />
                 <CheckBoxPreference
-                    android:title="Local storage"
-                    android:summary="Make data available for other apps"
-                    android:defaultValue="true"
-                    android:key="local_storage" />
-                <CheckBoxPreference
                     android:title="Use CommonSense"
                     android:summary="Share your data with your online platform"
                     android:defaultValue="true"
