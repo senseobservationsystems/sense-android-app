@@ -113,8 +113,17 @@ public class LocalStorage {
 
     private LocalStorage(Context context) {
         Log.v(TAG, "Create local storage...");
-        dbHelper = new DbHelper(context);
         this.context = context;
+        dbHelper = new DbHelper(context);
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        // get the count
+        Cursor c = db.query(TABLE_PERSISTENT, new String[] { DataPoint._ID }, "1", null, null,
+                null, null);
+        Log.d(TAG, c.getCount() + " points in persistant storage");
+        count = c.getCount();
+        c.close();
+        db.close();
     }
 
     public int delete(Uri uri, String where, String[] selectionArgs) {
@@ -160,7 +169,7 @@ public class LocalStorage {
         }
 
         // add a unique ID
-        values.put(BaseColumns._ID, count);
+        values.put(DataPoint._ID, count);
         count++;
 
         // get currently stored values from the storage map
@@ -232,6 +241,9 @@ public class LocalStorage {
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             for (ContentValues dataPoint : storedValues) {
+                // strip the _ID column to dodge SQL exceptions
+                dataPoint.remove(DataPoint._ID);
+
                 db.insert(TABLE_PERSISTENT, DataPoint.SENSOR_NAME, dataPoint);
             }
         } catch (Exception e) {
