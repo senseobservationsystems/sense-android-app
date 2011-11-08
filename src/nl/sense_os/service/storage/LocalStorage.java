@@ -1,5 +1,11 @@
 package nl.sense_os.service.storage;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import nl.sense_os.service.R;
+import nl.sense_os.service.SensorData.DataPoint;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -10,13 +16,6 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.provider.BaseColumns;
 import android.util.Log;
-
-import nl.sense_os.service.R;
-import nl.sense_os.service.SensorData.DataPoint;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Storage for recent sensor data. The data is stored in the devices RAM memory, so this
@@ -232,9 +231,9 @@ public class LocalStorage {
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
 
-            // do not store data points that are more than 90 minutes old
+            // do not store data points that are more than 24 hours old
             String where = DataPoint.TIMESTAMP + "<"
-                    + (System.currentTimeMillis() - 1000 * 60 * 90);
+                    + (System.currentTimeMillis() - 1000 * 60 * 60 * 24);
             int deleted = db.delete(TABLE_PERSISTENT, where, null);
             if (deleted > 0) {
                 Log.v(TAG, "Deleted " + deleted + " old data points from persistent storage");
