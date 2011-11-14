@@ -16,9 +16,11 @@ import nl.sense_os.service.SensePrefs.Auth;
 import nl.sense_os.service.SensePrefs.Main.Advanced;
 import nl.sense_os.service.SensePrefs.Main.Ambience;
 import nl.sense_os.service.SensePrefs.Main.Motion;
+import nl.sense_os.service.SensePrefs.Main.PhoneState;
 import nl.sense_os.service.SensePrefs.Status;
 import nl.sense_os.service.ambience.LightSensor;
 import nl.sense_os.service.ambience.NoiseSensor;
+import nl.sense_os.service.ambience.PressureSensor;
 import nl.sense_os.service.deviceprox.DeviceProximity;
 import nl.sense_os.service.external_sensors.OBD2Dongle;
 import nl.sense_os.service.external_sensors.ZephyrBioHarness;
@@ -27,7 +29,6 @@ import nl.sense_os.service.location.LocationSensor;
 import nl.sense_os.service.motion.MotionSensor;
 import nl.sense_os.service.phonestate.BatterySensor;
 import nl.sense_os.service.phonestate.PhoneActivitySensor;
-import nl.sense_os.service.phonestate.PressureSensor;
 import nl.sense_os.service.phonestate.ProximitySensor;
 import nl.sense_os.service.phonestate.SensePhoneState;
 
@@ -1049,6 +1050,13 @@ public class SenseService extends Service {
                     lightSensor = null;
                 }
 
+                // check pressure sensor presence
+                if (pressureSensor != null) {
+                    Log.w(TAG, "pressure sensor is already present!");
+                    pressureSensor.stopPressureSensing();
+                    pressureSensor = null;
+                }
+
                 if (ambienceThread != null && ambienceThread.isAlive()) {
                     Log.w(TAG, "Ambience thread is already present! Quitting the thread...");
                     ambienceThread.getLooper().quit();
@@ -1101,6 +1109,10 @@ public class SenseService extends Service {
                             lightSensor = new LightSensor(SenseService.this);
                             lightSensor.startLightSensing(finalInterval);
                         }
+                        if (mainPrefs.getBoolean(Ambience.PRESSURE, true)) {
+                            pressureSensor = new PressureSensor(SenseService.this);
+                            pressureSensor.startPressureSensing(finalInterval);
+                        }
                     }
                 });
 
@@ -1114,6 +1126,10 @@ public class SenseService extends Service {
                 if (null != lightSensor) {
                     lightSensor.stopLightSensing();
                     lightSensor = null;
+                }
+                if (null != pressureSensor) {
+                    pressureSensor.stopPressureSensing();
+                    pressureSensor = null;
                 }
 
                 if (ambienceThread != null && ambienceThread.isAlive()) {
@@ -1549,13 +1565,6 @@ public class SenseService extends Service {
                     batterySensor = null;
                 }
 
-                // check pressure sensor presence
-                if (pressureSensor != null) {
-                    Log.w(TAG, "pressure sensor is already present!");
-                    pressureSensor.stopPressureSensing();
-                    pressureSensor = null;
-                }
-
                 // check phone activity sensor presence
                 if (phoneActivitySensor != null) {
                     Log.w(TAG, "phone activity sensor is already present!");
@@ -1603,18 +1612,20 @@ public class SenseService extends Service {
                     @Override
                     public void run() {
                         try {
+                            if (mainPrefs.getBoolean(PhoneState.BATTERY, true)) {
+                                batterySensor = new BatterySensor(SenseService.this);
+                                batterySensor.startBatterySensing(finalInterval);
+                            }
+                            if (mainPrefs.getBoolean(PhoneState.SCREEN_ACTIVITY, true)) {
+                                phoneActivitySensor = new PhoneActivitySensor(SenseService.this);
+                                phoneActivitySensor.startPhoneActivitySensing(finalInterval);
+                            }
+                            if (mainPrefs.getBoolean(PhoneState.PROXIMITY, true)) {
+                                proximitySensor = new ProximitySensor(SenseService.this);
+                                proximitySensor.startProximitySensing(finalInterval);
+                            }
                             phoneStateListener = new SensePhoneState(SenseService.this);
-                            proximitySensor = new ProximitySensor(SenseService.this);
-                            batterySensor = new BatterySensor(SenseService.this);
-                            pressureSensor = new PressureSensor(SenseService.this);
-                            phoneActivitySensor = new PhoneActivitySensor(SenseService.this);
-
-                            // start sensing
                             phoneStateListener.startSensing(finalInterval);
-                            proximitySensor.startProximitySensing(finalInterval);
-                            batterySensor.startBatterySensing(finalInterval);
-                            pressureSensor.startPressureSensing(finalInterval);
-                            phoneActivitySensor.startPhoneActivitySensing(finalInterval);
                         } catch (Exception e) {
                             Log.e(TAG, "Phone state thread failed to start!");
                             togglePhoneState(false);
@@ -1632,10 +1643,6 @@ public class SenseService extends Service {
                 if (null != proximitySensor) {
                     proximitySensor.stopProximitySensing();
                     proximitySensor = null;
-                }
-                if (null != pressureSensor) {
-                    pressureSensor.stopPressureSensing();
-                    pressureSensor = null;
                 }
                 if (null != batterySensor) {
                     batterySensor.stopBatterySensing();

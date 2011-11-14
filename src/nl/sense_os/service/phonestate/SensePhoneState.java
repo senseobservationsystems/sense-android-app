@@ -13,6 +13,8 @@ import java.util.TimerTask;
 
 import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
+import nl.sense_os.service.SensePrefs;
+import nl.sense_os.service.SensePrefs.Main.PhoneState;
 import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.SensorData.SensorNames;
 
@@ -21,6 +23,7 @@ import org.json.JSONObject;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Handler;
@@ -140,26 +143,47 @@ public class SensePhoneState extends PhoneStateListener {
      */
     public void startSensing(final int interval) {
 
-        // start listening to the phone state
-        telMgr.listen(this, PhoneStateListener.LISTEN_CALL_FORWARDING_INDICATOR
-                | PhoneStateListener.LISTEN_CALL_STATE
-                | PhoneStateListener.LISTEN_DATA_CONNECTION_STATE
-                | PhoneStateListener.LISTEN_MESSAGE_WAITING_INDICATOR
-                | PhoneStateListener.LISTEN_SERVICE_STATE
-                | PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+        SharedPreferences mainPrefs = context.getSharedPreferences(SensePrefs.MAIN_PREFS,
+                Context.MODE_PRIVATE);
 
-        if (null != transmitTimer) {
-            transmitTimer.cancel();
+        // listen to events as defined in the preferences
+        int events = 0;
+        if (mainPrefs.getBoolean(PhoneState.CALL_STATE, true)) {
+            events |= PhoneStateListener.LISTEN_CALL_STATE;
         }
-        transmitTimer = new Timer();
+        if (mainPrefs.getBoolean(PhoneState.DATA_CONNECTION, true)) {
+            events |= PhoneStateListener.LISTEN_DATA_CONNECTION_STATE;
+        }
+        if (mainPrefs.getBoolean(PhoneState.UNREAD_MSG, true)) {
+            events |= PhoneStateListener.LISTEN_MESSAGE_WAITING_INDICATOR;
+        }
+        if (mainPrefs.getBoolean(PhoneState.SERVICE_STATE, true)) {
+            events |= PhoneStateListener.LISTEN_SERVICE_STATE;
+        }
+        if (mainPrefs.getBoolean(PhoneState.SIGNAL_STRENGTH, true)) {
+            events |= PhoneStateListener.LISTEN_SIGNAL_STRENGTH;
+            events |= 256; // PhoneStateListener.LISTEN_SIGNAL_STRENGTHS
+        }
 
-        transmitTimer.scheduleAtFixedRate(new TimerTask() {
+        if (0 != events) {
+            // start listening to the phone state
+            telMgr.listen(this, events);
 
-            @Override
-            public void run() {
-                transmitLatestState();
+            if (null != transmitTimer) {
+                transmitTimer.cancel();
             }
-        }, interval, interval);
+            transmitTimer = new Timer();
+
+            transmitTimer.scheduleAtFixedRate(new TimerTask() {
+
+                @Override
+                public void run() {
+                    transmitLatestState();
+                }
+            }, interval, interval);
+        } else {
+            Log.w(TAG, "Phone state sensor is started but is not registered for any events");
+        }
     }
 
     /**
@@ -329,10 +353,13 @@ public class SensePhoneState extends PhoneStateListener {
 
         JSONObject json = new JSONObject();
         try {
-            json.put("CDMA dBm", signalStrength.getCdmaDbm());
-            json.put("EVDO dBm", signalStrength.getEvdoDbm());
-            json.put("GSM signal strength", signalStrength.getGsmSignalStrength());
-            json.put("GSM bit error rate", signalStrength.getGsmBitErrorRate());
+            if (signalStrength.isGsm()) {
+                json.put("GSM signal strength", signalStrength.getGsmSignalStrength());
+                json.put("GSM bit error rate", signalStrength.getGsmBitErrorRate());
+            } else {
+                json.put("CDMA dBm", signalStrength.getCdmaDbm());
+                json.put("EVDO dBm", signalStrength.getEvdoDbm());
+            }
         } catch (JSONException e) {
             Log.e(TAG, "JSONException in onSignalStrengthsChanged", e);
             return;

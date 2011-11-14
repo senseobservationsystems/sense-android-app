@@ -3,7 +3,7 @@
  *     Copyright (C)  2010 Sense Observation Systems, Rotterdam, the Netherlands.  All rights reserved.     *
  ************************************************************************************************************
  */
-package nl.sense_os.service.phonestate;
+package nl.sense_os.service.ambience;
 
 import java.util.List;
 
