@@ -226,20 +226,21 @@ public class NoiseSensor extends PhoneStateListener {
          */
         public void stopRecording() {
 
-            // clean up the AudioRecord if the noise sensor was using it
-            if (audioRecord != null && audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
-
-                try {
-                    audioRecord.stop();
-                    Log.i(TAG, "Stopped recording for sound level measurement...");
-                } catch (IllegalStateException e) {
-                    // audioRecord is probably already stopped..?
-                }
-            }
-
             try {
-                audioRecord.release();
-                audioRecord = null;
+                if (audioRecord != null) {
+                    if (audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
+
+                        try {
+                            audioRecord.stop();
+                            Log.i(TAG, "Stopped recording for sound level measurement...");
+                        } catch (IllegalStateException e) {
+                            // audioRecord is probably already stopped..?
+                        }
+                    }
+                    audioRecord.release();
+                    audioRecord = null;
+
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Exception while stopping noise sample recording", e);
             }
