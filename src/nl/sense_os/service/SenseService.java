@@ -9,8 +9,8 @@ package nl.sense_os.service;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URI;
 import java.net.URLEncoder;
+import java.util.HashMap;
 
 import nl.sense_os.service.SensePrefs.Auth;
 import nl.sense_os.service.SensePrefs.Main.Advanced;
@@ -508,20 +508,21 @@ public class SenseService extends Service {
                 return;
             }
 
-            URI uri = new URI(SenseUrls.VERSION + "?version=" + versionName);
-            final JSONObject version = SenseApi.getJsonObject(this, uri, "");
+            String url = SenseUrls.VERSION + "?version=" + versionName;
+            HashMap<String, String> response = SenseApi.request(this, url, null, null);
+            JSONObject content = new JSONObject(response.get("content"));
 
-            if (version == null) {
-                return;
-            }
-
-            if (version.getString("message").length() > 0) {
-                Log.i(TAG, "Newer Sense Platform version available: " + version.toString());
-                showToast(version.getString("message"));
+            if (content.getString("message").length() > 0) {
+                Log.i(TAG, "Newer Sense Platform version available: " + content.toString());
+                showToast(content.getString("message"));
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "Failed to get Sense Platform version! Exception: " + e.getMessage());
+            if (null != e.getMessage()) {
+                Log.e(TAG, "Failed to get Sense Platform version! Message: " + e.getMessage());
+            } else {
+                Log.e(TAG, "Failed to get Sense Platform version!", e);
+            }
         }
     }
 

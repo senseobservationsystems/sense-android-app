@@ -1,7 +1,5 @@
 package nl.sense_os.service.feedback;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,13 +39,15 @@ public class FeedbackChecker extends IntentService {
             // get last feedback sensor value
             if (cookie != null) {
                 try {
-                    JSONObject json = SenseApi.getJsonObject(this, new URI(url), cookie);
-                    // parseFeedback(json);
+                    HashMap<String, String> response = SenseApi.request(this, url, null, cookie);
 
-                    sendFeedback(json, actionAfterCheck);
+                    JSONObject content = new JSONObject(response.get("content"));
+                    // parseFeedback(content);
 
-                } catch (URISyntaxException e) {
-                    Log.e(TAG, "URISyntaxException checking feedback sensor", e);
+                    sendFeedback(content, actionAfterCheck);
+
+                } catch (Exception e) {
+                    Log.e(TAG, "Exception checking feedback sensor", e);
                 }
             }
         }

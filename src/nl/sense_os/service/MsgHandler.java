@@ -65,19 +65,14 @@ public class MsgHandler extends Service {
         String cookie;
         Cursor cursor;
         private WakeLock wakeLock;
-        private URL url;
+        private String url;
         private final DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.ENGLISH);
         private final NumberFormat dateFormatter = new DecimalFormat("##########.###", symbols);
 
         public AbstractDataTransmitHandler(Context context, Looper looper) {
             super(looper);
             this.context = context;
-            try {
-                url = new URL(SenseUrls.SENSOR_DATA.replace("/<id>/", "/"));
-            } catch (MalformedURLException e) {
-                // should never happen
-                Log.e(TAG, "Failed to create the URL to post sensor data points to");
-            }
+            url = SenseUrls.SENSOR_DATA.replace("/<id>/", "/");
         }
 
         /**
@@ -161,8 +156,8 @@ public class MsgHandler extends Service {
          */
         private void postData(JSONObject transmission) throws JSONException, MalformedURLException {
 
-            HashMap<String, String> response = SenseApi.sendJson(context, url, transmission,
-                    "POST", cookie);
+            HashMap<String, String> response = SenseApi
+                    .request(context, url, transmission, cookie);
 
             if (response == null) {
                 // Error when sending
@@ -549,15 +544,12 @@ public class MsgHandler extends Service {
                     return;
                 }
 
-                HashMap<String, String> response = SenseApi.sendJson(context, new URL(url), data,
-                        "POST", cookie);
+                HashMap<String, String> response = SenseApi.request(context, url, data, cookie);
                 // Error when sending
-                if (response == null
-                        || response.get("http response code").compareToIgnoreCase("201") != 0) {
+                if (response == null || !response.get("http response code").equals("201")) {
 
                     // if un-authorized: relogin
-                    if (response != null
-                            && response.get("http response code").compareToIgnoreCase("403") == 0) {
+                    if (response != null && response.get("http response code").equals("403")) {
                         final Intent serviceIntent = new Intent(
                                 getString(R.string.action_sense_service));
                         serviceIntent.putExtra(SenseService.INTENT_EXTRA_RELOGIN, true);
