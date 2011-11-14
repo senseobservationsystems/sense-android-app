@@ -11,12 +11,19 @@ import java.net.URI;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import nl.sense_os.service.SensePrefs.Auth;
 import nl.sense_os.service.SensePrefs.Main.Advanced;
@@ -25,7 +32,11 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.SingleClientConnManager;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -703,14 +714,35 @@ public class SenseApi {
                     Context.MODE_PRIVATE);
             final boolean compress = mainPrefs.getBoolean(Advanced.COMPRESS, true);
 
-            final HttpGet get = new HttpGet(uri);
+            HttpGet get = new HttpGet(uri);
             get.setHeader("Cookie", cookie);
             if (compress)
                 get.setHeader("Accept-Encoding", "gzip");
             final HttpClient client = new DefaultHttpClient();
 
             // client.getConnectionManager().closeIdleConnections(2, TimeUnit.SECONDS);
-            final HttpResponse response = client.execute(get);
+            HttpResponse response = null;
+            if ("https".equals(uri.getScheme().toLowerCase())) {
+                Log.d(TAG, "Use https for GET");
+
+                SchemeRegistry registry = new SchemeRegistry();
+                SSLSocketFactory socketFactory = SSLSocketFactory.getSocketFactory();
+                socketFactory.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+                registry.register(new Scheme("https", socketFactory, 443));
+                SingleClientConnManager mgr = new SingleClientConnManager(client.getParams(),
+                        registry);
+                DefaultHttpClient httpClient = new DefaultHttpClient(mgr, client.getParams());
+
+                // Set verifier
+                HttpsURLConnection
+                        .setDefaultHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+
+                // Example send http request
+                get = new HttpGet(uri);
+                response = httpClient.execute(get);
+            } else {
+                response = client.execute(get);
+            }
             if (response == null) {
                 return null;
             }
@@ -741,6 +773,35 @@ public class SenseApi {
     }
 
     /**
+     * Trust every server - dont check for any certificate
+     */
+    private static void trustAllHosts() {
+        // Create a trust manager that does not validate certificate chains
+        TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                return new java.security.cert.X509Certificate[] {};
+            }
+
+            public void checkClientTrusted(X509Certificate[] chain, String authType)
+                    throws CertificateException {
+            }
+
+            public void checkServerTrusted(X509Certificate[] chain, String authType)
+                    throws CertificateException {
+            }
+        } };
+
+        // Install the all-trusting trust manager
+        try {
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * This method sends a JSON object to update or create an item it returns the HTTP-response code
      */
     public static HashMap<String, String> sendJson(Context context, URL url, JSONObject json,
@@ -750,7 +811,15 @@ public class SenseApi {
             // Log.d(TAG, "Sending:" + url.toString());
 
             // Open New URL connection channel.
-            urlConn = (HttpURLConnection) url.openConnection();
+            if ("https".equals(url.getProtocol().toLowerCase())) {
+                Log.d(TAG, "Use https for POST");
+                trustAllHosts();
+                HttpsURLConnection https = (HttpsURLConnection) url.openConnection();
+                https.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+                urlConn = https;
+            } else {
+                urlConn = (HttpURLConnection) url.openConnection();
+            }
 
             // set post request
             urlConn.setRequestMethod(method);
