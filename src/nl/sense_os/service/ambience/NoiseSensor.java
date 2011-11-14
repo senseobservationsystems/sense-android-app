@@ -43,6 +43,7 @@ public class NoiseSensor extends PhoneStateListener {
 
             // clear old sample jobs
             if (noiseSampleJob != null) {
+                noiseSampleJob.stopRecording();
                 noiseSampleHandler.removeCallbacks(noiseSampleJob);
             }
 
@@ -223,7 +224,7 @@ public class NoiseSensor extends PhoneStateListener {
         /**
          * Stops the recording and releases the AudioRecord object, making it unusable.
          */
-        private void stopRecording() {
+        public void stopRecording() {
 
             // clean up the AudioRecord if the noise sensor was using it
             if (audioRecord != null && audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
@@ -234,8 +235,13 @@ public class NoiseSensor extends PhoneStateListener {
                 } catch (IllegalStateException e) {
                     // audioRecord is probably already stopped..?
                 }
+            }
+
+            try {
                 audioRecord.release();
                 audioRecord = null;
+            } catch (Exception e) {
+                Log.e(TAG, "Exception while stopping noise sample recording", e);
             }
         }
     }
@@ -334,11 +340,15 @@ public class NoiseSensor extends PhoneStateListener {
         /**
          * Stops the recording and releases the MediaRecorder object, making it unusable.
          */
-        private void stopRecording() {
+        public void stopRecording() {
 
             // clean up the MediaRecorder if the mic sensor was using it
             if (recorder != null) {
-                recorder.stop();
+                try {
+                    recorder.stop();
+                } catch (IllegalStateException e) {
+                    // probably already stopped
+                }
 
                 // if we reset, we can reuse the object by going back to setAudioSource() step
                 recorder.reset();
@@ -443,11 +453,13 @@ public class NoiseSensor extends PhoneStateListener {
 
             // stop the sound recordings
             if (soundStreamJob != null) {
+                soundStreamJob.stopRecording();
                 soundStreamHandler.removeCallbacks(soundStreamJob);
                 soundStreamJob = null;
             }
             if (noiseSampleJob != null) {
-                soundStreamHandler.removeCallbacks(noiseSampleJob);
+                noiseSampleJob.stopRecording();
+                noiseSampleHandler.removeCallbacks(noiseSampleJob);
                 noiseSampleJob = null;
             }
 
