@@ -519,13 +519,14 @@ public class SenseApp extends Activity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(Menu.NONE, MenuItems.SETTINGS, Menu.NONE, "Preferences").setIcon(
-                android.R.drawable.ic_menu_preferences);
-        menu.add(Menu.NONE, MenuItems.FAQ, Menu.NONE, "FAQ").setIcon(
+        menu.add(Menu.NONE, MenuItems.SETTINGS, Menu.NONE, getString(R.string.menu_preferences))
+                .setIcon(android.R.drawable.ic_menu_preferences);
+        menu.add(Menu.NONE, MenuItems.FAQ, Menu.NONE, getString(R.string.menu_faq)).setIcon(
                 android.R.drawable.ic_menu_help);
-        menu.add(Menu.NONE, MenuItems.LOGIN, Menu.NONE, "Log in").setIcon(R.drawable.ic_menu_login);
-        menu.add(Menu.NONE, MenuItems.REGISTER, Menu.NONE, "Register").setIcon(
-                R.drawable.ic_menu_invite);
+        menu.add(Menu.NONE, MenuItems.LOGIN, Menu.NONE, getString(R.string.menu_login)).setIcon(
+                R.drawable.ic_menu_login);
+        menu.add(Menu.NONE, MenuItems.REGISTER, Menu.NONE, getString(R.string.menu_register))
+                .setIcon(R.drawable.ic_menu_invite);
         return true;
     }
 
