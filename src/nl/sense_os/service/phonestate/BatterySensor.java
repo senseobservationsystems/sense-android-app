@@ -5,8 +5,9 @@
  */
 package nl.sense_os.service.phonestate;
 
-import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
+import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.SensorData.SensorNames;
 
 import org.json.JSONException;
@@ -60,8 +61,7 @@ public class BatterySensor {
                         if (plugType > 0) {
                             statusString = statusString
                                     + " "
-                                    + ((plugType == BatteryManager.BATTERY_PLUGGED_AC)
-                                            ? "AC"
+                                    + ((plugType == BatteryManager.BATTERY_PLUGGED_AC) ? "AC"
                                             : "USB");
                         }
                         try {
@@ -107,11 +107,11 @@ public class BatterySensor {
                 if (gotData) {
                     // Log.v(TAG, "Transmit battery state: " + json.toString());
 
-                    Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
-                    i.putExtra(MsgHandler.KEY_VALUE, json.toString());
-                    i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.BATTERY_SENSOR);
-                    i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+                    Intent i = new Intent(context.getString(R.string.action_sense_new_data));
+                    i.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.JSON);
+                    i.putExtra(DataPoint.VALUE, json.toString());
+                    i.putExtra(DataPoint.SENSOR_NAME, SensorNames.BATTERY_SENSOR);
+                    i.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                     lastSampleTime = System.currentTimeMillis();
                     context.startService(i);
                 }

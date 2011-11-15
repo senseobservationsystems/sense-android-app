@@ -17,9 +17,9 @@ import java.util.UUID;
 import java.util.Vector;
 
 import nl.sense_os.app.R;
-import nl.sense_os.service.MsgHandler;
 import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensePrefs;
+import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.SensorData.SensorNames;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -154,15 +154,9 @@ public class ZephyrHxM {
                             heartRate = (heartRate + 255);
 
                         // Log.v(TAG, "Heart rate:" + heartRate);
-                        Intent heartRateIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                        heartRateIntent
-                                .putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.HEART_RATE);
-                        heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
-                        heartRateIntent.putExtra(MsgHandler.KEY_VALUE, heartRate);
-                        heartRateIntent.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.INT);
-                        heartRateIntent.putExtra(MsgHandler.KEY_TIMESTAMP,
-                                System.currentTimeMillis());
-                        context.startService(heartRateIntent);
+                        sendDataPoint(SensorNames.HEART_RATE, "HxM " + deviceName, heartRate,
+                                SenseDataTypes.INT);
+
                     }
                     // send speed
                     if (prefs.getBoolean(
@@ -171,13 +165,8 @@ public class ZephyrHxM {
                         float speedF = (float) speed / 256f;
 
                         // Log.v(TAG, "Speed:" + speedF);
-                        Intent speedIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                        speedIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.SPEED);
-                        speedIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
-                        speedIntent.putExtra(MsgHandler.KEY_VALUE, speedF);
-                        speedIntent.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.FLOAT);
-                        speedIntent.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
-                        context.startService(speedIntent);
+                        sendDataPoint(SensorNames.SPEED, "HxM " + deviceName, speedF,
+                                SenseDataTypes.FLOAT);
                     }
                     // send distance
                     if (prefs.getBoolean(
@@ -186,14 +175,8 @@ public class ZephyrHxM {
                         float distanceF = (float) distance / 16F;
 
                         // Log.v(TAG, "Distance:" + distanceF);
-                        Intent distanceIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                        distanceIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.DISTANCE);
-                        distanceIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
-                        distanceIntent.putExtra(MsgHandler.KEY_VALUE, distanceF);
-                        distanceIntent.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.FLOAT);
-                        distanceIntent.putExtra(MsgHandler.KEY_TIMESTAMP,
-                                System.currentTimeMillis());
-                        context.startService(distanceIntent);
+                        sendDataPoint(SensorNames.DISTANCE, "HxM " + deviceName, distanceF,
+                                SenseDataTypes.FLOAT);
                     }
                     // send battery charge
                     if (prefs.getBoolean(
@@ -201,25 +184,17 @@ public class ZephyrHxM {
                         Short battery = (short) buffer[11];
 
                         // Log.v(TAG, "Battery charge:" + battery.intValue());
-                        Intent batteryIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                        batteryIntent.putExtra(MsgHandler.KEY_SENSOR_NAME,
-                                SensorNames.BATTERY_CHARGE);
-                        batteryIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
-                        batteryIntent.putExtra(MsgHandler.KEY_VALUE, battery.intValue());
-                        batteryIntent.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.INT);
-                        batteryIntent
-                                .putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
-                        context.startService(batteryIntent);
+                        sendDataPoint(SensorNames.BATTERY_CHARGE, "HxM " + deviceName, battery,
+                                SenseDataTypes.INT);
+
                         if (notifyOnEmptyBattery && battery < 5 && battery != 0
                                 && (System.currentTimeMillis() - lastEmptyBatteryNotify) > 300000) {
                             sendNotification("Zephyr HxM empty battery warning: " + battery + "%");
                             lastEmptyBatteryNotify = System.currentTimeMillis();
                         }
+                        // every 5 min
                         if (battery == 0
-                                && (System.currentTimeMillis() - lastNoChestConnectionNofify) > 300000) // every
-                                                                                                        // 5
-                                                                                                        // min
-                        {
+                                && (System.currentTimeMillis() - lastNoChestConnectionNofify) > 300000) {
                             sendNotification("Zephyr HxM not properly connected to the chest, make sure the strap is wet enough.");
                             lastNoChestConnectionNofify = System.currentTimeMillis();
                         }
@@ -231,15 +206,8 @@ public class ZephyrHxM {
                         // Short strides = (short)buffer[54];
 
                         // Log.v(TAG, "Battery charge:" + battery.intValue());
-                        Intent stridesIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                        stridesIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.STRIDES);
-                        stridesIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "HxM " + deviceName);
-                        stridesIntent.putExtra(MsgHandler.KEY_VALUE, strides.intValue());
-                        stridesIntent.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.INT);
-                        stridesIntent
-                                .putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
-                        context.startService(stridesIntent);
-
+                        sendDataPoint(SensorNames.STRIDES, "HxM " + deviceName, strides,
+                                SenseDataTypes.INT);
                     }
                     return true;
 
@@ -270,6 +238,29 @@ public class ZephyrHxM {
                 return false;
             }
             return false;
+        }
+
+        private void sendDataPoint(String sensorName, String description, Object value,
+                String dataType) {
+            Intent intent = new Intent(context.getString(R.string.action_sense_new_data));
+            intent.putExtra(DataPoint.SENSOR_NAME, sensorName);
+            intent.putExtra(DataPoint.SENSOR_DESCRIPTION, description);
+            intent.putExtra(DataPoint.DATA_TYPE, dataType);
+            if (dataType.equals(SenseDataTypes.BOOL)) {
+                intent.putExtra(DataPoint.VALUE, (Boolean) value);
+            } else if (dataType.equals(SenseDataTypes.FLOAT)) {
+                intent.putExtra(DataPoint.VALUE, (Float) value);
+            } else if (dataType.equals(SenseDataTypes.INT)) {
+                intent.putExtra(DataPoint.VALUE, (Integer) value);
+            } else if (dataType.equals(SenseDataTypes.JSON)) {
+                intent.putExtra(DataPoint.VALUE, (String) value);
+            } else if (dataType.equals(SenseDataTypes.STRING)) {
+                intent.putExtra(DataPoint.VALUE, (String) value);
+            } else {
+                Log.w(TAG, "Error sending data point: unexpected data type! '" + dataType + "'");
+            }
+            intent.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
+            context.startService(intent);
         }
     }
 
@@ -662,7 +653,7 @@ public class ZephyrHxM {
         Notification note = new Notification(icon, tickerText, when);
         note.defaults |= Notification.FLAG_ONLY_ALERT_ONCE | Notification.DEFAULT_ALL;
         note.flags |= Notification.FLAG_AUTO_CANCEL | Notification.FLAG_ONLY_ALERT_ONCE;
-        final Intent notifIntent = new Intent("nl.sense_os.app.SenseApp");
+        final Intent notifIntent = new Intent(context.getString(R.string.action_sense_app));
         notifIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notifIntent, 0);
         final CharSequence contentTitle = "Sense Platform";

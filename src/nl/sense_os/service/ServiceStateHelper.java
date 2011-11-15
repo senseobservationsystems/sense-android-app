@@ -1,15 +1,13 @@
 package nl.sense_os.service;
 
+import nl.sense_os.app.R;
+import nl.sense_os.service.SensePrefs.Auth;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-
-import nl.sense_os.app.R;
-import nl.sense_os.app.appwidget.SenseWidgetUpdater;
-import nl.sense_os.service.SensePrefs.Auth;
 
 public class ServiceStateHelper {
 
@@ -155,12 +153,14 @@ public class ServiceStateHelper {
 
     public void setAmbienceActive(boolean active) {
         ambienceActive = active;
-        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
+        context.startService(new Intent(context
+                .getString(nl.sense_os.service.R.string.action_widget_update)));
     }
 
     public void setDevProxActive(boolean active) {
         devProxActive = active;
-        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
+        context.startService(new Intent(context
+                .getString(nl.sense_os.service.R.string.action_widget_update)));
     }
 
     public void setExternalActive(boolean active) {
@@ -175,12 +175,14 @@ public class ServiceStateHelper {
             // : "Sense Platform Service is in background...");
             updateNotification();
         }
-        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
+        context.startService(new Intent(context
+                .getString(nl.sense_os.service.R.string.action_widget_update)));
     }
 
     public void setLocationActive(boolean active) {
         locationActive = active;
-        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
+        context.startService(new Intent(context
+                .getString(nl.sense_os.service.R.string.action_widget_update)));
     }
 
     public void setLoggedIn(boolean loggedIn) {
@@ -190,17 +192,20 @@ public class ServiceStateHelper {
             // : "Sense Platform Service logged out...");
             updateNotification();
         }
-        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
+        context.startService(new Intent(context
+                .getString(nl.sense_os.service.R.string.action_widget_update)));
     }
 
     public void setMotionActive(boolean active) {
         motionActive = active;
-        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
+        context.startService(new Intent(context
+                .getString(nl.sense_os.service.R.string.action_widget_update)));
     }
 
     public void setPhoneStateActive(boolean active) {
         phoneStateActive = active;
-        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
+        context.startService(new Intent(context
+                .getString(nl.sense_os.service.R.string.action_widget_update)));
     }
 
     public void setQuizActive(boolean active) {
@@ -215,7 +220,8 @@ public class ServiceStateHelper {
             // : "Sense Platform Service stopped...");
             updateNotification();
         }
-        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
+        context.startService(new Intent(context
+                .getString(nl.sense_os.service.R.string.action_widget_update)));
     }
 
     /**

@@ -23,6 +23,7 @@ import java.util.Map.Entry;
 import nl.sense_os.service.SensePrefs.Auth;
 import nl.sense_os.service.SensePrefs.Main;
 import nl.sense_os.service.SensorData.DataPoint;
+import nl.sense_os.service.storage.LocalStorage;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -64,19 +65,14 @@ public class MsgHandler extends Service {
         String cookie;
         Cursor cursor;
         private WakeLock wakeLock;
-        private URL url;
+        private String url;
         private final DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.ENGLISH);
         private final NumberFormat dateFormatter = new DecimalFormat("##########.###", symbols);
 
         public AbstractDataTransmitHandler(Context context, Looper looper) {
             super(looper);
             this.context = context;
-            try {
-                url = new URL(SenseUrls.SENSOR_DATA.replace("/<id>/", "/"));
-            } catch (MalformedURLException e) {
-                // should never happen
-                Log.e(TAG, "Failed to create the URL to post sensor data points to");
-            }
+            url = SenseUrls.SENSOR_DATA.replace("/<id>/", "/");
         }
 
         /**
@@ -160,8 +156,8 @@ public class MsgHandler extends Service {
          */
         private void postData(JSONObject transmission) throws JSONException, MalformedURLException {
 
-            HashMap<String, String> response = SenseApi.sendJson(context, url, transmission,
-                    "POST", cookie);
+            HashMap<String, String> response = SenseApi
+                    .request(context, url, transmission, cookie);
 
             if (response == null) {
                 // Error when sending
@@ -173,8 +169,9 @@ public class MsgHandler extends Service {
 
                 // if un-authorized: relogin
                 if (statusCode.compareToIgnoreCase("403") == 0) {
-                    final Intent serviceIntent = new Intent(ISenseService.class.getName());
-                    serviceIntent.putExtra(SenseService.ACTION_RELOGIN, true);
+                    final Intent serviceIntent = new Intent(
+                            getString(R.string.action_sense_service));
+                    serviceIntent.putExtra(SenseService.INTENT_EXTRA_RELOGIN, true);
                     context.startService(serviceIntent);
                 }
 
@@ -209,7 +206,7 @@ public class MsgHandler extends Service {
 
                 // organize the data into a hash map sorted by sensor
                 sensorDataMap = new HashMap<String, JSONObject>();
-                String sensorName, sensorDesc, dataType, value;
+                String sensorName, displayName, sensorDesc, dataType, value;
                 long timestamp;
                 int points = 0;
                 while (points < MAX_POST_DATA && !cursor.isAfterLast()) {
@@ -217,6 +214,13 @@ public class MsgHandler extends Service {
                     // get the data point details
                     sensorName = cursor.getString(cursor
                             .getColumnIndexOrThrow(DataPoint.SENSOR_NAME));
+                    try {
+                        // TODO ugly solution
+                        displayName = cursor.getString(cursor
+                                .getColumnIndexOrThrow(DataPoint.DISPLAY_NAME));
+                    } catch (IllegalArgumentException e) {
+                        displayName = sensorName;
+                    }
                     sensorDesc = cursor.getString(cursor
                             .getColumnIndexOrThrow(DataPoint.SENSOR_DESCRIPTION));
                     dataType = cursor.getString(cursor.getColumnIndexOrThrow(DataPoint.DATA_TYPE));
@@ -238,7 +242,7 @@ public class MsgHandler extends Service {
                         if (sensorEntry == null) {
                             sensorEntry = new JSONObject();
                             sensorEntry.put("sensor_id", SenseApi.getSensorId(context, sensorName,
-                                    value, dataType, sensorDesc));
+                                    displayName, value, dataType, sensorDesc));
                             data = new JSONArray();
                         } else {
                             data = sensorEntry.getJSONArray("data");
@@ -265,7 +269,7 @@ public class MsgHandler extends Service {
                         dataArray.put(data);
                         sensorData.put("data", dataArray);
 
-                        sendSensorData(sensorName, sensorData, dataType, sensorDesc);
+                        sendSensorData(sensorName, displayName, sensorData, dataType, sensorDesc);
                     }
 
                     cursor.moveToNext();
@@ -303,15 +307,24 @@ public class MsgHandler extends Service {
 
         @Override
         protected Cursor getUnsentData() {
-            String where = DataPoint.TRANSMIT_STATE + "=0";
-            Cursor unsent = getContentResolver().query(DataPoint.CONTENT_PERSISTED_URI, null,
-                    where, null, null);
-            if (null != unsent && unsent.moveToFirst()) {
-                Log.v(TAG, "Found " + unsent.getCount()
-                        + " unsent data points in persistant storage");
-                return unsent;
-            } else {
-                Log.v(TAG, "No unsent data points in the persistant storage");
+            try {
+                String where = DataPoint.TRANSMIT_STATE + "=0";
+                Uri contentUri = Uri.parse("content://"
+                        + getString(R.string.local_storage_authority)
+                        + DataPoint.CONTENT_PERSISTED_URI_PATH);
+                Cursor unsent = LocalStorage.getInstance(MsgHandler.this).query(contentUri, null,
+                        where, null, null);
+
+                if (null != unsent && unsent.moveToFirst()) {
+                    Log.v(TAG, "Found " + unsent.getCount()
+                            + " unsent data points in persistant storage");
+                    return unsent;
+                } else {
+                    Log.v(TAG, "No unsent data points in the persistant storage");
+                    return new MatrixCursor(new String[] {});
+                }
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "Error querying Local Storage!", e);
                 return new MatrixCursor(new String[] {});
             }
         }
@@ -357,15 +370,22 @@ public class MsgHandler extends Service {
                         + max;
 
                 // delete the data from the storage
-                int deleted = getContentResolver().delete(DataPoint.CONTENT_PERSISTED_URI, where,
-                        null);
-                if (deleted == dataPoints.length()) {
-                    Log.v(TAG, "Deleted all " + deleted + " '" + sensorName
-                            + "' points from the persistant storage");
-                } else {
-                    Log.w(TAG, "Wrong number of '" + sensorName
-                            + "' data points deleted after transmission! " + deleted + " vs. "
-                            + dataPoints.length());
+                try {
+                    Uri contentUri = Uri.parse("content://"
+                            + getString(R.string.local_storage_authority)
+                            + DataPoint.CONTENT_PERSISTED_URI_PATH);
+                    int deleted = LocalStorage.getInstance(MsgHandler.this).delete(contentUri,
+                            where, null);
+                    if (deleted == dataPoints.length()) {
+                        Log.v(TAG, "Deleted all " + deleted + " '" + sensorName
+                                + "' points from the persistant storage");
+                    } else {
+                        Log.w(TAG, "Wrong number of '" + sensorName
+                                + "' data points deleted after transmission! " + deleted + " vs. "
+                                + dataPoints.length());
+                    }
+                } catch (IllegalArgumentException e) {
+                    Log.e(TAG, "Error deleting points from Local Storage!", e);
                 }
             }
         }
@@ -384,14 +404,22 @@ public class MsgHandler extends Service {
 
         @Override
         protected Cursor getUnsentData() {
-            String where = DataPoint.TRANSMIT_STATE + "=0";
-            Cursor unsent = getContentResolver().query(DataPoint.CONTENT_URI, null, where, null,
-                    null);
-            if (null != unsent && unsent.moveToFirst()) {
-                Log.v(TAG, "Found " + unsent.getCount() + " unsent data points in local storage");
-                return unsent;
-            } else {
-                Log.v(TAG, "No unsent recent data points");
+            try {
+                String where = DataPoint.TRANSMIT_STATE + "=0";
+                Uri contentUri = Uri.parse("content://"
+                        + getString(R.string.local_storage_authority) + DataPoint.CONTENT_URI_PATH);
+                Cursor unsent = LocalStorage.getInstance(MsgHandler.this).query(contentUri, null,
+                        where, null, null);
+                if (null != unsent && unsent.moveToFirst()) {
+                    Log.v(TAG, "Found " + unsent.getCount()
+                            + " unsent data points in local storage");
+                    return unsent;
+                } else {
+                    Log.v(TAG, "No unsent recent data points");
+                    return new MatrixCursor(new String[] {});
+                }
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "Error querying Local Storage!", e);
                 return new MatrixCursor(new String[] {});
             }
         }
@@ -440,15 +468,23 @@ public class MsgHandler extends Service {
                         + DataPoint.TIMESTAMP + ">=" + min + " AND " + DataPoint.TIMESTAMP + " <="
                         + max;
 
-                int updated = getContentResolver().update(DataPoint.CONTENT_URI, values, where,
-                        null);
-                if (updated == dataPoints.length()) {
-                    Log.v(TAG, "Updated all " + updated + " '" + sensorName
-                            + "' data points in the local storage");
-                } else {
-                    Log.w(TAG, "Wrong number of '" + sensorName
-                            + "' data points updated after transmission! " + updated + " vs. "
-                            + dataPoints.length());
+                // update points in local storage
+                try {
+                    Uri contentUri = Uri.parse("content://"
+                            + getString(R.string.local_storage_authority)
+                            + DataPoint.CONTENT_URI_PATH);
+                    int updated = LocalStorage.getInstance(MsgHandler.this).update(contentUri,
+                            values, where, null);
+                    if (updated == dataPoints.length()) {
+                        Log.v(TAG, "Updated all " + updated + " '" + sensorName
+                                + "' data points in the local storage");
+                    } else {
+                        Log.w(TAG, "Wrong number of '" + sensorName
+                                + "' data points updated after transmission! " + updated + " vs. "
+                                + dataPoints.length());
+                    }
+                } catch (IllegalArgumentException e) {
+                    Log.e(TAG, "Error updating points in Local Storage!", e);
                 }
             }
         }
@@ -458,18 +494,21 @@ public class MsgHandler extends Service {
 
         private final String cookie;
         private final String sensorName;
+        private final String displayName;
         private final String deviceType;
         private final String dataType;
         private final Context context;
         private final JSONObject data;
         private WakeLock wakeLock;
 
-        public SendDataThread(String cookie, JSONObject data, String sensorName, String dataType,
-                String deviceType, Context context, Looper looper) {
+        public SendDataThread(String cookie, JSONObject data, String sensorName,
+                String displayName, String dataType, String deviceType, Context context,
+                Looper looper) {
             super(looper);
             this.cookie = cookie;
             this.data = data;
             this.sensorName = sensorName;
+            this.displayName = displayName;
             this.dataType = dataType;
             this.deviceType = deviceType != null ? deviceType : sensorName;
             this.context = context;
@@ -480,8 +519,8 @@ public class MsgHandler extends Service {
             try {
                 String sensorValue = (String) ((JSONObject) ((JSONArray) data.get("data")).get(0))
                         .get("value");
-                url = MsgHandler.this.getSensorUrl(context, sensorName, sensorValue, dataType,
-                        deviceType);
+                url = MsgHandler.this.getSensorUrl(context, sensorName, displayName, sensorValue,
+                        dataType, deviceType);
             } catch (Exception e) {
                 Log.e(TAG, "Exception retrieving sensor URL from API", e);
             }
@@ -505,17 +544,15 @@ public class MsgHandler extends Service {
                     return;
                 }
 
-                HashMap<String, String> response = SenseApi.sendJson(context, new URL(url), data,
-                        "POST", cookie);
+                HashMap<String, String> response = SenseApi.request(context, url, data, cookie);
                 // Error when sending
-                if (response == null
-                        || response.get("http response code").compareToIgnoreCase("201") != 0) {
+                if (response == null || !response.get("http response code").equals("201")) {
 
                     // if un-authorized: relogin
-                    if (response != null
-                            && response.get("http response code").compareToIgnoreCase("403") == 0) {
-                        final Intent serviceIntent = new Intent(ISenseService.class.getName());
-                        serviceIntent.putExtra(SenseService.ACTION_RELOGIN, true);
+                    if (response != null && response.get("http response code").equals("403")) {
+                        final Intent serviceIntent = new Intent(
+                                getString(R.string.action_sense_service));
+                        serviceIntent.putExtra(SenseService.INTENT_EXTRA_RELOGIN, true);
                         context.startService(serviceIntent);
                     }
 
@@ -568,12 +605,19 @@ public class MsgHandler extends Service {
                     + DataPoint.TIMESTAMP + ">=" + min + " AND " + DataPoint.TIMESTAMP + " <="
                     + max;
 
-            int updated = getContentResolver().update(DataPoint.CONTENT_URI, values, where, null);
-            if (updated == dataPoints.length()) {
-                // Log.v(TAG, "Updated all " + updated + " rows in the local storage");
-            } else {
-                Log.w(TAG, "Wrong number of local storage points updated! " + updated + " vs. "
-                        + dataPoints.length());
+            try {
+                Uri contentUri = Uri.parse("content://"
+                        + getString(R.string.local_storage_authority) + DataPoint.CONTENT_URI_PATH);
+                int updated = LocalStorage.getInstance(MsgHandler.this).update(contentUri, values,
+                        where, null);
+                if (updated == dataPoints.length()) {
+                    // Log.v(TAG, "Updated all " + updated + " rows in the local storage");
+                } else {
+                    Log.w(TAG, "Wrong number of local storage points updated! " + updated + " vs. "
+                            + dataPoints.length());
+                }
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "Error updating points in Local Storage!", e);
             }
         }
 
@@ -589,17 +633,20 @@ public class MsgHandler extends Service {
         private final String cookie;
         private final JSONObject data;
         private final String sensorName;
+        private final String displayName;
         private final String dataType;
         private final String deviceType;
         private final Context context;
         private WakeLock wakeLock;
 
-        public SendFileThread(String cookie, JSONObject data, String sensorName, String dataType,
-                String deviceType, Context context, Looper looper) {
+        public SendFileThread(String cookie, JSONObject data, String sensorName,
+                String displayName, String dataType, String deviceType, Context context,
+                Looper looper) {
             super(looper);
             this.cookie = cookie;
             this.data = data;
             this.sensorName = sensorName;
+            this.displayName = displayName;
             this.dataType = dataType;
             this.deviceType = deviceType;
             this.context = context;
@@ -611,8 +658,8 @@ public class MsgHandler extends Service {
                 final String f_deviceType = deviceType != null ? deviceType : sensorName;
                 String dataStructure = (String) ((JSONObject) ((JSONArray) data.get("data")).get(0))
                         .get("value");
-                url = SenseApi.getSensorUrl(context, sensorName, dataStructure, dataType,
-                        f_deviceType);
+                url = MsgHandler.this.getSensorUrl(context, sensorName, displayName, dataStructure,
+                        dataType, f_deviceType);
             } catch (Exception e) {
                 Log.e(TAG, "Exception retrieving sensor URL from API", e);
             }
@@ -737,16 +784,27 @@ public class MsgHandler extends Service {
             String where = DataPoint.SENSOR_NAME + "='" + sensorName + "'" + " AND "
                     + DataPoint.TIMESTAMP + "=" + timestamp;
 
-            int updated = getContentResolver().update(DataPoint.CONTENT_URI, values, where, null);
-            int deleted = 0;
-            if (0 == updated) {
-                deleted = getContentResolver().delete(DataPoint.CONTENT_PERSISTED_URI, where, null);
-            }
-            if (deleted == 1 || updated == 1) {
-                // ok
-            } else {
-                Log.w(TAG,
-                        "Failed to update the local storage after a file was successfully sent to CommonSense!");
+            try {
+                Uri contentUri = Uri.parse("content://"
+                        + getString(R.string.local_storage_authority) + DataPoint.CONTENT_URI_PATH);
+                int updated = LocalStorage.getInstance(MsgHandler.this).update(contentUri, values,
+                        where, null);
+                int deleted = 0;
+                if (0 == updated) {
+                    contentUri = Uri.parse("content://"
+                            + getString(R.string.local_storage_authority)
+                            + DataPoint.CONTENT_PERSISTED_URI_PATH);
+                    deleted = LocalStorage.getInstance(MsgHandler.this).delete(contentUri, where,
+                            null);
+                }
+                if (deleted == 1 || updated == 1) {
+                    // ok
+                } else {
+                    Log.w(TAG,
+                            "Failed to update the local storage after a file was successfully sent to CommonSense!");
+                }
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "Error updating points in Local Storage!", e);
             }
 
         }
@@ -759,14 +817,6 @@ public class MsgHandler extends Service {
     }
 
     private static final String TAG = "Sense MsgHandler";
-    public static final String ACTION_NEW_MSG = "nl.sense_os.app.MsgHandler.NEW_MSG";
-    public static final String ACTION_NEW_FILE = "nl.sense_os.app.MsgHandler.NEW_FILE";
-    public static final String ACTION_SEND_DATA = "nl.sense_os.app.MsgHandler.SEND_DATA";
-    public static final String KEY_DATA_TYPE = "data_type";
-    public static final String KEY_SENSOR_DEVICE = "sensor_device";
-    public static final String KEY_SENSOR_NAME = "sensor_name";
-    public static final String KEY_TIMESTAMP = "timestamp";
-    public static final String KEY_VALUE = "value";
     private static final int MAX_NR_OF_SEND_MSG_THREADS = 50;
     private static final int MAX_POST_DATA = 100;
     private int nrOfSendMessageThreads = 0;
@@ -780,10 +830,14 @@ public class MsgHandler extends Service {
      */
     private void emptyBufferToDb() {
         Log.v(TAG, "Emptying buffer to persistant database...");
-
-        String where = DataPoint.TRANSMIT_STATE + "=" + 0;
-        getContentResolver().update(Uri.parse(DataPoint.CONTENT_URI.toString() + "?persist=true"),
-                new ContentValues(), where, null);
+        try {
+            Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
+                    + DataPoint.CONTENT_URI_PATH + "?persist=true");
+            String where = DataPoint.TRANSMIT_STATE + "=" + 0;
+            LocalStorage.getInstance(this).update(contentUri, new ContentValues(), where, null);
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "Error updating Local Storage!", e);
+        }
     }
 
     /**
@@ -793,8 +847,9 @@ public class MsgHandler extends Service {
      * @return The URL of the sensor at CommonSense, or null if an error occurred.
      */
     private synchronized String getSensorUrl(Context context, String sensorName,
-            String sensorValue, String dataType, String deviceType) {
-        String url = SenseApi.getSensorUrl(context, sensorName, sensorValue, dataType, deviceType);
+            String displayName, String sensorValue, String dataType, String deviceType) {
+        String url = SenseApi.getSensorUrl(context, sensorName, displayName, sensorValue, dataType,
+                deviceType);
         return url;
     }
 
@@ -811,9 +866,9 @@ public class MsgHandler extends Service {
      * message or if it wants to send data to CommonSense.
      */
     private void handleIntent(Intent intent, int flags, int startId) {
-        if (ACTION_NEW_MSG.equals(intent.getAction())) {
+        if (getString(R.string.action_sense_new_data).equals(intent.getAction())) {
             handleNewMsgIntent(intent);
-        } else if (ACTION_SEND_DATA.equals(intent.getAction())) {
+        } else if (getString(R.string.action_sense_send_data).equals(intent.getAction())) {
             handleSendIntent(intent);
         } else {
             Log.e(TAG, "Unexpected intent action: " + intent.getAction());
@@ -827,31 +882,39 @@ public class MsgHandler extends Service {
             NumberFormat formatter = new DecimalFormat("##########.###", otherSymbols);
 
             // get data point details from Intent
-            String sensorName = intent.getStringExtra(KEY_SENSOR_NAME);
-            String dataType = intent.getStringExtra(KEY_DATA_TYPE);
-            long timestamp = intent.getLongExtra(KEY_TIMESTAMP, System.currentTimeMillis());
+            String sensorName = intent.getStringExtra(DataPoint.SENSOR_NAME);
+            String displayName = intent.getStringExtra(DataPoint.DISPLAY_NAME);
+            String dataType = intent.getStringExtra(DataPoint.DATA_TYPE);
+            long timestamp = intent.getLongExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
             String timeInSecs = formatter.format(timestamp / 1000.0d);
-            String deviceType = intent.getStringExtra(KEY_SENSOR_DEVICE);
+            String deviceType = intent.getStringExtra(DataPoint.SENSOR_DESCRIPTION);
+
+            // defaults
             deviceType = deviceType != null ? deviceType : sensorName;
+            displayName = displayName != null ? displayName : sensorName;
+
+            // Log.d(TAG, "name: '" + sensorName + "', display: '" + displayName +
+            // "', description: '" + deviceType + "', data type: '" + dataType + "'");
 
             // convert sensor value to String
             String sensorValue = "";
             if (dataType.equals(SenseDataTypes.BOOL)) {
-                sensorValue += intent.getBooleanExtra(KEY_VALUE, false);
+                sensorValue += intent.getBooleanExtra(DataPoint.VALUE, false);
             } else if (dataType.equals(SenseDataTypes.FLOAT)) {
-                sensorValue += intent.getFloatExtra(KEY_VALUE, Float.MIN_VALUE);
+                sensorValue += intent.getFloatExtra(DataPoint.VALUE, Float.MIN_VALUE);
             } else if (dataType.equals(SenseDataTypes.INT)) {
-                sensorValue += intent.getIntExtra(KEY_VALUE, Integer.MIN_VALUE);
+                sensorValue += intent.getIntExtra(DataPoint.VALUE, Integer.MIN_VALUE);
             } else if (dataType.equals(SenseDataTypes.JSON)
                     || dataType.equals(SenseDataTypes.JSON_TIME_SERIE)) {
-                sensorValue += new JSONObject(intent.getStringExtra(KEY_VALUE)).toString();
+                sensorValue += new JSONObject(intent.getStringExtra(DataPoint.VALUE)).toString();
             } else if (dataType.equals(SenseDataTypes.STRING)
                     || dataType.equals(SenseDataTypes.FILE)) {
-                sensorValue += intent.getStringExtra(KEY_VALUE);
+                sensorValue += intent.getStringExtra(DataPoint.VALUE);
             }
 
             // put the data point in the local storage
-            insertToLocalStorage(sensorName, deviceType, dataType, timestamp, sensorValue);
+            insertToLocalStorage(sensorName, displayName, deviceType, dataType, timestamp,
+                    sensorValue);
 
             // check if we can send the data point immediately
             SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);
@@ -870,7 +933,7 @@ public class MsgHandler extends Service {
                 dataArray.put(data);
                 sensorData.put("data", dataArray);
 
-                sendSensorData(sensorName, sensorData, dataType, deviceType);
+                sendSensorData(sensorName, displayName, sensorData, dataType, deviceType);
             }
 
         } catch (Exception e) {
@@ -904,24 +967,32 @@ public class MsgHandler extends Service {
      * automatically.
      * 
      * @param sensorName
+     * @param displayName
      * @param sensorDescription
      * @param dataType
      * @param timestamp
      * @param value
      */
-    private void insertToLocalStorage(String sensorName, String sensorDescription, String dataType,
-            long timestamp, String value) {
+    private void insertToLocalStorage(String sensorName, String displayName,
+            String sensorDescription, String dataType, long timestamp, String value) {
 
         // new value
         ContentValues values = new ContentValues();
         values.put(DataPoint.SENSOR_NAME, sensorName);
+        values.put(DataPoint.DISPLAY_NAME, displayName);
         values.put(DataPoint.SENSOR_DESCRIPTION, sensorDescription);
         values.put(DataPoint.DATA_TYPE, dataType);
         values.put(DataPoint.TIMESTAMP, timestamp);
         values.put(DataPoint.VALUE, value);
         values.put(DataPoint.TRANSMIT_STATE, 0);
 
-        getContentResolver().insert(DataPoint.CONTENT_URI, values);
+        try {
+            Uri contentUri = Uri.parse("content://" + getString(R.string.local_storage_authority)
+                    + DataPoint.CONTENT_URI_PATH);
+            LocalStorage.getInstance(this).insert(contentUri, values);
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "Error inserting points in Local Storage!", e);
+        }
     }
 
     /**
@@ -988,8 +1059,8 @@ public class MsgHandler extends Service {
         return START_NOT_STICKY;
     }
 
-    private void sendSensorData(final String sensorName, final JSONObject sensorData,
-            final String dataType, final String deviceType) {
+    private void sendSensorData(final String sensorName, final String displayName,
+            final JSONObject sensorData, final String dataType, final String deviceType) {
 
         try {
             if (nrOfSendMessageThreads < MAX_NR_OF_SEND_MSG_THREADS) {
@@ -1006,15 +1077,15 @@ public class MsgHandler extends Service {
                         // create handler thread and run task on there
                         HandlerThread ht = new HandlerThread("sendFileThread");
                         ht.start();
-                        new SendFileThread(cookie, sensorData, sensorName, dataType, deviceType,
-                                this, ht.getLooper()).sendEmptyMessage(0);
+                        new SendFileThread(cookie, sensorData, sensorName, displayName, dataType,
+                                deviceType, this, ht.getLooper()).sendEmptyMessage(0);
 
                     } else {
                         // create handler thread and run task on there
                         HandlerThread ht = new HandlerThread("sendDataPointThread");
                         ht.start();
-                        new SendDataThread(cookie, sensorData, sensorName, dataType, deviceType,
-                                this, ht.getLooper()).sendEmptyMessage(0);
+                        new SendDataThread(cookie, sensorData, sensorName, displayName, dataType,
+                                deviceType, this, ht.getLooper()).sendEmptyMessage(0);
 
                     }
                 } else {

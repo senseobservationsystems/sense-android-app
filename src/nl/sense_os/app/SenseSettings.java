@@ -179,11 +179,6 @@ public class SenseSettings extends PreferenceActivity {
             if (service != null) {
                 try {
                     result = service.register(username, password, name, surname, email, phone);
-
-                    // start service
-                    if (0 == result) {
-                        startSenseService();
-                    }
                 } catch (final RemoteException e) {
                     Log.e(TAG, "RemoteException starting sensing after login.", e);
                 }
@@ -369,7 +364,7 @@ public class SenseSettings extends PreferenceActivity {
     private void bindToSenseService() {
         // start the service if it was not running already
         if (!isServiceBound) {
-            final Intent serviceIntent = new Intent(ISenseService.class.getName());
+            final Intent serviceIntent = new Intent(getString(R.string.action_sense_service));
             isServiceBound = bindService(serviceIntent, serviceConn, BIND_AUTO_CREATE);
         }
     }
@@ -479,8 +474,6 @@ public class SenseSettings extends PreferenceActivity {
             // advanced settings
             editor.putBoolean(Auth.DEV_MODE, service.getPrefBool(Auth.DEV_MODE, false));
             editor.putBoolean(Advanced.COMPRESS, service.getPrefBool(Advanced.COMPRESS, true));
-            editor.putBoolean(Advanced.LOCAL_STORAGE,
-                    service.getPrefBool(Advanced.LOCAL_STORAGE, true));
             editor.putBoolean(Advanced.USE_COMMONSENSE,
                     service.getPrefBool(Advanced.USE_COMMONSENSE, true));
             editor.putBoolean("agostino_mode", service.getPrefBool("agostino_mode", false));
@@ -493,7 +486,6 @@ public class SenseSettings extends PreferenceActivity {
         }
 
         prefs.registerOnSharedPreferenceChangeListener(changeListener);
-
     }
 
     @Override
@@ -715,17 +707,6 @@ public class SenseSettings extends PreferenceActivity {
             break;
         default:
             syncPref.setSummary("ERROR");
-        }
-    }
-
-    private void startSenseService() {
-
-        final Intent serviceIntent = new Intent(ISenseService.class.getName());
-        ComponentName name = startService(serviceIntent);
-        if (null == name) {
-            Log.w(TAG, "Failed to start Sense service");
-        } else {
-            // Log.v(TAG, "Started Sense service");
         }
     }
 

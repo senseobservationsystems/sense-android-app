@@ -1,5 +1,6 @@
 package nl.sense_os.app.appwidget;
 
+import nl.sense_os.service.R;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
@@ -13,6 +14,6 @@ public class SenseWidgetProvider extends AppWidgetProvider {
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         Log.d(TAG, "Update widget");
-        context.startService(new Intent(SenseWidgetUpdater.ACTION_UPDATE));
+        context.startService(new Intent(context.getString(R.string.action_widget_update)));
     }
 }

@@ -7,8 +7,9 @@ package nl.sense_os.service.deviceprox;
 
 import java.util.List;
 
-import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
+import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.SensorData.SensorNames;
 
 import org.json.JSONException;
@@ -57,11 +58,11 @@ public class WIFIDeviceProximity {
                             deviceJson.put("capabilities", result.capabilities);
 
                             // pass device data to the MsgHandler
-                            Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-                            i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.WIFI_SCAN);
-                            i.putExtra(MsgHandler.KEY_VALUE, deviceJson.toString());
-                            i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
-                            i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+                            Intent i = new Intent(context.getString(R.string.action_sense_new_data));
+                            i.putExtra(DataPoint.SENSOR_NAME, SensorNames.WIFI_SCAN);
+                            i.putExtra(DataPoint.VALUE, deviceJson.toString());
+                            i.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.JSON);
+                            i.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                             WIFIDeviceProximity.this.context.startService(i);
                         }
 

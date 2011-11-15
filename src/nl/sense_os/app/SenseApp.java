@@ -319,7 +319,7 @@ public class SenseApp extends Activity {
         // start the service if it was not running already
         if (!isServiceBound) {
             // Log.v(TAG, "Try to bind to Sense Platform service");
-            final Intent serviceIntent = new Intent(ISenseService.class.getName());
+            final Intent serviceIntent = new Intent(getString(R.string.action_sense_service));
             isServiceBound = bindService(serviceIntent, serviceConn, BIND_AUTO_CREATE);
         } else {
             // already bound
@@ -418,73 +418,63 @@ public class SenseApp extends Activity {
     public void onClick(View v) {
 
         boolean oldState = false;
-        switch (v.getId()) {
-        case R.id.main_field:
+        if (v.getId() == R.id.main_field) {
             final CheckBox cb = (CheckBox) findViewById(R.id.main_cb);
             oldState = cb.isChecked();
             // cb.setChecked(!oldState);
             toggleMain(!oldState);
-            break;
-        case R.id.device_prox_field:
+        } else if (v.getId() == R.id.device_prox_field) {
             final CheckBox devProx = (CheckBox) findViewById(R.id.device_prox_cb);
             if (devProx.isEnabled()) {
                 oldState = devProx.isChecked();
                 // devProx.setChecked(!oldState);
                 toggleDeviceProx(!oldState);
             }
-            break;
-        case R.id.location_field:
+        } else if (v.getId() == R.id.location_field) {
             final CheckBox location = (CheckBox) findViewById(R.id.location_cb);
             if (location.isEnabled()) {
                 oldState = location.isChecked();
                 // location.setChecked(!oldState);
                 toggleLocation(!oldState);
             }
-            break;
-        case R.id.motion_field:
+        } else if (v.getId() == R.id.motion_field) {
             final CheckBox motion = (CheckBox) findViewById(R.id.motion_cb);
             if (motion.isEnabled()) {
                 oldState = motion.isChecked();
                 // motion.setChecked(!oldState);
                 toggleMotion(!oldState);
             }
-            break;
-        case R.id.external_sensor_field:
+        } else if (v.getId() == R.id.external_sensor_field) {
             final CheckBox external = (CheckBox) findViewById(R.id.external_sensor_cb);
             if (external.isEnabled()) {
                 oldState = external.isChecked();
                 // external.setChecked(!oldState);
                 toggleExternalSensors(!oldState);
             }
-            break;
-        case R.id.ambience_field:
+        } else if (v.getId() == R.id.ambience_field) {
             final CheckBox ambience = (CheckBox) findViewById(R.id.ambience_cb);
             if (ambience.isEnabled()) {
                 oldState = ambience.isChecked();
                 // ambience.setChecked(!oldState);
                 toggleAmbience(!oldState);
             }
-            break;
-        case R.id.phonestate_field:
+        } else if (v.getId() == R.id.phonestate_field) {
             final CheckBox phoneState = (CheckBox) findViewById(R.id.phonestate_cb);
             if (phoneState.isEnabled()) {
                 oldState = phoneState.isChecked();
                 // phoneState.setChecked(!oldState);
                 togglePhoneState(!oldState);
             }
-            break;
-        case R.id.popquiz_field:
+        } else if (v.getId() == R.id.popquiz_field) {
             final CheckBox quiz = (CheckBox) findViewById(R.id.popquiz_cb);
             if (quiz.isEnabled()) {
                 oldState = quiz.isChecked();
                 // quiz.setChecked(!oldState);
                 togglePopQuiz(!oldState);
             }
-            break;
-        case R.id.prefs_field:
-            startActivity(new Intent("nl.sense_os.app.Settings"));
-            break;
-        default:
+        } else if (v.getId() == R.id.prefs_field) {
+            startActivity(new Intent(getString(R.string.action_sense_settings)));
+        } else {
             Log.e(TAG, "Unknown button pressed!");
         }
     }
@@ -529,13 +519,14 @@ public class SenseApp extends Activity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(Menu.NONE, MenuItems.SETTINGS, Menu.NONE, "Preferences").setIcon(
-                android.R.drawable.ic_menu_preferences);
-        menu.add(Menu.NONE, MenuItems.FAQ, Menu.NONE, "FAQ").setIcon(
+        menu.add(Menu.NONE, MenuItems.SETTINGS, Menu.NONE, getString(R.string.menu_preferences))
+                .setIcon(android.R.drawable.ic_menu_preferences);
+        menu.add(Menu.NONE, MenuItems.FAQ, Menu.NONE, getString(R.string.menu_faq)).setIcon(
                 android.R.drawable.ic_menu_help);
-        menu.add(Menu.NONE, MenuItems.LOGIN, Menu.NONE, "Log in").setIcon(R.drawable.ic_menu_login);
-        menu.add(Menu.NONE, MenuItems.REGISTER, Menu.NONE, "Register").setIcon(
-                R.drawable.ic_menu_invite);
+        menu.add(Menu.NONE, MenuItems.LOGIN, Menu.NONE, getString(R.string.menu_login)).setIcon(
+                R.drawable.ic_menu_login);
+        menu.add(Menu.NONE, MenuItems.REGISTER, Menu.NONE, getString(R.string.menu_register))
+                .setIcon(R.drawable.ic_menu_invite);
         return true;
     }
 
@@ -543,7 +534,7 @@ public class SenseApp extends Activity {
     protected void onDestroy() {
         // stop the service if it is not running anymore
         if (false == ((CheckBox) findViewById(R.id.main_cb)).isChecked()) {
-            stopService(new Intent(ISenseService.class.getName()));
+            stopService(new Intent(getString(R.string.action_sense_service)));
         }
         unbindFromSenseService();
         super.onDestroy();
@@ -556,7 +547,7 @@ public class SenseApp extends Activity {
             showDialog(Dialogs.FAQ);
             break;
         case MenuItems.SETTINGS:
-            startActivity(new Intent("nl.sense_os.app.Settings"));
+            startActivity(new Intent(getString(R.string.action_sense_settings)));
             break;
         case MenuItems.LOGIN:
             showDialog(Dialogs.LOGIN);

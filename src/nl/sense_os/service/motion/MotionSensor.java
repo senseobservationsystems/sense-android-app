@@ -10,10 +10,11 @@ package nl.sense_os.service.motion;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 
-import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensePrefs;
 import nl.sense_os.service.SensePrefs.Main.Motion;
+import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.SensorData.SensorNames;
 import nl.sense_os.service.states.EpiStateMonitor;
 
@@ -229,16 +230,16 @@ public class MotionSensor implements SensorEventListener {
             // send the stuff
             // Log.v(TAG, "Transmit accelerodata: " + dataBuffer[sensor.getType()].length());
             // pass message to the MsgHandler
-            Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-            i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.ACCELEROMETER_EPI);
-            i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());
+            Intent i = new Intent(context.getString(R.string.action_sense_new_data));
+            i.putExtra(DataPoint.SENSOR_NAME, SensorNames.ACCELEROMETER_EPI);
+            i.putExtra(DataPoint.SENSOR_DESCRIPTION, sensor.getName());
             i.putExtra(
-                    MsgHandler.KEY_VALUE,
+                    DataPoint.VALUE,
                     "{\"interval\":"
                             + Math.round(localBufferTime / dataBuffer[sensor.getType()].length())
                             + ",\"data\":" + dataBuffer[sensor.getType()].toString() + "}");
-            i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON_TIME_SERIE);
-            i.putExtra(MsgHandler.KEY_TIMESTAMP, lastLocalSampleTimes[sensor.getType()]);
+            i.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.JSON_TIME_SERIE);
+            i.putExtra(DataPoint.TIMESTAMP, lastLocalSampleTimes[sensor.getType()]);
             context.startService(i);
             dataBuffer[sensor.getType()] = new JSONArray();
             lastLocalSampleTimes[sensor.getType()] = System.currentTimeMillis();
@@ -458,12 +459,12 @@ public class MotionSensor implements SensorEventListener {
             float value = BigDecimal.valueOf(avgSpeedChange).setScale(3, 0).floatValue();
 
             // prepare intent to send to MsgHandler
-            Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-            i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.MOTION_ENERGY);
-            i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, SensorNames.MOTION_ENERGY);
-            i.putExtra(MsgHandler.KEY_VALUE, value);
-            i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.FLOAT);
-            i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+            Intent i = new Intent(context.getString(R.string.action_sense_new_data));
+            i.putExtra(DataPoint.SENSOR_NAME, SensorNames.MOTION_ENERGY);
+            i.putExtra(DataPoint.SENSOR_DESCRIPTION, SensorNames.MOTION_ENERGY);
+            i.putExtra(DataPoint.VALUE, value);
+            i.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.FLOAT);
+            i.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
             context.startService(i);
 
         }
@@ -472,22 +473,22 @@ public class MotionSensor implements SensorEventListener {
     }
 
     private void sendFallMessage(boolean fall) {
-        Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-        i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.FALL_DETECTOR);
-        i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, fallDetector.demo ? "demo fall" : "human fall");
-        i.putExtra(MsgHandler.KEY_VALUE, fall);
-        i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.BOOL);
-        i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+        Intent i = new Intent(context.getString(R.string.action_sense_new_data));
+        i.putExtra(DataPoint.SENSOR_NAME, SensorNames.FALL_DETECTOR);
+        i.putExtra(DataPoint.SENSOR_DESCRIPTION, fallDetector.demo ? "demo fall" : "human fall");
+        i.putExtra(DataPoint.VALUE, fall);
+        i.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.BOOL);
+        i.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
         context.startService(i);
     }
 
     private void sendNormalMessage(Sensor sensor, String sensorName, JSONObject json) {
-        Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-        i.putExtra(MsgHandler.KEY_SENSOR_NAME, sensorName);
-        i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());
-        i.putExtra(MsgHandler.KEY_VALUE, json.toString());
-        i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
-        i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+        Intent i = new Intent(context.getString(R.string.action_sense_new_data));
+        i.putExtra(DataPoint.SENSOR_NAME, sensorName);
+        i.putExtra(DataPoint.SENSOR_DESCRIPTION, sensor.getName());
+        i.putExtra(DataPoint.VALUE, json.toString());
+        i.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.JSON);
+        i.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
         context.startService(i);
     }
 

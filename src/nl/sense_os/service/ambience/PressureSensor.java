@@ -3,12 +3,13 @@
  *     Copyright (C)  2010 Sense Observation Systems, Rotterdam, the Netherlands.  All rights reserved.     *
  ************************************************************************************************************
  */
-package nl.sense_os.service.phonestate;
+package nl.sense_os.service.ambience;
 
 import java.util.List;
 
-import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
+import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.SensorData.SensorNames;
 import android.content.Context;
 import android.content.Intent;
@@ -66,12 +67,12 @@ public class PressureSensor implements SensorEventListener {
             jsonString += "}";
 
             // send msg to MsgHandler
-            Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-            i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
-            i.putExtra(MsgHandler.KEY_VALUE, jsonString);
-            i.putExtra(MsgHandler.KEY_SENSOR_NAME, sensorName);
-            i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, sensor.getName());
-            i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+            Intent i = new Intent(context.getString(R.string.action_sense_new_data));
+            i.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.JSON);
+            i.putExtra(DataPoint.VALUE, jsonString);
+            i.putExtra(DataPoint.SENSOR_NAME, sensorName);
+            i.putExtra(DataPoint.SENSOR_DESCRIPTION, sensor.getName());
+            i.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
             context.startService(i);
         }
         if (sampleDelay > 500 && PressureSensingActive) {

@@ -1,26 +1,14 @@
-package nl.sense_os.service.provider;
+package nl.sense_os.service.storage;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import nl.sense_os.service.SenseApi;
-import nl.sense_os.service.SensePrefs;
-import nl.sense_os.service.SensePrefs.Auth;
-import nl.sense_os.service.SenseUrls;
+import nl.sense_os.service.R;
 import nl.sense_os.service.SensorData.DataPoint;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -30,10 +18,9 @@ import android.provider.BaseColumns;
 import android.util.Log;
 
 /**
- * ContentProvider that encapsulates recent sensor data. The data is stored in the devices RAM
- * memory, so this implementation is more energy efficient than storing everything in flash. This
- * does mean that parsing the selection queries is quite a challenge. Only a very limited set of
- * queries will work:
+ * Storage for recent sensor data. The data is stored in the devices RAM memory, so this
+ * implementation is more energy efficient than storing everything in flash. This does mean that
+ * parsing the selection queries is quite a challenge. Only a very limited set of queries will work:
  * <ul>
  * <li>sensor_name = 'foo'</li>
  * <li>sensor_name != 'foo'</li>
@@ -49,7 +36,7 @@ import android.util.Log;
  * @see ParserUtils
  * @see DataPoint
  */
-public class LocalStorage extends ContentProvider {
+public class LocalStorage {
 
     /**
      * Inner class that handles the creation of the SQLite3 database with the desired tables and
@@ -58,7 +45,7 @@ public class LocalStorage extends ContentProvider {
     private static class DbHelper extends SQLiteOpenHelper {
 
         protected static final String DATABASE_NAME = "persitent_storage.sqlite3";
-        protected static final int DATABASE_VERSION = 1;
+        protected static final int DATABASE_VERSION = 2;
 
         DbHelper(Context context) {
             super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -69,6 +56,7 @@ public class LocalStorage extends ContentProvider {
             final StringBuilder sb = new StringBuilder("CREATE TABLE " + TABLE_PERSISTENT + "(");
             sb.append(BaseColumns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT");
             sb.append(", " + DataPoint.SENSOR_NAME + " STRING");
+            sb.append(", " + DataPoint.DISPLAY_NAME + " STRING");
             sb.append(", " + DataPoint.SENSOR_DESCRIPTION + " STRING");
             sb.append(", " + DataPoint.DATA_TYPE + " STRING");
             sb.append(", " + DataPoint.TIMESTAMP + " INTEGER");
@@ -83,14 +71,14 @@ public class LocalStorage extends ContentProvider {
             Log.w(TAG, "Upgrading '" + DATABASE_NAME + "' database from version " + oldVers
                     + " to " + newVers + ", which will destroy all old data");
 
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_VOLATILE);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_PERSISTENT);
             onCreate(db);
         }
     }
 
     private static final String TAG = "Sense LocalStorage";
 
-    public static final String AUTHORITY = "nl.sense_os.service.provider.LocalStorage";
+    // public static final String AUTHORITY = "nl.sense_os.service.provider.LocalStorage";
     private static final String TABLE_VOLATILE = "recent_values";
     private static final String TABLE_PERSISTENT = "persisted_values";
     private static final String TABLE_REMOTE = "remote_values";
@@ -101,23 +89,35 @@ public class LocalStorage extends ContentProvider {
 
     private static long count = 0;
 
+    private static LocalStorage instance;
+
+    private Context context;
     private DbHelper dbHelper;
 
-    private static UriMatcher uriMatcher;
     private final static Map<String, ContentValues[]> storage = new HashMap<String, ContentValues[]>();
     private final static Map<String, Integer> pointers = new HashMap<String, Integer>();
 
-    static {
-        // set up URI matcher
-        uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
-        uriMatcher.addURI(AUTHORITY, TABLE_VOLATILE, VOLATILE_VALUES_URI);
-        uriMatcher.addURI(AUTHORITY, TABLE_PERSISTENT, PERSISTED_VALUES_URI);
-        uriMatcher.addURI(AUTHORITY, TABLE_REMOTE, REMOTE_VALUES_URI);
+    /**
+     * @param context
+     *            Context for lazy creating the LocalStorage.
+     * @return Singleton instance of the LocalStorage
+     */
+    public static LocalStorage getInstance(Context context) {
+        // Log.v(TAG, "Get local storage instance...");
+        if (null == instance) {
+            instance = new LocalStorage(context.getApplicationContext());
+        }
+        return instance;
     }
 
-    @Override
+    private LocalStorage(Context context) {
+        Log.v(TAG, "Construct new local storage instance...");
+        this.context = context;
+        dbHelper = new DbHelper(context);
+    }
+
     public int delete(Uri uri, String where, String[] selectionArgs) {
-        switch (uriMatcher.match(uri)) {
+        switch (matchUri(uri)) {
         case VOLATILE_VALUES_URI:
             throw new IllegalArgumentException("Cannot delete recent data points!");
         case PERSISTED_VALUES_URI:
@@ -131,10 +131,9 @@ public class LocalStorage extends ContentProvider {
         }
     }
 
-    @Override
     public String getType(Uri uri) {
         Log.v(TAG, "Get content type...");
-        int uriType = uriMatcher.match(uri);
+        int uriType = matchUri(uri);
         if (uriType == VOLATILE_VALUES_URI || uriType == PERSISTED_VALUES_URI
                 || uriType == REMOTE_VALUES_URI) {
             return DataPoint.CONTENT_TYPE;
@@ -143,11 +142,10 @@ public class LocalStorage extends ContentProvider {
         }
     }
 
-    @Override
     public Uri insert(Uri uri, ContentValues values) {
 
         // check URI
-        switch (uriMatcher.match(uri)) {
+        switch (matchUri(uri)) {
         case VOLATILE_VALUES_URI:
             break;
         case PERSISTED_VALUES_URI:
@@ -161,7 +159,7 @@ public class LocalStorage extends ContentProvider {
         }
 
         // add a unique ID
-        values.put(BaseColumns._ID, count);
+        values.put(DataPoint._ID, count);
         count++;
 
         // get currently stored values from the storage map
@@ -201,31 +199,51 @@ public class LocalStorage extends ContentProvider {
         }
 
         // add the new data point
-        // Log.v(TAG, "Insert '" + sensorName + "' value in local storage...");
+        Log.v(TAG, "Inserting '" + sensorName + "' value in local storage...");
         storedValues[index] = values;
         index++;
         storage.put(sensorName, storedValues);
         pointers.put(sensorName, index);
 
         // notify any listeners (does this work properly?)
-        Uri rowUri = ContentUris.withAppendedId(DataPoint.CONTENT_URI, count - 1);
-        getContext().getContentResolver().notifyChange(rowUri, null);
+        Uri contentUri = Uri.parse("content://"
+                + context.getString(R.string.local_storage_authority) + DataPoint.CONTENT_URI_PATH);
+        Uri rowUri = ContentUris.withAppendedId(contentUri, count - 1);
+        context.getContentResolver().notifyChange(rowUri, null);
 
         return rowUri;
     }
 
-    @Override
-    public boolean onCreate() {
-        Log.v(TAG, "Create local storage...");
-        dbHelper = new DbHelper(getContext());
-        return true;
+    private int matchUri(Uri uri) {
+        if (DataPoint.CONTENT_URI_PATH.equals(uri.getPath())) {
+            return VOLATILE_VALUES_URI;
+        } else if (DataPoint.CONTENT_PERSISTED_URI_PATH.equals(uri.getPath())) {
+            return PERSISTED_VALUES_URI;
+        } else if (DataPoint.CONTENT_REMOTE_URI_PATH.equals(uri.getPath())) {
+            return REMOTE_VALUES_URI;
+        } else {
+            return -1;
+        }
     }
 
     private void persist(ContentValues[] storedValues) {
         Log.d(TAG, "Persist " + storedValues.length + " data points");
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+            // do not store data points that are more than 24 hours old
+            String where = DataPoint.TIMESTAMP + "<"
+                    + (System.currentTimeMillis() - 1000 * 60 * 60 * 24);
+            int deleted = db.delete(TABLE_PERSISTENT, where, null);
+            if (deleted > 0) {
+                Log.v(TAG, "Deleted " + deleted + " old data points from persistent storage");
+            }
+
+            // insert new points to persistent storage
             for (ContentValues dataPoint : storedValues) {
+                // strip the _ID column to dodge SQL exceptions
+                dataPoint.remove(DataPoint._ID);
+
                 db.insert(TABLE_PERSISTENT, DataPoint.SENSOR_NAME, dataPoint);
             }
         } catch (Exception e) {
@@ -233,7 +251,6 @@ public class LocalStorage extends ContentProvider {
         }
     }
 
-    @Override
     public Cursor query(Uri uri, String[] projection, String where, String[] selectionArgs,
             String sortOrder) {
         // Log.v(TAG, "Query local storage...");
@@ -246,7 +263,7 @@ public class LocalStorage extends ContentProvider {
         }
 
         // query based on URI
-        switch (uriMatcher.match(uri)) {
+        switch (matchUri(uri)) {
         case VOLATILE_VALUES_URI:
             try {
                 return queryVolatile(uri, projection, where, selectionArgs, sortOrder);
@@ -262,16 +279,67 @@ public class LocalStorage extends ContentProvider {
                 return null;
             }
         case REMOTE_VALUES_URI:
-            try {
-                return queryRemote(uri, projection, where, selectionArgs, sortOrder);
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to query the CommonSense data points", e);
-                return null;
-            }
+            // try {
+            Log.d(TAG, "Querying remote data points is not supported!");
+            // return queryRemote(uri, projection, where, selectionArgs, sortOrder);
+            // } catch (Exception e) {
+            // Log.e(TAG, "Failed to query the CommonSense data points", e);
+            return null;
+            // }
         default:
+            Log.e(TAG, "Unknown URI: " + uri);
             throw new IllegalArgumentException("Unknown URI " + uri);
         }
     }
+
+    private Cursor queryPersistent(Uri uri, String[] projection, String where,
+            String[] selectionArgs, String sortOrder) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor persistentResult = db.query(TABLE_PERSISTENT, projection, where, selectionArgs,
+                null, null, sortOrder);
+        return persistentResult;
+    }
+
+    /*
+     * private Cursor queryRemote(Uri uri, String[] projection, String where, String[]
+     * selectionArgs, String sortOrder) throws JSONException, URISyntaxException { // Log.v(TAG,
+     * "Query remote data points");
+     * 
+     * // try to parse the selection criteria List<String> sensorNames =
+     * ParserUtils.getSelectedSensors(storage.keySet(), where, selectionArgs); long[]
+     * timeRangeSelect = ParserUtils.getSelectedTimeRange(where, selectionArgs);
+     * 
+     * if (sensorNames.size() != 1) { throw new
+     * IllegalArgumentException("Can only query CommonSense for a single sensor"); }
+     * 
+     * JSONArray sensors = SenseApi.getAllSensors(context);
+     * 
+     * if (sensors == null) { Log.w(TAG, "Cannot access sensors from CommonSense"); return null; }
+     * 
+     * // check if the requested sensor is in the list String id = null; for (int i = 0; i <
+     * sensors.length(); i++) { JSONObject sensor = sensors.getJSONObject(i); if
+     * (sensor.getString("name").equalsIgnoreCase(sensorNames.get(0))) { // found the right sensor
+     * if (null != id) { Log.w(TAG, "Multiple sensors with the same name"); } id =
+     * sensor.getString("id"); } }
+     * 
+     * // get the data for the sensor URI remoteUri = new URI(SenseUrls.SENSOR_DATA.replace("<id>",
+     * id) + "?start_date=" + timeRangeSelect[0] / 1000d + "&end_date=" + timeRangeSelect[1] /
+     * 1000d); String cookie = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
+     * Context.MODE_PRIVATE) .getString(Auth.LOGIN_COOKIE, null); JSONObject response =
+     * SenseApi.getJsonObject(context, remoteUri, cookie); JSONArray data =
+     * response.getJSONArray("data");
+     * 
+     * // fill the result Cursor with sensor data MatrixCursor result = new MatrixCursor(projection,
+     * data.length()); for (int i = 0; i < data.length(); i++) { Object[] row = new
+     * Object[projection.length]; JSONObject jsonDataPoint = data.getJSONObject(i); for (int j = 0;
+     * j < projection.length; j++) { if (projection[j].equals(DataPoint.VALUE)) { row[j] =
+     * jsonDataPoint.getString("value"); } else if (projection[j].equals(DataPoint.TIMESTAMP)) {
+     * double rawDate = jsonDataPoint.getDouble("date"); row[j] = Math.round(rawDate * 1000d); }
+     * else if (projection[j].equals(DataPoint.SENSOR_NAME)) { row[j] = sensorNames.get(0); } }
+     * result.addRow(row); }
+     * 
+     * return result; }
+     */
 
     private Cursor queryVolatile(Uri uri, String[] projection, String where,
             String[] selectionArgs, String sortOrder) {
@@ -291,76 +359,6 @@ public class LocalStorage extends ContentProvider {
         }
 
         // Log.d(TAG, "query result: " + result.getCount() + " data points.");
-
-        return result;
-    }
-
-    private Cursor queryPersistent(Uri uri, String[] projection, String where,
-            String[] selectionArgs, String sortOrder) {
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor persistentResult = db.query(TABLE_PERSISTENT, projection, where, selectionArgs,
-                null, null, sortOrder);
-        return persistentResult;
-    }
-
-    private Cursor queryRemote(Uri uri, String[] projection, String where, String[] selectionArgs,
-            String sortOrder) throws JSONException, URISyntaxException {
-        // Log.v(TAG, "Query remote data points");
-
-        // try to parse the selection criteria
-        List<String> sensorNames = ParserUtils.getSelectedSensors(storage.keySet(), where,
-                selectionArgs);
-        long[] timeRangeSelect = ParserUtils.getSelectedTimeRange(where, selectionArgs);
-
-        if (sensorNames.size() != 1) {
-            throw new IllegalArgumentException("Can only query CommonSense for a single sensor");
-        }
-
-        JSONArray sensors = SenseApi.getAllSensors(getContext());
-
-        if (sensors == null) {
-            Log.w(TAG, "Cannot access sensors from CommonSense");
-            return null;
-        }
-
-        // check if the requested sensor is in the list
-        String id = null;
-        for (int i = 0; i < sensors.length(); i++) {
-            JSONObject sensor = sensors.getJSONObject(i);
-            if (sensor.getString("name").equalsIgnoreCase(sensorNames.get(0))) {
-                // found the right sensor
-                if (null != id) {
-                    Log.w(TAG, "Multiple sensors with the same name");
-                }
-                id = sensor.getString("id");
-            }
-        }
-
-        // get the data for the sensor
-        URI remoteUri = new URI(SenseUrls.SENSOR_DATA.replace("<id>", id) + "?start_date="
-                + (timeRangeSelect[0] / 1000d) + "&end_date=" + (timeRangeSelect[1] / 1000d));
-        String cookie = getContext().getSharedPreferences(SensePrefs.AUTH_PREFS,
-                Context.MODE_PRIVATE).getString(Auth.LOGIN_COOKIE, null);
-        JSONObject response = SenseApi.getJsonObject(getContext(), remoteUri, cookie);
-        JSONArray data = response.getJSONArray("data");
-
-        // fill the result Cursor with sensor data
-        MatrixCursor result = new MatrixCursor(projection, data.length());
-        for (int i = 0; i < data.length(); i++) {
-            Object[] row = new Object[projection.length];
-            JSONObject jsonDataPoint = data.getJSONObject(i);
-            for (int j = 0; j < projection.length; j++) {
-                if (projection[j].equals(DataPoint.VALUE)) {
-                    row[j] = jsonDataPoint.getString("value");
-                } else if (projection[j].equals(DataPoint.TIMESTAMP)) {
-                    double rawDate = jsonDataPoint.getDouble("date");
-                    row[j] = Math.round(rawDate * 1000d);
-                } else if (projection[j].equals(DataPoint.SENSOR_NAME)) {
-                    row[j] = sensorNames.get(0);
-                }
-            }
-            result.addRow(row);
-        }
 
         return result;
     }
@@ -408,12 +406,11 @@ public class LocalStorage extends ContentProvider {
         return result;
     }
 
-    @Override
     public int update(Uri uri, ContentValues newValues, String where, String[] selectionArgs) {
         // Log.v(TAG, "Update local storage...");
 
         // check URI
-        switch (uriMatcher.match(uri)) {
+        switch (matchUri(uri)) {
         case VOLATILE_VALUES_URI:
             break;
         case PERSISTED_VALUES_URI:
@@ -443,7 +440,7 @@ public class LocalStorage extends ContentProvider {
         }
 
         // notify content observers
-        getContext().getContentResolver().notifyChange(uri, null);
+        context.getContentResolver().notifyChange(uri, null);
 
         return result;
     }

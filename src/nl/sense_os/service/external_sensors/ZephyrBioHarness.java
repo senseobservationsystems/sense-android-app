@@ -15,9 +15,10 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.UUID;
 
-import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
 import nl.sense_os.service.SensePrefs;
+import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.SensorData.SensorNames;
 
 import org.json.JSONObject;
@@ -67,7 +68,8 @@ public class ZephyrBioHarness {
                 }
 
                 // send acceleration data in m/s^2
-                if (prefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.ACC, true)) {
+                if (prefs.getBoolean(
+                        nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.ACC, true)) {
                     float g = 9.80665f;
                     JSONObject json = new JSONObject();
                     Short xmin = (short) (((short) buffer[32]) | (((short) buffer[33]) << 8));
@@ -84,83 +86,90 @@ public class ZephyrBioHarness {
                     json.put("x-axis", x);
                     json.put("y-axis", y);
                     json.put("z-axis", z);
-                    Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.ACCELEROMETER);
-                    i.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "BioHarness " + deviceName);
-                    i.putExtra(MsgHandler.KEY_VALUE, json.toString());
-                    i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.JSON);
-                    i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+                    Intent i = new Intent(context.getString(R.string.action_sense_new_data));
+                    i.putExtra(DataPoint.SENSOR_NAME, SensorNames.ACCELEROMETER);
+                    i.putExtra(DataPoint.SENSOR_DESCRIPTION, "BioHarness " + deviceName);
+                    i.putExtra(DataPoint.VALUE, json.toString());
+                    i.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.JSON);
+                    i.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                     context.startService(i);
                 }
 
                 // send heart rate
-                if (prefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.HEART_RATE, true)) {
+                if (prefs.getBoolean(
+                        nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.HEART_RATE,
+                        true)) {
                     Short heartRate = (short) (((short) buffer[12]) | (((short) buffer[13]) << 8));
                     // if(heartRate < (short)0)
                     // heartRate = (short)(heartRate+(short)255);
 
                     // Log.v(TAG, "Heart rate:" + heartRate);
-                    Intent heartRateIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.HEART_RATE);
-                    heartRateIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "BioHarness "
+                    Intent heartRateIntent = new Intent(
+                            context.getString(R.string.action_sense_new_data));
+                    heartRateIntent.putExtra(DataPoint.SENSOR_NAME, SensorNames.HEART_RATE);
+                    heartRateIntent.putExtra(DataPoint.SENSOR_DESCRIPTION, "BioHarness "
                             + deviceName);
-                    heartRateIntent.putExtra(MsgHandler.KEY_VALUE, heartRate.intValue());
-                    heartRateIntent.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.INT);
-                    heartRateIntent.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+                    heartRateIntent.putExtra(DataPoint.VALUE, heartRate.intValue());
+                    heartRateIntent.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.INT);
+                    heartRateIntent.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                     context.startService(heartRateIntent);
                 }
 
                 // send respiration rate
-                if (prefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.RESP, true)) {
+                if (prefs.getBoolean(
+                        nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.RESP, true)) {
                     Short respirationRate = (short) (((short) buffer[14]) | (((short) buffer[15]) << 8));
                     if (respirationRate < 0)
                         respirationRate = (short) (respirationRate + (short) 255);
                     float respirationRateF = (float) (respirationRate.floatValue() / 10.0f);
 
                     // Log.v(TAG, "Respiration rate:" + respirationRateF);
-                    Intent respirationRateIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    respirationRateIntent.putExtra(MsgHandler.KEY_SENSOR_NAME,
-                            SensorNames.RESPIRATION);
-                    respirationRateIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "BioHarness "
+                    Intent respirationRateIntent = new Intent(
+                            context.getString(R.string.action_sense_new_data));
+                    respirationRateIntent.putExtra(DataPoint.SENSOR_NAME, SensorNames.RESPIRATION);
+                    respirationRateIntent.putExtra(DataPoint.SENSOR_DESCRIPTION, "BioHarness "
                             + deviceName);
-                    respirationRateIntent.putExtra(MsgHandler.KEY_VALUE, respirationRateF);
-                    respirationRateIntent.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.FLOAT);
-                    respirationRateIntent.putExtra(MsgHandler.KEY_TIMESTAMP,
-                            System.currentTimeMillis());
+                    respirationRateIntent.putExtra(DataPoint.VALUE, respirationRateF);
+                    respirationRateIntent.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.FLOAT);
+                    respirationRateIntent.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                     context.startService(respirationRateIntent);
                 }
 
                 // send skin temperature
-                if (prefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.TEMP, true)) {
+                if (prefs.getBoolean(
+                        nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.TEMP, true)) {
                     Short skinTemperature = (short) (((short) buffer[16]) | (((short) buffer[17]) << 8));
                     if (skinTemperature < 0)
                         skinTemperature = (short) (skinTemperature + (short) 255);
                     float skinTemperatureF = (float) (skinTemperature.floatValue() / 10.0f);
 
                     // Log.v(TAG, "Skin temperature:" + skinTemperatureF);
-                    Intent skinTemperatureIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    skinTemperatureIntent.putExtra(MsgHandler.KEY_SENSOR_NAME,
-                            SensorNames.TEMPERATURE);
-                    skinTemperatureIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "BioHarness "
+                    Intent skinTemperatureIntent = new Intent(
+                            context.getString(R.string.action_sense_new_data));
+                    skinTemperatureIntent.putExtra(DataPoint.SENSOR_NAME, SensorNames.TEMPERATURE);
+                    skinTemperatureIntent.putExtra(DataPoint.SENSOR_DESCRIPTION, "BioHarness "
                             + deviceName);
-                    skinTemperatureIntent.putExtra(MsgHandler.KEY_VALUE, skinTemperatureF);
-                    skinTemperatureIntent.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.FLOAT);
-                    skinTemperatureIntent.putExtra(MsgHandler.KEY_TIMESTAMP,
-                            System.currentTimeMillis());
+                    skinTemperatureIntent.putExtra(DataPoint.VALUE, skinTemperatureF);
+                    skinTemperatureIntent.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.FLOAT);
+                    skinTemperatureIntent.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                     context.startService(skinTemperatureIntent);
                 }
 
                 // send battery level
-                if (prefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.BATTERY, true)) {
+                if (prefs
+                        .getBoolean(
+                                nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.BATTERY,
+                                true)) {
                     int batteryLevel = buffer[54];
                     // Log.v(TAG, "Battery level:" + batteryLevel);
-                    Intent batteryIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    batteryIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.BATTERY_LEVEL);
+                    Intent batteryIntent = new Intent(
+                            context.getString(R.string.action_sense_new_data));
+                    batteryIntent.putExtra(DataPoint.SENSOR_NAME, SensorNames.BATTERY_LEVEL);
                     batteryIntent
-                            .putExtra(MsgHandler.KEY_SENSOR_DEVICE, "BioHarness " + deviceName);
-                    batteryIntent.putExtra(MsgHandler.KEY_VALUE, batteryLevel);
-                    batteryIntent.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.INT);
-                    batteryIntent.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+                            .putExtra(DataPoint.SENSOR_DESCRIPTION, "BioHarness " + deviceName);
+                    batteryIntent.putExtra(DataPoint.VALUE, batteryLevel);
+                    batteryIntent.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.INT);
+                    batteryIntent.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                     context.startService(batteryIntent);
                 }
 
@@ -173,28 +182,32 @@ public class ZephyrBioHarness {
                 // float bloodPressureF = (float)(bloodPressure.floatValue()/1000.0f);
                 //
                 // Log.d(TAG, "Blood pressure:"+bloodPressureF);
-                // Intent batteryIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                // batteryIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.BLOOD_PRESSURE);
-                // batteryIntent.putExtra(MsgHandler.KEY_SENSOR_DEVICE, "BioHarness "+deviceName);
-                // batteryIntent.putExtra(MsgHandler.KEY_VALUE, bloodPressureF);
-                // batteryIntent.putExtra(MsgHandler.KEY_DATA_TYPE,
+                // Intent batteryIntent = new
+                // Intent(context.getString(R.string.action_sense_new_data));
+                // batteryIntent.putExtra(DataPoint.SENSOR_NAME, SensorNames.BLOOD_PRESSURE);
+                // batteryIntent.putExtra(DataPoint.SENSOR_DESCRIPTION, "BioHarness "+deviceName);
+                // batteryIntent.putExtra(DataPoint.VALUE, bloodPressureF);
+                // batteryIntent.putExtra(DataPoint.DATA_TYPE,
                 // SenseDataTypes.FLOAT);
-                // batteryIntent.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+                // batteryIntent.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                 // context.startService(batteryIntent);
                 // }
 
                 // send worn status
-                if (prefs.getBoolean(nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.WORN_STATUS, true)) {
+                if (prefs.getBoolean(
+                        nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness.WORN_STATUS,
+                        true)) {
                     boolean wornStatusB = (buffer[55] & 0x10000000) == 0x10000000;
 
                     // Log.v(TAG, "Worn status:" + wornStatusB);
-                    Intent batteryIntent = new Intent(MsgHandler.ACTION_NEW_MSG);
-                    batteryIntent.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.WORN_STATUS);
+                    Intent batteryIntent = new Intent(
+                            context.getString(R.string.action_sense_new_data));
+                    batteryIntent.putExtra(DataPoint.SENSOR_NAME, SensorNames.WORN_STATUS);
                     batteryIntent
-                            .putExtra(MsgHandler.KEY_SENSOR_DEVICE, "BioHarness " + deviceName);
-                    batteryIntent.putExtra(MsgHandler.KEY_VALUE, wornStatusB);
-                    batteryIntent.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.BOOL);
-                    batteryIntent.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+                            .putExtra(DataPoint.SENSOR_DESCRIPTION, "BioHarness " + deviceName);
+                    batteryIntent.putExtra(DataPoint.VALUE, wornStatusB);
+                    batteryIntent.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.BOOL);
+                    batteryIntent.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                     context.startService(batteryIntent);
                 }
                 return true;

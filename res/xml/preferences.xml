@@ -44,8 +44,45 @@
         <PreferenceScreen
             android:title="Phone status"
             android:summary="Settings for battery sensor etc."
-            android:enabled="false"
-            android:key="phone_status_screen" />
+            android:enabled="true"
+            android:key="phone_status_screen">
+            <PreferenceCategory android:title="Main settings">
+                <CheckBoxPreference
+                    android:title="Battery"
+                    android:summary="Measures battery level and charge status"
+                    android:defaultValue="true"
+                    android:key="phonestate_battery" />
+                <CheckBoxPreference android:title="Call state" android:summary="Detects the call state and phone numbers" android:defaultValue="true" android:key="phonestate_call_state" /><CheckBoxPreference
+                    android:title="Screen activity"
+                    android:summary="Detects screen on/off events"
+                    android:defaultValue="true"
+                    android:key="phonestate_screen_activity" />
+                
+                <CheckBoxPreference
+                    android:title="Proximity"
+                    android:summary="Measures distance of objects from screen"
+                    android:defaultValue="true"
+                    android:key="phonestate_proximity" />
+                
+                <CheckBoxPreference
+                    android:title="Data connection"
+                    android:summary="Detects connection state and type (Wi-Fi or mobile)"
+                    android:defaultValue="true"
+                    android:key="phonestate_data_connection" />
+                
+                <CheckBoxPreference
+                    android:title="Service state"
+                    android:summary="Detects mobile service state"
+                    android:defaultValue="true"
+                    android:key="phonestate_service_state" />
+                <CheckBoxPreference
+                    android:title="Signal strength"
+                    android:summary="Measures mobile signal strength"
+                    android:defaultValue="true"
+                    android:key="phonestate_signal_strength" /><CheckBoxPreference android:title="IP address" android:summary="Detects current IP address (if available)" android:defaultValue="true" android:key="phonestate_ip" /><CheckBoxPreference android:title="Unread messages" android:summary="Detects number of unread messages" android:defaultValue="true" android:key="phonestate_unread_msg" />
+                
+            </PreferenceCategory>
+        </PreferenceScreen>
 
         <PreferenceScreen
             android:title="Location"
@@ -88,7 +125,7 @@
                     android:key="ambience_light"
                     android:defaultValue="True"
                     android:summary="Measures the light intensity"
-                    android:title="Light" />
+                    android:title="Light" /><CheckBoxPreference android:title="Pressure" android:summary="Measures pressure (if available)" android:defaultValue="true" android:key="ambience_pressure" />
             </PreferenceCategory>
         </PreferenceScreen>
 
@@ -308,11 +345,6 @@
                     android:summary="Costs more CPU, less data traffic"
                     android:defaultValue="true"
                     android:key="compression" />
-                <CheckBoxPreference
-                    android:title="Local storage"
-                    android:summary="Make data available for other apps"
-                    android:defaultValue="true"
-                    android:key="local_storage" />
                 <CheckBoxPreference
                     android:title="Use CommonSense"
                     android:summary="Share your data with your online platform"

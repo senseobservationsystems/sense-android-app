@@ -9,7 +9,9 @@ import java.io.File;
 import java.math.BigDecimal;
 
 import nl.sense_os.service.MsgHandler;
+import nl.sense_os.service.R;
 import nl.sense_os.service.SenseDataTypes;
+import nl.sense_os.service.SensorData.DataPoint;
 import nl.sense_os.service.SensorData.SensorNames;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -41,6 +43,7 @@ public class NoiseSensor extends PhoneStateListener {
 
             // clear old sample jobs
             if (noiseSampleJob != null) {
+                noiseSampleJob.stopRecording();
                 noiseSampleHandler.removeCallbacks(noiseSampleJob);
             }
 
@@ -58,6 +61,14 @@ public class NoiseSensor extends PhoneStateListener {
      * schedules the next sample job.
      */
     private class NoiseSampleJob implements Runnable {
+
+        private static final int DEFAULT_SAMPLE_RATE = 8000;
+        /*
+         * samples per second * 2 seconds, 2 bytes
+         */
+        private static final int BUFFER_SIZE = DEFAULT_SAMPLE_RATE * 2 * 2;
+        private static final int RECORDING_TIME_NOISE = 2000;
+        private AudioRecord audioRecord;
 
         /**
          * @param buffer
@@ -96,6 +107,48 @@ public class NoiseSensor extends PhoneStateListener {
             }
 
             return dB;
+        }
+
+        /**
+         * @return <code>true</code> if {@link #audioRecord} was initialized successfully
+         */
+        private boolean initAudioRecord() {
+            Log.v(TAG, "Initializing AudioRecord instance...");
+
+            if (null != audioRecord) {
+                Log.w(TAG, "AudioRecord object is already present! Releasing it...");
+                // release the audioRecord object and stop any recordings that are running
+                stopSampling();
+            }
+
+            // create the AudioRecord
+            try {
+                if (isCalling) {
+                    audioRecord = new AudioRecord(MediaRecorder.AudioSource.VOICE_UPLINK,
+                            DEFAULT_SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
+                            AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE);
+                } else {
+                    audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC,
+                            DEFAULT_SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
+                            AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE);
+                }
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "Failed to create the audiorecord!", e);
+                return false;
+            }
+
+            if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
+                Log.w(TAG, "Failed to create AudioRecord!");
+                Log.w(TAG,
+                        "format: " + audioRecord.getAudioFormat() + " source: "
+                                + audioRecord.getAudioSource() + " channel: "
+                                + audioRecord.getChannelConfiguration() + " buffer size: "
+                                + BUFFER_SIZE);
+                return false;
+            }
+
+            // initialized OK
+            return true;
         }
 
         @Override
@@ -143,13 +196,13 @@ public class NoiseSensor extends PhoneStateListener {
                             // Log.v(TAG, "Sampled noise level: " + dB);
 
                             // pass message to the MsgHandler
-                            Intent sensorData = new Intent(MsgHandler.ACTION_NEW_MSG);
-                            sensorData.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.NOISE);
-                            sensorData.putExtra(MsgHandler.KEY_VALUE, BigDecimal.valueOf(dB)
-                                    .setScale(2, 0).floatValue());
-                            sensorData.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.FLOAT);
-                            sensorData.putExtra(MsgHandler.KEY_TIMESTAMP,
-                                    System.currentTimeMillis());
+                            Intent sensorData = new Intent(
+                                    context.getString(R.string.action_sense_new_data));
+                            sensorData.putExtra(DataPoint.SENSOR_NAME, SensorNames.NOISE);
+                            sensorData.putExtra(DataPoint.VALUE,
+                                    BigDecimal.valueOf(dB).setScale(2, 0).floatValue());
+                            sensorData.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.FLOAT);
+                            sensorData.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                             context.startService(sensorData);
                         }
 
@@ -167,6 +220,31 @@ public class NoiseSensor extends PhoneStateListener {
                 // Log.v(TAG, "Did not start recording: noise sensor is disabled...");
             }
         }
+
+        /**
+         * Stops the recording and releases the AudioRecord object, making it unusable.
+         */
+        public void stopRecording() {
+
+            try {
+                if (audioRecord != null) {
+                    if (audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
+
+                        try {
+                            audioRecord.stop();
+                            Log.i(TAG, "Stopped recording for sound level measurement...");
+                        } catch (IllegalStateException e) {
+                            // audioRecord is probably already stopped..?
+                        }
+                    }
+                    audioRecord.release();
+                    audioRecord = null;
+
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Exception while stopping noise sample recording", e);
+            }
+        }
     }
 
     /**
@@ -174,6 +252,22 @@ public class NoiseSensor extends PhoneStateListener {
      * {@link MsgHandler}. Also schedules the next sample job.
      */
     private class SoundStreamJob implements Runnable {
+
+        private static final int MAX_FILES = 60;
+        private static final int RECORDING_TIME_STREAM = 60000;
+        private MediaRecorder recorder = null;
+        private String recordFileName = Environment.getExternalStorageDirectory().getAbsolutePath()
+                + "/sense/micSample";
+        private int fileCounter;
+
+        public SoundStreamJob(int fileCounter) {
+            this.fileCounter = fileCounter;
+
+            // create directory to put the sound recording
+            new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/sense")
+                    .mkdir();
+            recorder = new MediaRecorder();
+        }
 
         @Override
         public void run() {
@@ -195,7 +289,6 @@ public class NoiseSensor extends PhoneStateListener {
                 // recorder.setVideoEncoder(MediaRecorder.VideoEncoder.H263);
                 recorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
                 final String fileName = recordFileName + fileCounter + ".3gp";
-                fileCounter = ++fileCounter % MAX_FILES;
                 new File(recordFileName).createNewFile();
                 String command = "chmod 666 " + fileName;
                 Runtime.getRuntime().exec(command);
@@ -215,15 +308,17 @@ public class NoiseSensor extends PhoneStateListener {
                                 SoundStreamJob tmp = soundStreamJob;
 
                                 // pass message to the MsgHandler
-                                Intent i = new Intent(MsgHandler.ACTION_NEW_MSG);
-                                i.putExtra(MsgHandler.KEY_SENSOR_NAME, SensorNames.MIC);
-                                i.putExtra(MsgHandler.KEY_VALUE, fileName);
-                                i.putExtra(MsgHandler.KEY_DATA_TYPE, SenseDataTypes.FILE);
-                                i.putExtra(MsgHandler.KEY_TIMESTAMP, System.currentTimeMillis());
+                                Intent i = new Intent(context
+                                        .getString(R.string.action_sense_new_data));
+                                i.putExtra(DataPoint.SENSOR_NAME, SensorNames.MIC);
+                                i.putExtra(DataPoint.VALUE, fileName);
+                                i.putExtra(DataPoint.DATA_TYPE, SenseDataTypes.FILE);
+                                i.putExtra(DataPoint.TIMESTAMP, System.currentTimeMillis());
                                 context.startService(i);
 
                                 if (isEnabled && listenInterval == -1 && tmp.equals(soundStreamJob)) {
-                                    soundStreamJob = new SoundStreamJob();
+                                    fileCounter = ++fileCounter % MAX_FILES;
+                                    soundStreamJob = new SoundStreamJob(fileCounter);
                                     soundStreamHandler.post(soundStreamJob);
                                 }
 
@@ -242,18 +337,33 @@ public class NoiseSensor extends PhoneStateListener {
                 Log.d(TAG, "Error while recording sound:", e);
             }
         }
+
+        /**
+         * Stops the recording and releases the MediaRecorder object, making it unusable.
+         */
+        public void stopRecording() {
+
+            // clean up the MediaRecorder if the mic sensor was using it
+            if (recorder != null) {
+                try {
+                    recorder.stop();
+                } catch (IllegalStateException e) {
+                    // probably already stopped
+                }
+
+                // if we reset, we can reuse the object by going back to setAudioSource() step
+                recorder.reset();
+
+                // if we release instead of reset, the object cannot be reused
+                // recorder.release();
+                // recorder = null;
+            }
+        }
     }
 
     private static final String TAG = "Sense NoiseSensor";
-    private static final int MAX_FILES = 60;
-    private static final int DEFAULT_SAMPLE_RATE = 8000;
-    private static final int RECORDING_TIME_NOISE = 2000;
-    private static final int BUFFER_SIZE = DEFAULT_SAMPLE_RATE * 2 * 2; // samples per second * 2
-                                                                        // seconds, 2 bytes
-    private static final int RECORDING_TIME_STREAM = 60000;
     private static final int REQID = 0xF00;
     private static final String ACTION_NOISE = "nl.sense_os.service.NoiseSample";
-    private AudioRecord audioRecord;
     private boolean isEnabled = false;
     private boolean isCalling = false;
     private int listenInterval; // Update interval in msec
@@ -263,10 +373,6 @@ public class NoiseSensor extends PhoneStateListener {
     private final Handler noiseSampleHandler = new Handler();
     private NoiseSampleJob noiseSampleJob = null;
     private final AlarmReceiver alarmReceiver = new AlarmReceiver();
-    private MediaRecorder recorder = null;
-    private int fileCounter = 0;
-    private String recordFileName = Environment.getExternalStorageDirectory().getAbsolutePath()
-            + "/sense/micSample";
 
     public NoiseSensor(Context context) {
         this.context = context;
@@ -277,10 +383,10 @@ public class NoiseSensor extends PhoneStateListener {
      * listener.
      */
     public void disable() {
-        // Log.v(TAG, "Noise sensor disabled...");
+        Log.v(TAG, "Noise sensor disabled...");
 
         isEnabled = false;
-        pauseSampling();
+        stopSampling();
 
         TelephonyManager telMgr = (TelephonyManager) context
                 .getSystemService(Context.TELEPHONY_SERVICE);
@@ -292,7 +398,7 @@ public class NoiseSensor extends PhoneStateListener {
      * listener.
      */
     public void enable(int interval) {
-        // Log.v(TAG, "Noise sensor enabled...");
+        Log.v(TAG, "Noise sensor enabled...");
 
         listenInterval = interval;
         isEnabled = true;
@@ -301,47 +407,6 @@ public class NoiseSensor extends PhoneStateListener {
         TelephonyManager telMgr = (TelephonyManager) context
                 .getSystemService(Context.TELEPHONY_SERVICE);
         telMgr.listen(this, PhoneStateListener.LISTEN_CALL_STATE);
-    }
-
-    /**
-     * @return <code>true</code> if {@link #audioRecord} was initialized successfully
-     */
-    private boolean initAudioRecord() {
-        // Log.v(TAG, "Initializing AudioRecord instance...");
-
-        if (null != audioRecord) {
-            Log.w(TAG, "AudioRecord object is already present! Releasing it...");
-            // release the audioRecord object and stop any recordings that are running
-            pauseSampling();
-        }
-
-        // create the AudioRecord
-        try {
-            if (isCalling) {
-                audioRecord = new AudioRecord(MediaRecorder.AudioSource.VOICE_UPLINK,
-                        DEFAULT_SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
-                        AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE);
-            } else {
-                audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, DEFAULT_SAMPLE_RATE,
-                        AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, BUFFER_SIZE);
-            }
-        } catch (IllegalArgumentException e) {
-            Log.e(TAG, "Failed to create the audiorecord!", e);
-            return false;
-        }
-
-        if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
-            Log.w(TAG, "Failed to create AudioRecord!");
-            Log.w(TAG,
-                    "format: " + audioRecord.getAudioFormat() + " source: "
-                            + audioRecord.getAudioSource() + " channel: "
-                            + audioRecord.getChannelConfiguration() + " buffer size: "
-                            + BUFFER_SIZE);
-            return false;
-        }
-
-        // initialized OK
-        return true;
     }
 
     /**
@@ -359,11 +424,11 @@ public class NoiseSensor extends PhoneStateListener {
                 isCalling = false;
             }
 
-            pauseSampling();
+            stopSampling();
 
             // recording while calling is disabled
             if (isEnabled && state == TelephonyManager.CALL_STATE_IDLE && !isCalling) {
-                startSensing();
+                startSampling();
             }
         } catch (Exception e) {
             Log.e(TAG, "Exception in onCallStateChanged!", e);
@@ -371,18 +436,14 @@ public class NoiseSensor extends PhoneStateListener {
     }
 
     /**
-     * Stops any active sensing jobs, and stops the AudioRecord.
+     * Stops any active sensing jobs, and stops and cleans up the AudioRecord.
      */
-    private void pauseSampling() {
-        // Log.v(TAG, "Pause sampling the noise level...");
+    private void stopSampling() {
+        Log.v(TAG, "Stop sound sensor sampling...");
 
         try {
 
-            if (soundStreamJob != null) {
-                soundStreamHandler.removeCallbacks(soundStreamJob);
-                soundStreamJob = null;
-            }
-
+            // stop the alarms
             AlarmManager alarms = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
             alarms.cancel(PendingIntent.getBroadcast(context, REQID, new Intent(ACTION_NOISE), 0));
             try {
@@ -391,18 +452,18 @@ public class NoiseSensor extends PhoneStateListener {
                 // ignore
             }
 
+            // stop the sound recordings
+            if (soundStreamJob != null) {
+                soundStreamJob.stopRecording();
+                soundStreamHandler.removeCallbacks(soundStreamJob);
+                soundStreamJob = null;
+            }
             if (noiseSampleJob != null) {
-                soundStreamHandler.removeCallbacks(noiseSampleJob);
+                noiseSampleJob.stopRecording();
+                noiseSampleHandler.removeCallbacks(noiseSampleJob);
                 noiseSampleJob = null;
             }
 
-            stopRecording();
-
-            if (listenInterval == -1 && recorder != null) {
-                recorder.stop();
-                recorder.reset(); // You can reuse the object by going back to setAudioSource() step
-                // recorder.release(); // Now the object cannot be reused
-            }
         } catch (Exception e) {
             Log.e(TAG, "Exception in pauseListening!", e);
         }
@@ -411,57 +472,34 @@ public class NoiseSensor extends PhoneStateListener {
     /**
      * Starts the sound sensing jobs.
      */
-    private void startSensing() {
-        // Log.v(TAG, "Start the sound sensor...");
+    private void startSampling() {
+        Log.v(TAG, "Start sound sensor sampling...");
 
         try {
 
             // different job if the listen interval is "real-time"
             if (listenInterval == -1) {
-                // create directory to put the sound recording
-                new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/sense")
-                        .mkdir();
-                recorder = new MediaRecorder();
 
                 // start recording
                 if (soundStreamJob != null) {
                     soundStreamHandler.removeCallbacks(soundStreamJob);
                 }
-                soundStreamJob = new SoundStreamJob();
+                soundStreamJob = new SoundStreamJob(0);
                 soundStreamHandler.post(soundStreamJob);
             } else {
 
                 context.registerReceiver(alarmReceiver, new IntentFilter(ACTION_NOISE));
 
-                PendingIntent sampleJob = PendingIntent.getBroadcast(context, REQID, new Intent(
-                        ACTION_NOISE), 0);
+                Intent alarm = new Intent(ACTION_NOISE);
+                PendingIntent alarmOperation = PendingIntent.getBroadcast(context, REQID, alarm, 0);
                 AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-                mgr.cancel(sampleJob);
+                mgr.cancel(alarmOperation);
                 mgr.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
-                        listenInterval, sampleJob);
-
+                        listenInterval, alarmOperation);
             }
 
         } catch (Exception e) {
             Log.e(TAG, "Exception in startSensing:" + e.getMessage());
-        }
-    }
-
-    /**
-     * Stops the recording and releases the AudioRecord object, making it unusable.
-     */
-    private void stopRecording() {
-
-        if (audioRecord != null && audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
-
-            try {
-                audioRecord.stop();
-                Log.i(TAG, "Stopped recording for sound level measurement...");
-            } catch (IllegalStateException e) {
-                // audioRecord is probably already stopped..?
-            }
-            audioRecord.release();
-            audioRecord = null;
         }
     }
 }

@@ -6,26 +6,26 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import nl.sense_os.service.SensePrefs.Auth;
 import nl.sense_os.service.SensePrefs.Main.Advanced;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -53,6 +53,66 @@ public class SenseApi {
 
     private static final String TAG = "SenseApi";
     private static final long CACHE_REFRESH = 1000l * 60 * 60; // 1 hour
+
+    /**
+     * Gets a list of all sensors for this user at the CommonSense API. Uses caching for increased
+     * performance.
+     * 
+     * @param context
+     *            Application context, used for getting preferences.
+     * @return The list of sensors (can be empty), or <code>null</code> if an error occurred and the
+     *         list could not be retrieved.
+     */
+    public static JSONArray getAllSensors(Context context) {
+
+        final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
+                Context.MODE_PRIVATE);
+
+        // try to get list of sensors from the cache
+        try {
+            String cachedSensors = authPrefs.getString(Auth.SENSOR_LIST_COMPLETE, null);
+            long cacheTime = authPrefs.getLong(Auth.SENSOR_LIST_COMPLETE_TIME, 0);
+            boolean isOutdated = System.currentTimeMillis() - cacheTime > CACHE_REFRESH;
+
+            // return cached list of it is still valid
+            if (false == isOutdated && null != cachedSensors) {
+                return new JSONArray(cachedSensors);
+            }
+
+        } catch (Exception e) {
+            // should not happen, we are only using stuff that was previously cached
+            Log.e(TAG, "Failed to get list of sensors! Exception while checking cache: ", e);
+            return null;
+        }
+
+        // if we make it here, the list was not in the cache
+        // Log.v(TAG, "List of sensor IDs is missing or outdated, refreshing...");
+
+        try {
+            // get fresh list of sensors for this device from CommonSense
+            String cookie = authPrefs.getString(Auth.LOGIN_COOKIE, "NO_COOKIE");
+            boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
+            String url = devMode ? SenseUrls.DEV_ALL_SENSORS : SenseUrls.ALL_SENSORS;
+            HashMap<String, String> response = SenseApi.request(context, url, null, cookie);
+
+            // parse response and store the list
+            JSONObject content = new JSONObject(response.get("content"));
+            JSONArray sensorList = content.getJSONArray("sensors");
+
+            // store the new sensor list
+            Editor authEditor = authPrefs.edit();
+            authEditor.putString(Auth.SENSOR_LIST_COMPLETE, sensorList.toString());
+            authEditor.putLong(Auth.SENSOR_LIST_COMPLETE_TIME, System.currentTimeMillis());
+            authEditor.commit();
+
+            return sensorList;
+
+        } catch (Exception e) {
+            Log.e(TAG, "Exception in retrieving registered sensors: ", e);
+            return null;
+
+        }
+    }
 
     /**
      * Gets the current device ID for use with CommonSense. The device ID is cached in the
@@ -93,119 +153,47 @@ public class SenseApi {
         try {
             // get list of devices that are already registered at CommonSense for this user
             boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
-            final URI uri = new URI(devMode ? SenseUrls.DEV_DEVICES : SenseUrls.DEVICES);
-            String cookie = authPrefs.getString(Auth.LOGIN_COOKIE, "NO_COOKIE");
-            JSONObject response = SenseApi.getJsonObject(context, uri, cookie);
+            String url = devMode ? SenseUrls.DEV_DEVICES : SenseUrls.DEVICES;
+            String cookie = authPrefs.getString(Auth.LOGIN_COOKIE, null);
+            HashMap<String, String> response = SenseApi.request(context, url, null, cookie);
 
             // check if this device is in the list
-            if (response != null) {
-                JSONArray deviceList = response.getJSONArray("devices");
+            JSONObject content = new JSONObject(response.get("content"));
+            JSONArray deviceList = content.getJSONArray("devices");
 
-                String uuid = "";
-                for (int x = 0; x < deviceList.length(); x++) {
+            String uuid = "";
+            for (int x = 0; x < deviceList.length(); x++) {
 
-                    JSONObject device = deviceList.getJSONObject(x);
-                    uuid = device.getString("uuid");
+                JSONObject device = deviceList.getJSONObject(x);
+                uuid = device.getString("uuid");
 
-                    // pad the UUID with leading zeros, CommonSense API removes them
-                    while (uuid.length() < imei.length()) {
-                        uuid = "0" + uuid;
-                    }
-
-                    // Found the right device if UUID matches IMEI
-                    if (uuid.equalsIgnoreCase(imei)) {
-
-                        // cache device ID in preferences
-                        int deviceId = Integer.parseInt(device.getString("id"));
-                        final Editor editor = authPrefs.edit();
-                        editor.putString(Auth.DEVICE_TYPE, device.getString("type"));
-                        editor.putInt(Auth.DEVICE_ID, deviceId);
-                        editor.putLong(Auth.DEVICE_ID_TIME, System.currentTimeMillis());
-                        editor.remove(Auth.SENSOR_LIST);
-                        editor.commit();
-                        return deviceId;
-                    }
+                // pad the UUID with leading zeros, CommonSense API removes them
+                while (uuid.length() < imei.length()) {
+                    uuid = "0" + uuid;
                 }
 
-                // if we make it here, the device was not registered yet: return -1
-                Log.w(TAG, "This device is not registered at CommonSense yet");
-                return -1;
+                // Found the right device if UUID matches IMEI
+                if (uuid.equalsIgnoreCase(imei)) {
 
-            } else {
-                // invalid response
-                Log.e(TAG, "Failed to get device ID: invalid device list from CommonSense.");
-                return -2;
+                    // cache device ID in preferences
+                    int deviceId = Integer.parseInt(device.getString("id"));
+                    final Editor editor = authPrefs.edit();
+                    editor.putString(Auth.DEVICE_TYPE, device.getString("type"));
+                    editor.putInt(Auth.DEVICE_ID, deviceId);
+                    editor.putLong(Auth.DEVICE_ID_TIME, System.currentTimeMillis());
+                    editor.remove(Auth.SENSOR_LIST);
+                    editor.commit();
+                    return deviceId;
+                }
             }
+
+            // if we make it here, the device was not registered yet: return -1
+            Log.w(TAG, "This device is not registered at CommonSense yet");
+            return -1;
 
         } catch (Exception e) {
             Log.e(TAG, "Failed to get device ID: exception communicating wih CommonSense!", e);
             return -2;
-
-        }
-    }
-
-    /**
-     * Gets a list of all sensors for this user at the CommonSense API. Uses caching for increased
-     * performance.
-     * 
-     * @param context
-     *            Application context, used for getting preferences.
-     * @return The list of sensors (can be empty), or <code>null</code> if an error occurred and the
-     *         list could not be retrieved.
-     */
-    public static JSONArray getAllSensors(Context context) {
-
-        final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
-                Context.MODE_PRIVATE);
-
-        // try to get list of sensors from the cache
-        try {
-            String cachedSensors = authPrefs.getString(Auth.SENSOR_LIST_COMPLETE, null);
-            long cacheTime = authPrefs.getLong(Auth.SENSOR_LIST_COMPLETE_TIME, 0);
-            boolean isOutdated = System.currentTimeMillis() - cacheTime > CACHE_REFRESH;
-
-            // return cached list of it is still valid
-            if (false == isOutdated && null != cachedSensors) {
-                return new JSONArray(cachedSensors);
-            }
-
-        } catch (Exception e) {
-            // should not happen, we are only using stuff that was previously cached
-            Log.e(TAG, "Failed to get list of sensors! Exception while checking cache: ", e);
-            return null;
-        }
-
-        // if we make it here, the list was not in the cache
-        // Log.v(TAG, "List of sensor IDs is missing or outdated, refreshing...");
-
-        try {
-            // get fresh list of sensors for this device from CommonSense
-            String cookie = authPrefs.getString(Auth.LOGIN_COOKIE, "NO_COOKIE");
-            boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
-            String rawUrl = devMode ? SenseUrls.DEV_ALL_SENSORS : SenseUrls.ALL_SENSORS;
-            URI uri = new URI(rawUrl);
-            JSONObject response = SenseApi.getJsonObject(context, uri, cookie);
-
-            // parse response and store the list
-            if (response != null) {
-                JSONArray sensorList = response.getJSONArray("sensors");
-
-                // store the new sensor list
-                Editor authEditor = authPrefs.edit();
-                authEditor.putString(Auth.SENSOR_LIST_COMPLETE, sensorList.toString());
-                authEditor.putLong(Auth.SENSOR_LIST_COMPLETE_TIME, System.currentTimeMillis());
-                authEditor.commit();
-
-                return sensorList;
-
-            } else {
-                Log.e(TAG, "Problem getting list of sensors: invalid response from CommonSense");
-                return null;
-            }
-
-        } catch (Exception e) {
-            Log.e(TAG, "Exception in retrieving registered sensors: ", e);
-            return null;
 
         }
     }
@@ -262,26 +250,21 @@ public class SenseApi {
             // get fresh list of sensors for this device from CommonSense
             String cookie = authPrefs.getString(Auth.LOGIN_COOKIE, "NO_COOKIE");
             boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
-            String rawUrl = devMode ? SenseUrls.DEV_SENSORS : SenseUrls.SENSORS;
-            URI uri = new URI(rawUrl.replaceAll("<id>", "" + deviceId));
-            JSONObject response = SenseApi.getJsonObject(context, uri, cookie);
+            String url = devMode ? SenseUrls.DEV_SENSORS : SenseUrls.SENSORS;
+            url = url.replaceFirst("<id>", "" + deviceId);
+            HashMap<String, String> response = SenseApi.request(context, url, null, cookie);
 
             // parse response and store the list
-            if (response != null) {
-                JSONArray sensorList = response.getJSONArray("sensors");
+            JSONObject content = new JSONObject(response.get("content"));
+            JSONArray sensorList = content.getJSONArray("sensors");
 
-                // store the new sensor list
-                Editor authEditor = authPrefs.edit();
-                authEditor.putString(Auth.SENSOR_LIST, sensorList.toString());
-                authEditor.putLong(Auth.SENSOR_LIST_TIME, System.currentTimeMillis());
-                authEditor.commit();
+            // store the new sensor list
+            Editor authEditor = authPrefs.edit();
+            authEditor.putString(Auth.SENSOR_LIST, sensorList.toString());
+            authEditor.putLong(Auth.SENSOR_LIST_TIME, System.currentTimeMillis());
+            authEditor.commit();
 
-                return sensorList;
-
-            } else {
-                Log.e(TAG, "Problem getting list of sensors: invalid response from CommonSense");
-                return null;
-            }
+            return sensorList;
 
         } catch (Exception e) {
             Log.e(TAG, "Exception in retrieving registered sensors: ", e);
@@ -290,8 +273,8 @@ public class SenseApi {
         }
     }
 
-    public static String getSensorId(Context context, String sensorName, String sensorValue,
-            String dataType, String deviceType) {
+    public static String getSensorId(Context context, String sensorName, String displayName,
+            String sensorValue, String dataType, String deviceType) {
 
         try {
             // get list of all registered sensors for this device
@@ -318,7 +301,8 @@ public class SenseApi {
             }
 
             // Sensor not found in current list of sensors, create it at CommonSense
-            return registerSensor(context, sensorName, deviceType, dataType, sensorValue);
+            return registerSensor(context, sensorName, displayName, deviceType, dataType,
+                    sensorValue);
 
         } catch (Exception e) {
             Log.e(TAG, "Failed to get ID for sensor '" + sensorName + "': Exception occurred:", e);
@@ -330,11 +314,12 @@ public class SenseApi {
      * This method returns the URL to which the data must be send, it does this based on the sensor
      * name and device_type. If the sensor cannot be found, then it will be created.
      */
-    public static String getSensorUrl(Context context, String sensorName, String sensorValue,
-            String dataType, String deviceType) {
+    public static String getSensorUrl(Context context, String sensorName, String displayName,
+            String sensorValue, String dataType, String deviceType) {
 
         try {
-            String id = getSensorId(context, sensorName, sensorValue, dataType, deviceType);
+            String id = getSensorId(context, sensorName, displayName, sensorValue, dataType,
+                    deviceType);
 
             if (id == null) {
                 Log.e(TAG, "Failed to get URL for sensor '" + sensorName
@@ -436,11 +421,11 @@ public class SenseApi {
                     Context.MODE_PRIVATE);
             final boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
 
-            final URL url = new URL(devMode ? SenseUrls.DEV_LOGIN : SenseUrls.LOGIN);
+            final String url = devMode ? SenseUrls.DEV_LOGIN : SenseUrls.LOGIN;
             final JSONObject user = new JSONObject();
             user.put("username", username);
             user.put("password", pass);
-            final HashMap<String, String> response = sendJson(context, url, user, "POST", "");
+            final HashMap<String, String> response = request(context, url, user, null);
             if (response == null) {
                 // request failed
                 return -1;
@@ -481,7 +466,11 @@ public class SenseApi {
             return 0;
 
         } catch (Exception e) {
-            Log.e(TAG, "Exception during login: " + e.getMessage());
+            if (null != e.getMessage()) {
+                Log.e(TAG, "Exception during login! Message: " + e.getMessage());
+            } else {
+                Log.e(TAG, "Exception during login!", e);
+            }
 
             final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
                     Context.MODE_PRIVATE);
@@ -509,8 +498,8 @@ public class SenseApi {
      *            sensors.
      * @return The new sensor ID at CommonSense, or <code>null</code> if the registration failed.
      */
-    public static String registerSensor(Context context, String sensorName, String deviceType,
-            String dataType, String sensorValue) {
+    public static String registerSensor(Context context, String sensorName, String displayName,
+            String deviceType, String dataType, String sensorValue) {
 
         final SharedPreferences authPrefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
                 Context.MODE_PRIVATE);
@@ -519,11 +508,12 @@ public class SenseApi {
 
         try {
             // prepare request to create new sensor
-            URL url = new URL(devMode ? SenseUrls.DEV_CREATE_SENSOR : SenseUrls.CREATE_SENSOR);
+            String url = devMode ? SenseUrls.DEV_CREATE_SENSOR : SenseUrls.CREATE_SENSOR;
             JSONObject postData = new JSONObject();
             JSONObject sensor = new JSONObject();
             sensor.put("name", sensorName);
             sensor.put("device_type", deviceType);
+            sensor.put("display_name", displayName);
             sensor.put("pager_type", "");
             sensor.put("data_type", dataType);
             if (dataType.compareToIgnoreCase("json") == 0) {
@@ -540,7 +530,7 @@ public class SenseApi {
             postData.put("sensor", sensor);
 
             // check if sensor was created successfully
-            HashMap<String, String> response = sendJson(context, url, postData, "POST", cookie);
+            HashMap<String, String> response = request(context, url, postData, cookie);
             if (response == null) {
                 // failed to create the sensor
                 Log.e(TAG, "Error creating sensor. response=null");
@@ -573,16 +563,15 @@ public class SenseApi {
             final String device_type = authPrefs.getString(Auth.DEVICE_TYPE, Build.MODEL);
 
             // Add sensor to this device at CommonSense
-            String rawUrl = devMode ? SenseUrls.DEV_ADD_SENSOR_TO_DEVICE
-                    : SenseUrls.ADD_SENSOR_TO_DEVICE;
-            url = new URL(rawUrl.replaceFirst("<id>", id));
+            url = devMode ? SenseUrls.DEV_ADD_SENSOR_TO_DEVICE : SenseUrls.ADD_SENSOR_TO_DEVICE;
+            url = url.replaceFirst("<id>", id);
             postData = new JSONObject();
             JSONObject device = new JSONObject();
             device.put("type", device_type);
             device.put("uuid", device_uuid);
             postData.put("device", device);
 
-            response = sendJson(context, url, postData, "POST", cookie);
+            response = request(context, url, postData, cookie);
             if (response == null) {
                 // failed to add the sensor to the device
                 Log.e(TAG, "Error adding sensor to device. response=null");
@@ -597,9 +586,6 @@ public class SenseApi {
             // return the new sensor ID
             return id;
 
-        } catch (MalformedURLException e) {
-            Log.e(TAG, "MalformedURLException registering new sensor '" + sensorName + "':", e);
-            return null;
         } catch (JSONException e) {
             Log.e(TAG, "JSONException registering new sensor '" + sensorName + "':", e);
             return null;
@@ -637,7 +623,7 @@ public class SenseApi {
         try {
             final boolean devMode = authPrefs.getBoolean(Auth.DEV_MODE, false);
 
-            final URL url = new URL(devMode ? SenseUrls.DEV_REG : SenseUrls.REG);
+            final String url = devMode ? SenseUrls.DEV_REG : SenseUrls.REG;
 
             // create JSON object to POST
             final JSONObject data = new JSONObject();
@@ -658,8 +644,7 @@ public class SenseApi {
             }
             data.put("user", user);
 
-            final HashMap<String, String> response = SenseApi.sendJson(context, url, data, "POST",
-                    "");
+            final HashMap<String, String> response = SenseApi.request(context, url, data, null);
             if (response == null) {
                 Log.e(TAG, "Error registering new user. response=null");
                 return -1;
@@ -674,12 +659,6 @@ public class SenseApi {
                 Log.e(TAG, "Error registering new user! Response code: " + responseCode);
                 return -1;
             }
-        } catch (final IOException e) {
-            Log.e(TAG, "IOException during registration!", e);
-            return -1;
-        } catch (final IllegalAccessError e) {
-            Log.e(TAG, "IllegalAccessError during registration!", e);
-            return -1;
         } catch (JSONException e) {
             Log.e(TAG, "JSONException during registration!", e);
             return -1;
@@ -691,128 +670,97 @@ public class SenseApi {
     }
 
     /**
-     * @return a JSONObject from the requested URI
+     * Performs request at CommonSense API. Returns the response code, content, and headers.
+     * 
+     * @param context
+     *            Application context, used to read preferences
+     * @param urlString
+     *            Complete URL to perform request to
+     * @param content
+     *            (Optional) content for the request. If the content is not null, the request method
+     *            is automatically POST. The default method is GET.
+     * @param cookie
+     *            (Optional) cookie header for the request.
+     * @return
      */
-    public static JSONObject getJsonObject(Context context, URI uri, String cookie) {
+    public static HashMap<String, String> request(Context context, String urlString,
+            JSONObject content, String cookie) {
+        HttpURLConnection urlConnection = null;
+        HashMap<String, String> result = new HashMap<String, String>();
         try {
+            Log.d(TAG, "API request: " + (content == null ? "GET" : "POST") + " " + urlString);
 
+            // get compression preference
             final SharedPreferences mainPrefs = context.getSharedPreferences(SensePrefs.MAIN_PREFS,
                     Context.MODE_PRIVATE);
             final boolean compress = mainPrefs.getBoolean(Advanced.COMPRESS, true);
 
-            final HttpGet get = new HttpGet(uri);
-            get.setHeader("Cookie", cookie);
-            if (compress)
-                get.setHeader("Accept-Encoding", "gzip");
-            final HttpClient client = new DefaultHttpClient();
-
-            // client.getConnectionManager().closeIdleConnections(2, TimeUnit.SECONDS);
-            final HttpResponse response = client.execute(get);
-            if (response == null) {
-                return null;
-            }
-            if (response.getStatusLine().getStatusCode() != 200) {
-                Log.e(TAG, "Error receiving content for " + uri.toString() + ". Status code: "
-                        + response.getStatusLine().getStatusCode());
-                return null;
-            }
-
-            HttpEntity entity = response.getEntity();
-            InputStream is = entity.getContent();
-            if (compress)
-                is = new GZIPInputStream(is);
-
-            BufferedReader rd = new BufferedReader(new InputStreamReader(is), 1024);
-            String line;
-            StringBuffer responseString = new StringBuffer();
-            while ((line = rd.readLine()) != null) {
-                responseString.append(line);
-                responseString.append('\r');
-            }
-            rd.close();
-            return new JSONObject(responseString.toString());
-        } catch (Exception e) {
-            Log.e(TAG, "Error receiving content for " + uri.toString() + ": " + e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * This method sends a JSON object to update or create an item it returns the HTTP-response code
-     */
-    public static HashMap<String, String> sendJson(Context context, URL url, JSONObject json,
-            String method, String cookie) {
-        HttpURLConnection urlConn = null;
-        try {
-            // Log.d(TAG, "Sending:" + url.toString());
-
-            // Open New URL connection channel.
-            urlConn = (HttpURLConnection) url.openConnection();
-
-            // set post request
-            urlConn.setRequestMethod(method);
-
-            // Let the run-time system (RTS) know that we want input.
-            urlConn.setDoInput(true);
-
-            // we want to do output.
-            urlConn.setDoOutput(true);
-
-            // We want no caching
-            urlConn.setUseCaches(false);
-
-            // Set content type
-            urlConn.setRequestProperty("Content-Type", "application/json");
-            urlConn.setInstanceFollowRedirects(false);
-
-            // Set cookie
-            urlConn.setRequestProperty("Cookie", cookie);
-
-            // Send POST output.
-            DataOutputStream printout;
-
-            // Set compression
-            final SharedPreferences mainPrefs = context.getSharedPreferences(SensePrefs.MAIN_PREFS,
-                    Context.MODE_PRIVATE);
-            final boolean compress = mainPrefs.getBoolean(Advanced.COMPRESS, true);
-            if (compress) {
-                // Don't Set content size
-                urlConn.setRequestProperty("Transfer-Encoding", "chunked");
-                urlConn.setRequestProperty("Content-Encoding", "gzip");
-                GZIPOutputStream zipStream = new GZIPOutputStream(urlConn.getOutputStream());
-                printout = new DataOutputStream(zipStream);
+            // open new URL connection channel.
+            URL url = new URL(urlString);
+            if ("https".equals(url.getProtocol().toLowerCase())) {
+                trustAllHosts();
+                HttpsURLConnection https = (HttpsURLConnection) url.openConnection();
+                https.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+                urlConnection = https;
             } else {
-                // Set content size
-                urlConn.setFixedLengthStreamingMode(json.toString().length());
-                urlConn.setRequestProperty("Content-Length", "" + json.toString().length());
-                printout = new DataOutputStream(urlConn.getOutputStream());
+                urlConnection = (HttpURLConnection) url.openConnection();
             }
 
-            printout.writeBytes(json.toString());
-            printout.flush();
-            printout.close();
+            // some parameters
+            urlConnection.setUseCaches(false);
+            urlConnection.setInstanceFollowRedirects(false);
 
-            // Get Response
-            HashMap<String, String> response = new HashMap<String, String>();
-            int responseCode = urlConn.getResponseCode();
-            response.put("http response code", "" + urlConn.getResponseCode());
+            // set cookie (if available)
+            if (null != cookie) {
+                urlConnection.setRequestProperty("Cookie", cookie);
+            }
 
-            // content is only available for 2xx requests
-            if (200 <= responseCode && 300 > responseCode) {
-                InputStream is = urlConn.getInputStream();
-                BufferedReader rd = new BufferedReader(new InputStreamReader(is), 1024);
-                String line;
-                StringBuffer responseString = new StringBuffer();
-                while ((line = rd.readLine()) != null) {
-                    responseString.append(line);
-                    responseString.append('\r');
+            // send content (if available)
+            if (null != content) {
+                urlConnection.setDoOutput(true);
+                urlConnection.setRequestProperty("Content-Type", "application/json");
+
+                // send content
+                DataOutputStream printout;
+                if (compress) {
+                    // do not set content size
+                    urlConnection.setRequestProperty("Transfer-Encoding", "chunked");
+                    urlConnection.setRequestProperty("Content-Encoding", "gzip");
+                    GZIPOutputStream zipStream = new GZIPOutputStream(
+                            urlConnection.getOutputStream());
+                    printout = new DataOutputStream(zipStream);
+                } else {
+                    // set content size
+                    urlConnection.setFixedLengthStreamingMode(content.toString().length());
+                    urlConnection.setRequestProperty("Content-Length", ""
+                            + content.toString().length());
+                    printout = new DataOutputStream(urlConnection.getOutputStream());
                 }
-                rd.close();
-                response.put("content", responseString.toString());
+                printout.writeBytes(content.toString());
+                printout.flush();
+                printout.close();
             }
 
-            // read header fields
-            Map<String, List<String>> headerFields = urlConn.getHeaderFields();
+            // get response, or read error message
+            InputStream inputStream;
+            try {
+                inputStream = urlConnection.getInputStream();
+            } catch (IOException e) {
+                inputStream = urlConnection.getErrorStream();
+            }
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream), 1024);
+            String line;
+            StringBuffer responseContent = new StringBuffer();
+            while ((line = reader.readLine()) != null) {
+                responseContent.append(line);
+                responseContent.append('\r');
+            }
+            reader.close();
+            result.put("content", responseContent.toString());
+            result.put("http response code", "" + urlConnection.getResponseCode());
+
+            // get headers
+            Map<String, List<String>> headerFields = urlConnection.getHeaderFields();
             for (Entry<String, List<String>> entry : headerFields.entrySet()) {
                 String key = entry.getKey();
                 List<String> value = entry.getValue();
@@ -821,26 +769,60 @@ public class SenseApi {
                     String valueString = value.toString();
                     valueString = valueString.substring(1, valueString.length() - 1);
                     // Log.d(TAG, "Header field '" + key + "': '" + valueString + "'");
-                    response.put(key, valueString);
+                    result.put(key, valueString);
                 } else {
                     // Log.d(TAG, "Skipped header field '" + key + "': '" + value + "'");
                 }
             }
-            return response;
+
+            return result;
 
         } catch (Exception e) {
             if (null == e.getMessage()) {
-                Log.e(TAG, "Error in posting JSON: " + json.toString(), e);
+                Log.e(TAG, "Error executing request: " + urlString + ", content: " + content, e);
             } else {
                 // less verbose output
-                Log.e(TAG, "Error in posting JSON: " + json.toString(), e);
+                Log.e(TAG, "Error executing request: " + urlString + ", content: " + content + ". "
+                        + e.getMessage());
             }
             return null;
-        } finally {
 
-            if (urlConn != null) {
-                urlConn.disconnect();
+        } finally {
+            if (urlConnection != null) {
+                urlConnection.disconnect();
             }
+        }
+    }
+
+    /**
+     * Trust every server - dont check for any certificate
+     */
+    private static void trustAllHosts() {
+        // Create a trust manager that does not validate certificate chains
+        TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+            @Override
+            public void checkClientTrusted(X509Certificate[] chain, String authType)
+                    throws CertificateException {
+            }
+
+            @Override
+            public void checkServerTrusted(X509Certificate[] chain, String authType)
+                    throws CertificateException {
+            }
+
+            @Override
+            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                return new java.security.cert.X509Certificate[] {};
+            }
+        } };
+
+        // Install the all-trusting trust manager
+        try {
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

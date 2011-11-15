@@ -7,6 +7,8 @@
  */
 package nl.sense_os.service;
 
+import nl.sense_os.service.SensePrefs.Main;
+import nl.sense_os.service.SensePrefs.Status;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -15,13 +17,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import nl.sense_os.service.SensePrefs.Main;
-import nl.sense_os.service.SensePrefs.Status;
-
 public class DataTransmitter extends BroadcastReceiver {
 
     private static final String TAG = "Sense DataTransmitter";
-    private static final String ACTION = "nl.sense_os.service.StartTransmit";
     private static final int REQ_CODE = 0x05E2DDA7A;
 
     private class Intervals {
@@ -41,7 +39,7 @@ public class DataTransmitter extends BroadcastReceiver {
         // check if the service is (supposed to be) alive before scheduling next alarm
         if (true == alive) {
             // start send task
-            Intent task = new Intent(MsgHandler.ACTION_SEND_DATA);
+            Intent task = new Intent(context.getString(R.string.action_sense_send_data));
             context.startService(task);
         } else {
             Log.v(TAG, "Sense service should not be alive!");
@@ -56,7 +54,7 @@ public class DataTransmitter extends BroadcastReceiver {
      */
     public static void scheduleTransmissions(Context context) {
 
-        Intent intent = new Intent(ACTION);
+        Intent intent = new Intent(context.getString(R.string.action_sense_data_transmit_alarm));
         PendingIntent operation = PendingIntent.getBroadcast(context, REQ_CODE, intent, 0);
         AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 
@@ -111,7 +109,7 @@ public class DataTransmitter extends BroadcastReceiver {
      *            Context to access AlarmManager
      */
     public static void stopTransmissions(Context context) {
-        Intent intent = new Intent(ACTION);
+        Intent intent = new Intent(context.getString(R.string.action_sense_data_transmit_alarm));
         PendingIntent operation = PendingIntent.getBroadcast(context, REQ_CODE, intent, 0);
         AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         am.cancel(operation);
