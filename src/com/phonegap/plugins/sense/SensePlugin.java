@@ -1,5 +1,18 @@
 package com.phonegap.plugins.sense;
 
+import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.ISenseServiceCallback;
+import nl.sense_os.service.R;
+import nl.sense_os.service.SensePrefs;
+import nl.sense_os.service.SensePrefs.Auth;
+import nl.sense_os.service.SensePrefs.Main;
+import nl.sense_os.service.SensorData.DataPoint;
+import nl.sense_os.service.storage.LocalStorage;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -13,19 +26,6 @@ import android.util.Log;
 import com.phonegap.api.Plugin;
 import com.phonegap.api.PluginResult;
 import com.phonegap.api.PluginResult.Status;
-
-import nl.sense_os.service.ISenseService;
-import nl.sense_os.service.ISenseServiceCallback;
-import nl.sense_os.service.R;
-import nl.sense_os.service.SensePrefs;
-import nl.sense_os.service.SensePrefs.Auth;
-import nl.sense_os.service.SensePrefs.Main;
-import nl.sense_os.service.SensorData.DataPoint;
-import nl.sense_os.service.storage.LocalStorage;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 public class SensePlugin extends Plugin {
 
@@ -67,12 +67,23 @@ public class SensePlugin extends Plugin {
                     service.setPrefString(SensePrefs.Main.SAMPLE_RATE, "0");
                     service.setPrefString(SensePrefs.Main.SYNC_RATE, "-2");
 
+                    service.setPrefBool(SensePrefs.Main.Ambience.MIC, true);
                     service.setPrefBool(SensePrefs.Main.Ambience.LIGHT, false);
+                    service.setPrefBool(SensePrefs.Main.Ambience.PRESSURE, false);
                     service.toggleAmbience(true);
 
                     service.setPrefBool(SensePrefs.Main.Motion.MOTION_ENERGY, true);
                     service.toggleMotion(true);
 
+                    service.setPrefBool(SensePrefs.Main.PhoneState.BATTERY, true);
+                    service.setPrefBool(SensePrefs.Main.PhoneState.PROXIMITY, true);
+                    service.setPrefBool(SensePrefs.Main.PhoneState.SCREEN_ACTIVITY, true);
+                    service.setPrefBool(SensePrefs.Main.PhoneState.CALL_STATE, false);
+                    service.setPrefBool(SensePrefs.Main.PhoneState.DATA_CONNECTION, false);
+                    service.setPrefBool(SensePrefs.Main.PhoneState.IP_ADDRESS, false);
+                    service.setPrefBool(SensePrefs.Main.PhoneState.SERVICE_STATE, false);
+                    service.setPrefBool(SensePrefs.Main.PhoneState.SIGNAL_STRENGTH, false);
+                    service.setPrefBool(SensePrefs.Main.PhoneState.UNREAD_MSG, false);
                     service.togglePhoneState(true);
 
                     service.setPrefBool(SensePrefs.Status.AUTOSTART, true);
