@@ -1,5 +1,21 @@
 package nl.sense_os.service;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.os.Build;
+import android.os.RemoteException;
+import android.telephony.TelephonyManager;
+import android.util.Log;
+
+import nl.sense_os.service.SensePrefs.Auth;
+import nl.sense_os.service.SensePrefs.Main.Advanced;
+
+import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -21,22 +37,6 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-
-import nl.sense_os.service.SensePrefs.Auth;
-import nl.sense_os.service.SensePrefs.Main.Advanced;
-
-import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
-import android.os.Build;
-import android.os.RemoteException;
-import android.telephony.TelephonyManager;
-import android.util.Log;
 
 public class SenseApi {
 
@@ -359,13 +359,13 @@ public class SenseApi {
         SharedPreferences prefs = context.getSharedPreferences(SensePrefs.AUTH_PREFS,
                 Context.MODE_PRIVATE);
         if (AppSecrets.ASK.equals(appId)) {
-            Log.v(TAG, "An ASK app accessed the CommonSense session ID");
+            // Log.v(TAG, "An ASK app accessed the CommonSense session ID");
             return prefs.getString(Auth.LOGIN_COOKIE, null);
         } else if (AppSecrets.RDAM_CS.equals(appId)) {
-            Log.v(TAG, "A Rotterdam CS app accessed the CommonSense session ID");
+            // Log.v(TAG, "A Rotterdam CS app accessed the CommonSense session ID");
             return prefs.getString(Auth.LOGIN_COOKIE, null);
         } else if (AppSecrets.SENSE.equals(appId)) {
-            Log.v(TAG, "A Sense app accessed the CommonSense session ID");
+            // Log.v(TAG, "A Sense app accessed the CommonSense session ID");
             return prefs.getString(Auth.LOGIN_COOKIE, null);
         } else {
             Log.e(TAG, "App is not allowed access to the CommonSense session!");
@@ -688,7 +688,7 @@ public class SenseApi {
         HttpURLConnection urlConnection = null;
         HashMap<String, String> result = new HashMap<String, String>();
         try {
-            Log.d(TAG, "API request: " + (content == null ? "GET" : "POST") + " " + urlString);
+            // Log.d(TAG, "API request: " + (content == null ? "GET" : "POST") + " " + urlString);
 
             // get compression preference
             final SharedPreferences mainPrefs = context.getSharedPreferences(SensePrefs.MAIN_PREFS,
