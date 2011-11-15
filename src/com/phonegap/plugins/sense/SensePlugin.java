@@ -1,18 +1,5 @@
 package com.phonegap.plugins.sense;
 
-import nl.sense_os.service.ISenseService;
-import nl.sense_os.service.ISenseServiceCallback;
-import nl.sense_os.service.R;
-import nl.sense_os.service.SensePrefs;
-import nl.sense_os.service.SensePrefs.Auth;
-import nl.sense_os.service.SensePrefs.Main;
-import nl.sense_os.service.SensorData.DataPoint;
-import nl.sense_os.service.storage.LocalStorage;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -26,6 +13,19 @@ import android.util.Log;
 import com.phonegap.api.Plugin;
 import com.phonegap.api.PluginResult;
 import com.phonegap.api.PluginResult.Status;
+
+import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.ISenseServiceCallback;
+import nl.sense_os.service.R;
+import nl.sense_os.service.SensePrefs;
+import nl.sense_os.service.SensePrefs.Auth;
+import nl.sense_os.service.SensePrefs.Main;
+import nl.sense_os.service.SensorData.DataPoint;
+import nl.sense_os.service.storage.LocalStorage;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class SensePlugin extends Plugin {
 
@@ -449,66 +449,24 @@ public class SensePlugin extends Plugin {
         return new PluginResult(status, result);
     }
 
-    private PluginResult setPreference(JSONArray data, String callbackId) throws JSONException {
+    private PluginResult setPreference(JSONArray data, String callbackId) throws JSONException,
+            RemoteException {
 
         // get the preference key
         String key = data.getString(0);
 
         // get the preference value
-        try {
-            boolean value = data.getBoolean(1);
-            service.setPrefBool(key, value);
-            return new PluginResult(Status.OK);
-        } catch (JSONException e) {
-            // do nothing, try another type
-        } catch (RemoteException e) {
-            Log.e(TAG, "Failed to set preference '" + key + "' at Sense service");
-            return new PluginResult(Status.ERROR, "failed to set preference");
-        }
-
-        try {
-            float value = (float) data.getDouble(1);
-            service.setPrefFloat(key, value);
-            return new PluginResult(Status.OK);
-        } catch (JSONException e) {
-            // do nothing, try another type
-        } catch (RemoteException e) {
-            Log.e(TAG, "Failed to set preference '" + key + "' at Sense service");
-            return new PluginResult(Status.ERROR, "failed to set preference");
-        }
-
-        try {
-            int value = data.getInt(1);
-            service.setPrefInt(key, value);
-            return new PluginResult(Status.OK);
-        } catch (JSONException e) {
-            // do nothing, try another type
-        } catch (RemoteException e) {
-            Log.e(TAG, "Failed to set preference '" + key + "' at Sense service");
-            return new PluginResult(Status.ERROR, "failed to set preference");
-        }
-
-        try {
-            long value = data.getLong(1);
-            service.setPrefLong(key, value);
-            return new PluginResult(Status.OK);
-        } catch (JSONException e) {
-            // do nothing, try another type
-        } catch (RemoteException e) {
-            Log.e(TAG, "Failed to set preference '" + key + "' at Sense service");
-            return new PluginResult(Status.ERROR, "failed to set preference");
-        }
-
-        try {
+        if (key.equals(Main.SAMPLE_RATE) || key.equals(Main.SYNC_RATE)
+                || key.equals(Auth.LOGIN_USERNAME)) {
             String value = data.getString(1);
+            Log.d(TAG, "Set preference '" + key + "': '" + value + "'");
             service.setPrefString(key, value);
             return new PluginResult(Status.OK);
-        } catch (JSONException e) {
-            // give up
-            return new PluginResult(Status.ERROR, "cannot determine preference type");
-        } catch (RemoteException e) {
-            Log.e(TAG, "Failed to set preference '" + key + "' at Sense service");
-            return new PluginResult(Status.ERROR, "failed to set preference");
+        } else {
+            boolean value = data.getBoolean(1);
+            Log.d(TAG, "Set preference '" + key + "': " + value);
+            service.setPrefBool(key, value);
+            return new PluginResult(Status.OK);
         }
     }
 
