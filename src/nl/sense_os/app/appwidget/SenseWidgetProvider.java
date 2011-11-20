@@ -1,11 +1,12 @@
 package nl.sense_os.app.appwidget;
 
-import nl.sense_os.service.R;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
+
+import nl.sense_os.app.R;
 
 public class SenseWidgetProvider extends AppWidgetProvider {
 

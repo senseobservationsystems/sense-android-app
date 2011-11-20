@@ -6,14 +6,6 @@
 
 package nl.sense_os.app;
 
-import nl.sense_os.app.dialogs.LoginDialog;
-import nl.sense_os.app.dialogs.RegisterDialog;
-import nl.sense_os.service.ISenseService;
-import nl.sense_os.service.ISenseServiceCallback;
-import nl.sense_os.service.SensePrefs;
-import nl.sense_os.service.SensePrefs.Auth;
-import nl.sense_os.service.SenseService;
-import nl.sense_os.service.SenseStatusCodes;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -40,6 +32,15 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import nl.sense_os.app.dialogs.LoginDialog;
+import nl.sense_os.app.dialogs.RegisterDialog;
+import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.ISenseServiceCallback;
+import nl.sense_os.service.SenseService;
+import nl.sense_os.service.constants.SensePrefs;
+import nl.sense_os.service.constants.SensePrefs.Auth;
+import nl.sense_os.service.constants.SenseStatusCodes;
 
 public class SenseApp extends Activity {
 
@@ -359,7 +360,7 @@ public class SenseApp extends Activity {
         builder.setIcon(android.R.drawable.ic_dialog_info);
         builder.setTitle(R.string.dialog_faq_title);
         builder.setMessage(R.string.dialog_faq_msg);
-        builder.setPositiveButton(R.string.button_ok, null);
+        builder.setPositiveButton(android.R.string.ok, null);
         return builder.create();
     }
 
@@ -404,7 +405,7 @@ public class SenseApp extends Activity {
         builder.setIcon(android.R.drawable.ic_dialog_alert);
         builder.setMessage(R.string.dialog_update_msg);
         builder.setTitle(R.string.dialog_update_title);
-        builder.setPositiveButton(R.string.button_ok, null);
+        builder.setPositiveButton(android.R.string.ok, null);
         builder.setCancelable(false);
         return builder.create();
     }

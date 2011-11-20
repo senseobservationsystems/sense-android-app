@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>    
     <string name="sense_app_name">Sense Platform</string>
-    <string name="button_cancel">Cancel</string>
+    
+    <!-- button labels -->
     <string name="button_faq">FAQ</string>
     <string name="button_login">Login</string>
-    <string name="button_ok">OK</string>
     <string name="button_quit">Quit</string>
     <string name="button_reg">Register</string>
+    
+    <!-- miscellaneous text resources for dialogs -->
     <string name="dialog_dev_mode_title">Development mode</string>
     <string name="dialog_dev_mode_msg">Warning: enabling development mode is designed for Sense testers only. It is not recommended for normal use: your data will not be accessible anymore on CommonSense! </string>
     <string name="dialog_faq_title">Sense FAQ</string>
@@ -28,22 +30,14 @@
     <string name="dialog_update_title">Announcement</string>    
     <string name="dialog_welcome_title">Welcome to Sense</string> 
     <string name="dialog_welcome_msg">The Sense platform gathers data about your activities and shares it with the CommonSense data storage.\n\nOver time, it will learn to recognize your behaviour and current status. This makes it possible for your phone to help you avoid repetitive or stupid tasks, and alert you about interesting events.\n\nPlease login, or register a free CommonSense account.</string>
+    
+    <!-- options menu labels -->
     <string name="menu_preferences">Preferences</string>
     <string name="menu_faq">FAQ</string>
     <string name="menu_login">Change login</string>
     <string name="menu_register">Register</string>
-    <string name="stat_notify_action">nl.sense_os.platform.SenseApp</string>
-    <string name="stat_notify_title">Sense Platform</string>
-    <string name="stat_notify_content_off_loggedin">Sensors inactive, logged in as \'%s\'</string> 
-    <string name="stat_notify_content_off_loggedout">Sensors inactive, no connection to CommonSense</string>  
-    <string name="stat_notify_content_on_loggedin">"Sensors active, logged in as \'%s\'"</string> 
-    <string name="stat_notify_content_on_loggedout">Sensors active, no connection to CommonSense</string>
-    <string name="pq_missed_done">All missed pop quizzes are completed.</string>
-    <string name="pq_missed_msg">You have missed ?1 pop quizzes.\n\nDo you want to complete these now?</string>
-    <string name="pq_missed_title">Missed pop quiz</string>
-    <string name="pq_welcome_msg1">Time:</string>
-    <string name="pq_welcome_msg2">User:</string>
-    <string name="pq_welcome_title">Pop quiz</string>
+    
+    <!-- miscellaneous text resources for toast messages -->
     <string name="toast_location_noprovider">All location providers are disabled in the preferences. Location service not started.</string>
     <string name="toast_login_fail">Login failed! Possible connection problems.</string>
     <string name="toast_login_forbidden">Login failed! Invalid username or password.</string>
@@ -61,4 +55,22 @@
     <string name="toast_toggle_ambience">Ambience measurements will update ?.</string>
     <string name="toast_toggle_phonestate">Changes in phone state will be shared with CommonSense.</string>
     <string name="toast_toggle_quiz">A question will pop up every ?.</string>
+
+    <!-- action for the app widget -->
+    <string name="action_widget_update">nl.sense_os.platform.AppWidgetUpdate</string>
+    <string name="action_widget_start_phone_state">nl.sense_os.platform.StartPhoneState</string>
+    <string name="action_widget_start_location">nl.sense_os.platform.StartLocation</string>
+    <string name="action_widget_start_motion">nl.sense_os.platform.StartMotion</string>
+    <string name="action_widget_start_ambience">nl.sense_os.platform.StartAmbience</string>
+    <string name="action_widget_start_devices">nl.sense_os.platform.StartDevices</string>
+    <string name="action_widget_start_external">nl.sense_os.platform.StartExternal</string>
+    <string name="action_widget_stop_phone_state">nl.sense_os.platform.StopPhoneState</string>
+    <string name="action_widget_stop_location">nl.sense_os.platform.StopLocation</string>
+    <string name="action_widget_stop_motion">nl.sense_os.platform.StopMotion</string>
+    <string name="action_widget_stop_ambience">nl.sense_os.platform.StopAmbience</string>
+    <string name="action_widget_stop_devices">nl.sense_os.platform.StopDevices</string>
+    <string name="action_widget_stop_external">nl.sense_os.platform.StopExternal</string>        
+
+    <!-- LocalStorage authority, overwrite when bundling Sense into another app -->
+    <string name="local_storage_authority">nl.sense_os.platform.provider.LocalStorage</string>
 </resources>
