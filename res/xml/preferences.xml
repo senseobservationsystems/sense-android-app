@@ -17,8 +17,8 @@
             android:entries="@array/pref_sample_rate_keys"
             android:entryValues="@array/pref_sample_rate_vals"
             android:defaultValue="0"
-            android:positiveButtonText="@string/button_ok"
-            android:negativeButtonText="@string/button_cancel"
+            android:positiveButtonText="@android:string/ok"
+            android:negativeButtonText="@android:string/cancel"
             android:key="commonsense_rate" />
         <ListPreference
             android:title="CommonSense sync rate"
@@ -27,8 +27,8 @@
             android:entries="@array/pref_sync_rate_keys"
             android:entryValues="@array/pref_sync_rate_vals"
             android:defaultValue="0"
-            android:positiveButtonText="@string/button_ok"
-            android:negativeButtonText="@string/button_cancel"
+            android:positiveButtonText="@android:string/ok"
+            android:negativeButtonText="@android:string/cancel"
             android:key="sync_rate" />
         <CheckBoxPreference
             android:title="Autostart"
@@ -309,8 +309,8 @@
                     android:entries="@array/pref_popquiz_rate_keys"
                     android:entryValues="@array/pref_popquiz_rate_vals"
                     android:defaultValue="0"
-                    android:positiveButtonText="@string/button_ok"
-                    android:negativeButtonText="@string/button_cancel"
+                    android:positiveButtonText="@android:string/ok"
+                    android:negativeButtonText="@android:string/cancel"
                     android:key="popquiz_rate" />
                 <Preference
                     android:title="Refresh content"

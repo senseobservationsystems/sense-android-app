@@ -6,23 +6,6 @@
  */
 package nl.sense_os.app;
 
-import nl.sense_os.app.dialogs.LoginDialog;
-import nl.sense_os.app.dialogs.RegisterDialog;
-import nl.sense_os.service.ISenseService;
-import nl.sense_os.service.SensePrefs;
-import nl.sense_os.service.SensePrefs.Auth;
-import nl.sense_os.service.SensePrefs.Main.Advanced;
-import nl.sense_os.service.SensePrefs.Main.Ambience;
-import nl.sense_os.service.SensePrefs.Main.DevProx;
-import nl.sense_os.service.SensePrefs.Main.External.MyGlucoHealth;
-import nl.sense_os.service.SensePrefs.Main.External.OBD2Dongle;
-import nl.sense_os.service.SensePrefs.Main.External.TanitaScale;
-import nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness;
-import nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM;
-import nl.sense_os.service.SensePrefs.Main.Location;
-import nl.sense_os.service.SensePrefs.Main.Motion;
-import nl.sense_os.service.SensePrefs.Main.Quiz;
-import nl.sense_os.service.SensePrefs.Status;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -44,6 +27,24 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
+
+import nl.sense_os.app.dialogs.LoginDialog;
+import nl.sense_os.app.dialogs.RegisterDialog;
+import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.constants.SensePrefs;
+import nl.sense_os.service.constants.SensePrefs.Auth;
+import nl.sense_os.service.constants.SensePrefs.Main.Advanced;
+import nl.sense_os.service.constants.SensePrefs.Main.Ambience;
+import nl.sense_os.service.constants.SensePrefs.Main.DevProx;
+import nl.sense_os.service.constants.SensePrefs.Main.External.MyGlucoHealth;
+import nl.sense_os.service.constants.SensePrefs.Main.External.OBD2Dongle;
+import nl.sense_os.service.constants.SensePrefs.Main.External.TanitaScale;
+import nl.sense_os.service.constants.SensePrefs.Main.External.ZephyrBioHarness;
+import nl.sense_os.service.constants.SensePrefs.Main.External.ZephyrHxM;
+import nl.sense_os.service.constants.SensePrefs.Main.Location;
+import nl.sense_os.service.constants.SensePrefs.Main.Motion;
+import nl.sense_os.service.constants.SensePrefs.Main.Quiz;
+import nl.sense_os.service.constants.SensePrefs.Status;
 
 public class SenseSettings extends PreferenceActivity {
 
@@ -373,11 +374,11 @@ public class SenseSettings extends PreferenceActivity {
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.dialog_dev_mode_title);
         builder.setMessage(R.string.dialog_dev_mode_msg);
-        builder.setPositiveButton(R.string.button_ok, new OnClickListener() {
+        builder.setPositiveButton(android.R.string.ok, new OnClickListener() {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                // do nothinga
+                // do nothing
             }
         });
         return builder.create();
