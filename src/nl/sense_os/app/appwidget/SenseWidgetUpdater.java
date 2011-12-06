@@ -1,10 +1,5 @@
 package nl.sense_os.app.appwidget;
 
-import nl.sense_os.app.R;
-import nl.sense_os.service.ISenseService;
-import nl.sense_os.service.ISenseServiceCallback;
-import nl.sense_os.service.SensePrefs.Main;
-import nl.sense_os.service.SenseStatusCodes;
 import android.app.IntentService;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
@@ -15,6 +10,12 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
 import android.widget.RemoteViews;
+
+import nl.sense_os.app.R;
+import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.ISenseServiceCallback;
+import nl.sense_os.service.constants.SensePrefs.Main;
+import nl.sense_os.service.constants.SenseStatusCodes;
 
 public class SenseWidgetUpdater extends IntentService {
 
@@ -52,18 +53,6 @@ public class SenseWidgetUpdater extends IntentService {
 
     private static final String TAG = "Sense Widget Updater";
 
-    public static final String ACTION_UPDATE = "nl.sense_os.app.AppWidgetUpdate";
-    private static final String ACTION_START_PHONE_STATE = "nl.sense_os.app.StartPhoneState";
-    private static final String ACTION_START_LOCATION = "nl.sense_os.app.StartLocation";
-    private static final String ACTION_START_MOTION = "nl.sense_os.app.StartMotion";
-    private static final String ACTION_START_AMBIENCE = "nl.sense_os.app.StartAmbience";
-    private static final String ACTION_START_DEVICES = "nl.sense_os.app.StartDevices";
-    private static final String ACTION_STOP_PHONE_STATE = "nl.sense_os.app.StopPhoneState";
-    private static final String ACTION_STOP_LOCATION = "nl.sense_os.app.StopLocation";
-    private static final String ACTION_STOP_MOTION = "nl.sense_os.app.StopMotion";
-    private static final String ACTION_STOP_AMBIENCE = "nl.sense_os.app.StopAmbience";
-    private static final String ACTION_STOP_DEVICES = "nl.sense_os.app.StopDevices";
-
     private final ISenseServiceCallback callback = new SenseCallback();
 
     private boolean isBoundOrBinding;
@@ -82,7 +71,7 @@ public class SenseWidgetUpdater extends IntentService {
         // start the service if it was not running already
         if (!isBoundOrBinding) {
             // Log.v(TAG, "Try to bind to Sense Platform service");
-            final Intent serviceIntent = new Intent(ISenseService.class.getName());
+            final Intent serviceIntent = new Intent(getString(R.string.action_sense_service));
             isBoundOrBinding = bindService(serviceIntent, serviceConn, 0);
         } else {
             // already bound
@@ -137,27 +126,27 @@ public class SenseWidgetUpdater extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         String action = intent.getAction();
-        if (ACTION_UPDATE.equals(action)) {
+        if (getString(R.string.action_widget_update).equals(action)) {
             checkServiceStatus();
-        } else if (ACTION_START_PHONE_STATE.equals(action)) {
+        } else if (getString(R.string.action_widget_start_phone_state).equals(action)) {
             setPhoneState(true);
-        } else if (ACTION_STOP_PHONE_STATE.equals(action)) {
+        } else if (getString(R.string.action_widget_stop_phone_state).equals(action)) {
             setPhoneState(false);
-        } else if (ACTION_START_LOCATION.equals(action)) {
+        } else if (getString(R.string.action_widget_start_location).equals(action)) {
             setLocation(true);
-        } else if (ACTION_STOP_LOCATION.equals(action)) {
+        } else if (getString(R.string.action_widget_stop_location).equals(action)) {
             setLocation(false);
-        } else if (ACTION_START_MOTION.equals(action)) {
+        } else if (getString(R.string.action_widget_start_motion).equals(action)) {
             setMotion(true);
-        } else if (ACTION_STOP_MOTION.equals(action)) {
+        } else if (getString(R.string.action_widget_stop_motion).equals(action)) {
             setMotion(false);
-        } else if (ACTION_START_AMBIENCE.equals(action)) {
+        } else if (getString(R.string.action_widget_start_ambience).equals(action)) {
             setAmbience(true);
-        } else if (ACTION_STOP_AMBIENCE.equals(action)) {
+        } else if (getString(R.string.action_widget_stop_ambience).equals(action)) {
             setAmbience(false);
-        } else if (ACTION_START_DEVICES.equals(action)) {
+        } else if (getString(R.string.action_widget_start_devices).equals(action)) {
             setDevices(true);
-        } else if (ACTION_STOP_DEVICES.equals(action)) {
+        } else if (getString(R.string.action_widget_stop_devices).equals(action)) {
             setDevices(false);
         } else {
             Log.w(TAG, "Unexpected intent action: " + action);
@@ -316,7 +305,8 @@ public class SenseWidgetUpdater extends IntentService {
         views.setImageViewResource(R.id.widget_phone_state_btn,
                 active ? R.drawable.wi_pst_on_selector : R.drawable.wi_pst_off_selector);
 
-        Intent intent = new Intent(active ? ACTION_STOP_PHONE_STATE : ACTION_START_PHONE_STATE);
+        Intent intent = new Intent(active ? getString(R.string.action_widget_stop_phone_state)
+                : getString(R.string.action_widget_start_phone_state));
         PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, 0);
         views.setOnClickPendingIntent(R.id.widget_phone_state_btn, pendingIntent);
 
@@ -325,7 +315,8 @@ public class SenseWidgetUpdater extends IntentService {
         views.setImageViewResource(R.id.widget_location_btn, active ? R.drawable.wi_loc_on_selector
                 : R.drawable.wi_loc_off_selector);
 
-        intent = new Intent(active ? ACTION_STOP_LOCATION : ACTION_START_LOCATION);
+        intent = new Intent(active ? getString(R.string.action_widget_stop_location)
+                : getString(R.string.action_widget_start_location));
         pendingIntent = PendingIntent.getService(this, 0, intent, 0);
         views.setOnClickPendingIntent(R.id.widget_location_btn, pendingIntent);
 
@@ -334,7 +325,8 @@ public class SenseWidgetUpdater extends IntentService {
         views.setImageViewResource(R.id.widget_motion_btn, active ? R.drawable.wi_mot_on_selector
                 : R.drawable.wi_mot_off_selector);
 
-        intent = new Intent(active ? ACTION_STOP_MOTION : ACTION_START_MOTION);
+        intent = new Intent(active ? getString(R.string.action_widget_stop_motion)
+                : getString(R.string.action_widget_start_motion));
         pendingIntent = PendingIntent.getService(this, 0, intent, 0);
         views.setOnClickPendingIntent(R.id.widget_motion_btn, pendingIntent);
 
@@ -343,7 +335,8 @@ public class SenseWidgetUpdater extends IntentService {
         views.setImageViewResource(R.id.widget_ambience_btn, active ? R.drawable.wi_amb_on_selector
                 : R.drawable.wi_amb_off_selector);
 
-        intent = new Intent(active ? ACTION_STOP_AMBIENCE : ACTION_START_AMBIENCE);
+        intent = new Intent(active ? getString(R.string.action_widget_stop_ambience)
+                : getString(R.string.action_widget_start_ambience));
         pendingIntent = PendingIntent.getService(this, 0, intent, 0);
         views.setOnClickPendingIntent(R.id.widget_ambience_btn, pendingIntent);
 
@@ -352,7 +345,8 @@ public class SenseWidgetUpdater extends IntentService {
         views.setImageViewResource(R.id.widget_devices_btn, active ? R.drawable.wi_dev_on_selector
                 : R.drawable.wi_dev_off_selector);
 
-        intent = new Intent(active ? ACTION_STOP_DEVICES : ACTION_START_DEVICES);
+        intent = new Intent(active ? getString(R.string.action_widget_stop_devices)
+                : getString(R.string.action_widget_start_devices));
         pendingIntent = PendingIntent.getService(this, 0, intent, 0);
         views.setOnClickPendingIntent(R.id.widget_devices_btn, pendingIntent);
     }

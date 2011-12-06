@@ -2,8 +2,8 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="nl.sense_os.app"
-    android:versionName="2.1.1"
-    android:versionCode="20111012">
+    android:versionName="2.2.0"
+    android:versionCode="20111206">
 
     <uses-feature
         android:name="android.hardware.location.gps"
@@ -46,8 +46,8 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <uses-sdk
-        android:minSdkVersion="4"
-        android:targetSdkVersion="7" />
+        android:minSdkVersion="7"
+        android:targetSdkVersion="10" />
 
     <!-- we support all screen sizes by default, thanks to SDK version >= 4 -->
     <!-- <supports-screens -->
@@ -59,9 +59,9 @@
 
     <application
         android:label="@string/sense_app_name"
-        android:icon="@drawable/ic_launcher_sense"
-        android:debuggable="true">
+        android:icon="@drawable/ic_launcher_sense" >
 
+        <!-- COMPONENTS OF SENSE PLATFORM FRONT-END -->
         <activity
             android:launchMode="singleInstance"
             android:configChanges="orientation"
@@ -73,11 +73,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter>
-                <action android:name="nl.sense_os.app.SenseApp" />
+                <action android:name="nl.sense_os.platform.SenseApp" />
                 <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
 
@@ -86,26 +83,65 @@
             android:name="SenseSettings"
             android:process="nl.sense_os.app">
             <intent-filter>
-                <action android:name="nl.sense_os.app.Settings" />
+                <action android:name="nl.sense_os.platform.SenseSettings" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name="nl.sense_os.service.popquiz.PopQuiz"
-            android:configChanges="orientation"
-            android:process="nl.sense_os.service">
+        
+        <service android:name=".appwidget.SenseWidgetUpdater">
             <intent-filter>
-                <action android:name="nl.sense_os.service.DoPeriodic" />
+                <action android:name="nl.sense_os.platform.AppWidgetUpdate" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-        </activity>
+            <intent-filter>
+                <action android:name="nl.sense_os.platform.StartPhoneState" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="nl.sense_os.platform.StopPhoneState" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="nl.sense_os.platform.StartLocation" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="nl.sense_os.platform.StopLocation" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="nl.sense_os.platform.StartMotion" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="nl.sense_os.platform.StopMotion" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="nl.sense_os.platform.StartAmbience" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="nl.sense_os.platform.StopAmbience" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="nl.sense_os.platform.StartDevices" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="nl.sense_os.platform.StopDevices" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
 
+        <!-- COMPONENTS OF GENERIC SENSE PLATFORM -->  
         <service
             android:name="nl.sense_os.service.SenseService"
             android:process="nl.sense_os.service">
             <intent-filter>
-                <action android:name="nl.sense_os.service.ISenseService" />
+                <action android:name="nl.sense_os.platform.SenseService" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
 
@@ -113,11 +149,11 @@
             android:name="nl.sense_os.service.MsgHandler"
             android:process="nl.sense_os.msgs">
             <intent-filter>
-                <action android:name="nl.sense_os.app.MsgHandler.NEW_MSG" />
+                <action android:name="nl.sense_os.platform.MsgHandler.NEW_DATA" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="nl.sense_os.app.MsgHandler.SEND_DATA" />
+                <action android:name="nl.sense_os.platform.MsgHandler.SEND_DATA" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
@@ -126,29 +162,12 @@
             android:name="nl.sense_os.service.feedback.FeedbackChecker"
             android:process="nl.sense_os.service">
             <intent-filter>
-                <action android:name="nl.sense_os.service.DoCheckFeedback" />
+                <action android:name="nl.sense_os.platform.FeedbackCheck" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
 
         <service android:name="nl.sense_os.service.states.EpiStateMonitor"></service>
-        <receiver
-            android:name="nl.sense_os.service.popquiz.PopQuizRx"
-            android:process="nl.sense_os.service">
-            <intent-filter>
-                <action android:name="nl.sense_os.service.AlarmPeriodic" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name="nl.sense_os.service.popquiz.PopQuizSync"
-            android:process="nl.sense_os.service">
-            <intent-filter>
-                <action android:name="nl.sense_os.service.AlarmPopQuestionUpdate" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </receiver>
 
         <receiver
             android:name="nl.sense_os.service.BootRx"
@@ -163,7 +182,7 @@
             android:name="nl.sense_os.service.AliveChecker"
             android:process="nl.sense_os.service.alivechecker">
             <intent-filter>
-                <action android:name="nl.sense_os.service.CheckAlive" />
+                <action android:name="nl.sense_os.platform.AliveCheck" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
@@ -172,7 +191,7 @@
         <!-- android:name="nl.sense_os.service.feedback.FeedbackRx" -->
         <!-- android:process="nl.sense_os.service"> -->
         <!-- <intent-filter> -->
-        <!-- <action android:name="nl.sense_os.service.CheckFeedback" /> -->
+        <!-- <action android:name="@string/action_sense_feedback_check_alarm" /> -->
         <!-- <category android:name="android.intent.category.DEFAULT" /> -->
         <!-- </intent-filter> -->
         <!-- </receiver> -->
@@ -181,7 +200,7 @@
             android:name="nl.sense_os.service.DataTransmitter"
             android:process="nl.sense_os.service.datatransmitter">
             <intent-filter>
-                <action android:name="nl.sense_os.service.StartTransmit" />
+                <action android:name="nl.sense_os.platform.DataTransmit" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
@@ -194,59 +213,11 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_provider_info" />
         </receiver>
-        
-        <service android:name=".appwidget.SenseWidgetUpdater">
-            <intent-filter>
-                <action android:name="nl.sense_os.app.AppWidgetUpdate" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="nl.sense_os.app.StartPhoneState" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="nl.sense_os.app.StopPhoneState" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="nl.sense_os.app.StartLocation" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="nl.sense_os.app.StopLocation" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="nl.sense_os.app.StartMotion" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="nl.sense_os.app.StopMotion" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="nl.sense_os.app.StartAmbience" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="nl.sense_os.app.StopAmbience" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="nl.sense_os.app.StartDevices" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="nl.sense_os.app.StopDevices" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </service>
 
         <provider
-            android:name="nl.sense_os.service.provider.LocalStorage"
+            android:name="nl.sense_os.service.provider.SensorDataProvider"
             android:exported="true"
-            android:authorities="nl.sense_os.service.provider.LocalStorage" />
-
+            android:authorities="nl.sense_os.platform.provider.LocalStorage" />
 
     </application>
 

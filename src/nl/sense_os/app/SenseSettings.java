@@ -6,23 +6,6 @@
  */
 package nl.sense_os.app;
 
-import nl.sense_os.app.dialogs.LoginDialog;
-import nl.sense_os.app.dialogs.RegisterDialog;
-import nl.sense_os.service.ISenseService;
-import nl.sense_os.service.SensePrefs;
-import nl.sense_os.service.SensePrefs.Auth;
-import nl.sense_os.service.SensePrefs.Main.Advanced;
-import nl.sense_os.service.SensePrefs.Main.Ambience;
-import nl.sense_os.service.SensePrefs.Main.DevProx;
-import nl.sense_os.service.SensePrefs.Main.External.MyGlucoHealth;
-import nl.sense_os.service.SensePrefs.Main.External.OBD2Dongle;
-import nl.sense_os.service.SensePrefs.Main.External.TanitaScale;
-import nl.sense_os.service.SensePrefs.Main.External.ZephyrBioHarness;
-import nl.sense_os.service.SensePrefs.Main.External.ZephyrHxM;
-import nl.sense_os.service.SensePrefs.Main.Location;
-import nl.sense_os.service.SensePrefs.Main.Motion;
-import nl.sense_os.service.SensePrefs.Main.Quiz;
-import nl.sense_os.service.SensePrefs.Status;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -44,6 +27,24 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
+
+import nl.sense_os.app.dialogs.LoginDialog;
+import nl.sense_os.app.dialogs.RegisterDialog;
+import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.constants.SensePrefs;
+import nl.sense_os.service.constants.SensePrefs.Auth;
+import nl.sense_os.service.constants.SensePrefs.Main.Advanced;
+import nl.sense_os.service.constants.SensePrefs.Main.Ambience;
+import nl.sense_os.service.constants.SensePrefs.Main.DevProx;
+import nl.sense_os.service.constants.SensePrefs.Main.External.MyGlucoHealth;
+import nl.sense_os.service.constants.SensePrefs.Main.External.OBD2Dongle;
+import nl.sense_os.service.constants.SensePrefs.Main.External.TanitaScale;
+import nl.sense_os.service.constants.SensePrefs.Main.External.ZephyrBioHarness;
+import nl.sense_os.service.constants.SensePrefs.Main.External.ZephyrHxM;
+import nl.sense_os.service.constants.SensePrefs.Main.Location;
+import nl.sense_os.service.constants.SensePrefs.Main.Motion;
+import nl.sense_os.service.constants.SensePrefs.Main.Quiz;
+import nl.sense_os.service.constants.SensePrefs.Status;
 
 public class SenseSettings extends PreferenceActivity {
 
@@ -179,11 +180,6 @@ public class SenseSettings extends PreferenceActivity {
             if (service != null) {
                 try {
                     result = service.register(username, password, name, surname, email, phone);
-
-                    // start service
-                    if (0 == result) {
-                        startSenseService();
-                    }
                 } catch (final RemoteException e) {
                     Log.e(TAG, "RemoteException starting sensing after login.", e);
                 }
@@ -369,7 +365,7 @@ public class SenseSettings extends PreferenceActivity {
     private void bindToSenseService() {
         // start the service if it was not running already
         if (!isServiceBound) {
-            final Intent serviceIntent = new Intent(ISenseService.class.getName());
+            final Intent serviceIntent = new Intent(getString(R.string.action_sense_service));
             isServiceBound = bindService(serviceIntent, serviceConn, BIND_AUTO_CREATE);
         }
     }
@@ -378,11 +374,11 @@ public class SenseSettings extends PreferenceActivity {
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.dialog_dev_mode_title);
         builder.setMessage(R.string.dialog_dev_mode_msg);
-        builder.setPositiveButton(R.string.button_ok, new OnClickListener() {
+        builder.setPositiveButton(android.R.string.ok, new OnClickListener() {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                // do nothinga
+                // do nothing
             }
         });
         return builder.create();
@@ -479,8 +475,6 @@ public class SenseSettings extends PreferenceActivity {
             // advanced settings
             editor.putBoolean(Auth.DEV_MODE, service.getPrefBool(Auth.DEV_MODE, false));
             editor.putBoolean(Advanced.COMPRESS, service.getPrefBool(Advanced.COMPRESS, true));
-            editor.putBoolean(Advanced.LOCAL_STORAGE,
-                    service.getPrefBool(Advanced.LOCAL_STORAGE, true));
             editor.putBoolean(Advanced.USE_COMMONSENSE,
                     service.getPrefBool(Advanced.USE_COMMONSENSE, true));
             editor.putBoolean("agostino_mode", service.getPrefBool("agostino_mode", false));
@@ -493,7 +487,6 @@ public class SenseSettings extends PreferenceActivity {
         }
 
         prefs.registerOnSharedPreferenceChangeListener(changeListener);
-
     }
 
     @Override
@@ -715,17 +708,6 @@ public class SenseSettings extends PreferenceActivity {
             break;
         default:
             syncPref.setSummary("ERROR");
-        }
-    }
-
-    private void startSenseService() {
-
-        final Intent serviceIntent = new Intent(ISenseService.class.getName());
-        ComponentName name = startService(serviceIntent);
-        if (null == name) {
-            Log.w(TAG, "Failed to start Sense service");
-        } else {
-            // Log.v(TAG, "Started Sense service");
         }
     }
 

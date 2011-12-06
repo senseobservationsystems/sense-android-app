@@ -67,12 +67,14 @@
                 android:layout_width="0px"
                 android:layout_weight="1"
                 android:id="@+id/reg_btn_register" />
+
             <Button
-                android:text="@string/button_cancel"
-                android:layout_height="50dp"
+                android:id="@+id/reg_btn_cancel"
                 android:layout_width="0px"
+                android:layout_height="50dp"
                 android:layout_weight="1"
-                android:id="@+id/reg_btn_cancel" />
+                android:text="@android:string/cancel" />
+
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
