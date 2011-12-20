@@ -1,18 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>    
+<resources>
     <string name="sense_app_name">Sense Platform</string>
-    
+
     <!-- button labels -->
     <string name="button_faq">FAQ</string>
     <string name="button_login">Login</string>
-    <string name="button_quit">Quit</string>
     <string name="button_reg">Register</string>
-    
+
+    <string name="sense_service_station">Sense Service Station</string>
+
     <!-- miscellaneous text resources for dialogs -->
     <string name="dialog_dev_mode_title">Development mode</string>
-    <string name="dialog_dev_mode_msg">Warning: enabling development mode is designed for Sense testers only. It is not recommended for normal use: your data will not be accessible anymore on CommonSense! </string>
+    <string name="dialog_dev_mode_msg">Warning: enabling development mode is designed for Sense testers only. It is
+        not recommended for normal use: your data will not be accessible anymore on CommonSense!
+    </string>
     <string name="dialog_faq_title">Sense FAQ</string>
-    <string name="dialog_faq_msg"><b>What is Sense?</b>\nSense is a company that gathers context information to improve your communication and coordination activities. We want to create a system that can classify and predict your activities based on sensor information from your phone. Only a system that knows what you are doing can help you to do it.\n\n<b>What is the Sense Platform app?</b>\nThis app gathers your sensor data and sends it to our online CommonSense system. Sense is still in full development, so for now the app does nothing for you but gather data.\n\n<b>What is CommonSense?</b>\nCommonSense is Sense\'s intelligent data storage where advanced pattern recognition and sensor fusion can be performed, so the system can learn to recognize what you are doing and how to help you. Like the Sense app, it is still under heavy development so its powers are still limited.\n\n<b>How do I get to see the gathered data?</b>\nYou can see what information we have gathered on CommonSense\'s web interface: http://common-sense.appspot.com.\n\n<b>Are you spying on me?</b>\nNo. Sense is not gathering data for its own use, you are gathering data for your own use. Your data is only accessible to you and to anybody you <i>explicitly</i> shared information with.</string>
+    <string name="dialog_faq_msg">
+        <b>What is Sense?</b>
+        \nSense is a company that gathers context information to improve your communication and
+        coordination activities. We want to create a system that can classify and predict your
+        activities based on sensor information from your phone. Only a system that knows what you
+        are doing can help you to do it.\n\n
+        <b>What is the Sense Platform app?</b>
+        \nThis app gathers your sensor data and sends it to our online CommonSense system. Sense is
+        still in full development, so for now the app does nothing for you but gather data.\n\n
+        <b>What is CommonSense?</b>
+        \nCommonSense is Sense\'s intelligent data storage where advanced pattern recognition and
+        sensor fusion can be performed, so the system can learn to recognize what you are doing and
+        how to help you. Like the Sense app, it is still under heavy development so its powers are
+        still limited.\n\n
+        <b>How do I get to see the gathered data?</b>
+        \nYou can see what information we have gathered on CommonSense\'s web interface:
+        http://common-sense.appspot.com.\n\n
+        <b>Are you spying on me?</b>
+        \nNo. Sense is not gathering data for its own use, you are gathering data for your own use.
+        Your data is only accessible to you and to anybody you
+        <i>explicitly</i>
+        shared information with.
+    </string>
     <string name="dialog_login_title">Enter login details:</string>
     <string name="dialog_login_hint_username">Username</string>
     <string name="dialog_login_hint_pass">Password</string>
@@ -25,25 +50,31 @@
     <string name="dialog_reg_hint_email">Email</string>
     <string name="dialog_reg_hint_phone">Phone</string>
     <string name="dialog_progress_title">One moment please</string>
-    <string name="dialog_progress_login_msg">Checking login credentials...</string>
-    <string name="dialog_update_msg">After weeks of waiting, the CommonSense web interface is finally in a presentable state. Although it is still far from finished, you can have a peek at the collected data by logging in at http://common-sense.appspot.com.\n\nWe recommend using a regular computer instead of your Android, because the interface is not really suited for smaller screens.\n\nHappy experimenting!</string>
-    <string name="dialog_update_title">Announcement</string>    
-    <string name="dialog_welcome_title">Welcome to Sense</string> 
-    <string name="dialog_welcome_msg">The Sense platform gathers data about your activities and shares it with the CommonSense data storage.\n\nOver time, it will learn to recognize your behaviour and current status. This makes it possible for your phone to help you avoid repetitive or stupid tasks, and alert you about interesting events.\n\nPlease login, or register a free CommonSense account.</string>
-    
+    <string name="dialog_progress_login_msg">Checking login credentials&#8230;</string>
+    <string name="dialog_update_msg">After weeks of waiting, the CommonSense web interface is finally in a
+        presentable state. Although it is still far from finished, you can have a peek at the
+        collected data by logging in at http://common-sense.appspot.com.\n\nWe recommend using a
+        regular computer instead of your Android, because the interface is not really suited for
+        smaller screens.\n\nHappy experimenting!</string>
+    <string name="dialog_update_title">Announcement</string>
+    <string name="dialog_welcome_title">Welcome to Sense</string>
+    <string name="dialog_welcome_msg">The Sense platform gathers data about your activities and shares it with the
+        CommonSense data storage.\n\nOver time, it will learn to recognize your behaviour and
+        current status. This makes it possible for your phone to help you avoid repetitive or stupid
+        tasks, and alert you about interesting events.\n\nPlease login, or register a free
+        CommonSense account.</string>
+
     <!-- options menu labels -->
     <string name="menu_preferences">Preferences</string>
     <string name="menu_faq">FAQ</string>
     <string name="menu_login">Change login</string>
     <string name="menu_register">Register</string>
-    
+
     <!-- miscellaneous text resources for toast messages -->
-    <string name="toast_location_noprovider">All location providers are disabled in the preferences. Location service not started.</string>
     <string name="toast_login_fail">Login failed! Possible connection problems.</string>
     <string name="toast_login_forbidden">Login failed! Invalid username or password.</string>
     <string name="toast_login_ok">Login successful.</string>
-    <string name="toast_login_error_conn">No data connection available. Service will retry automatically.</string>
-    <string name="toast_quiz_refresh">Quiz questions are being refreshed...</string>
+    <string name="toast_quiz_refresh">Quiz questions are being refreshed&#8230;</string>
     <string name="toast_reg_fail">Registration failed! Possible connection problems.</string>
     <string name="toast_reg_conflict">Registration failed! The user already exists.</string>
     <string name="toast_reg_ok">Registration successful.</string>
@@ -55,6 +86,8 @@
     <string name="toast_toggle_ambience">Ambience measurements will update ?.</string>
     <string name="toast_toggle_phonestate">Changes in phone state will be shared with CommonSense.</string>
     <string name="toast_toggle_quiz">A question will pop up every ?.</string>
+
+    <string name="action_sense_settings">nl.sense_os.platform.SenseSettings</string>
 
     <!-- action for the app widget -->
     <string name="action_widget_update">nl.sense_os.platform.AppWidgetUpdate</string>
@@ -69,8 +102,35 @@
     <string name="action_widget_stop_motion">nl.sense_os.platform.StopMotion</string>
     <string name="action_widget_stop_ambience">nl.sense_os.platform.StopAmbience</string>
     <string name="action_widget_stop_devices">nl.sense_os.platform.StopDevices</string>
-    <string name="action_widget_stop_external">nl.sense_os.platform.StopExternal</string>        
+    <string name="action_widget_stop_external">nl.sense_os.platform.StopExternal</string>
 
     <!-- LocalStorage authority, overwrite when bundling Sense into another app -->
     <string name="local_storage_authority">nl.sense_os.platform.provider.LocalStorage</string>
+    <string name="main_scr_header_main">Main switch</string>
+    <string name="main_scr_header_sensors">Individual sensors</string>
+    <string name="main_scr_msw_title">Sense service</string>
+    <string name="main_scr_msw_details">Press to start Sense service</string>
+    <string name="main_scr_pst_title">Phone state sensing</string>
+    <string name="main_scr_pst_detail">Phone connectivity and state</string>
+    <string name="main_scr_loc_title">Location sensing</string>
+    <string name="main_scr_loc_details">GPS or network position</string>
+    <string name="main_scr_amb_title">Ambience sensing</string>
+    <string name="main_scr_amb_details">Intensity of sound and light</string>
+    <string name="main_src_mot_title">Motion sensing</string>
+    <string name="main_scr_mot_details">Acceleration and orientation</string>
+    <string name="main_scr_dev_title">Neighboring devices</string>
+    <string name="main_scr_dev_details">Wireless devices near you</string>
+    <string name="main_scr_ext_title">External sensors</string>
+    <string name="main_scr_ext_details">External bluetooth sensors</string>
+    <string name="main_scr_qst_title">Questionnaire</string>
+    <string name="main_scr_qst_details">Periodically pops up questions</string>
+    <string name="preferences">Preferences</string>
+    <string name="content_descr_spacer">spacer</string>
+    <string name="content_descr_wi_pst">widget phone state button</string>
+    <string name="content_descr_wi_loc">widget location button</string>
+    <string name="content_descr_wi_mot">widget motion button</string>
+    <string name="content_descr_wi_amb">widget ambience button</string>
+    <string name="content_descr_wi_dev">widget neighboring devices button</string>
+    <string name="content_descr_wi_smp">widget sample rate button</string>
+    <string name="content_descr_wi_syn">widget sync rate button</string>
 </resources>

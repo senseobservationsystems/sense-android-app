@@ -6,6 +6,14 @@
 
 package nl.sense_os.app;
 
+import nl.sense_os.app.dialogs.LoginDialog;
+import nl.sense_os.app.dialogs.RegisterDialog;
+import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.ISenseServiceCallback;
+import nl.sense_os.service.SenseService;
+import nl.sense_os.service.constants.SensePrefs;
+import nl.sense_os.service.constants.SensePrefs.Auth;
+import nl.sense_os.service.constants.SenseStatusCodes;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -32,15 +40,6 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import nl.sense_os.app.dialogs.LoginDialog;
-import nl.sense_os.app.dialogs.RegisterDialog;
-import nl.sense_os.service.ISenseService;
-import nl.sense_os.service.ISenseServiceCallback;
-import nl.sense_os.service.SenseService;
-import nl.sense_os.service.constants.SensePrefs;
-import nl.sense_os.service.constants.SensePrefs.Auth;
-import nl.sense_os.service.constants.SenseStatusCodes;
 
 public class SenseApp extends Activity {
 
