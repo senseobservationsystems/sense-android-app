@@ -158,20 +158,11 @@
             </intent-filter>
         </service>
 
-        <service
-            android:name="nl.sense_os.service.feedback.FeedbackChecker"
-            android:process="nl.sense_os.service">
-            <intent-filter>
-                <action android:name="nl.sense_os.platform.FeedbackCheck" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </service>
-
         <service android:name="nl.sense_os.service.states.EpiStateMonitor"></service>
 
         <receiver
             android:name="nl.sense_os.service.BootRx"
-            android:process="nl.sense_os.service">
+            android:process="nl.sense_os.service.monitoring">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <category android:name="android.intent.category.HOME" />
@@ -180,22 +171,22 @@
 
         <receiver
             android:name="nl.sense_os.service.AliveChecker"
-            android:process="nl.sense_os.service.alivechecker">
+            android:process="nl.sense_os.service.monitoring">
             <intent-filter>
                 <action android:name="nl.sense_os.platform.AliveCheck" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
 
-        <!-- <receiver -->
-        <!-- android:name="nl.sense_os.service.feedback.FeedbackRx" -->
-        <!-- android:process="nl.sense_os.service"> -->
-        <!-- <intent-filter> -->
-        <!-- <action android:name="@string/action_sense_feedback_check_alarm" /> -->
-        <!-- <category android:name="android.intent.category.DEFAULT" /> -->
-        <!-- </intent-filter> -->
-        <!-- </receiver> -->
-
+        <receiver
+            android:name="nl.sense_os.service.NetworkMonitor"
+            android:process="nl.sense_os.service" >
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+        
         <receiver
             android:name="nl.sense_os.service.DataTransmitter"
             android:process="nl.sense_os.service.datatransmitter">
