@@ -6,6 +6,23 @@
  */
 package nl.sense_os.app;
 
+import nl.sense_os.app.dialogs.LoginDialog;
+import nl.sense_os.app.dialogs.RegisterDialog;
+import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.constants.SensePrefs;
+import nl.sense_os.service.constants.SensePrefs.Auth;
+import nl.sense_os.service.constants.SensePrefs.Main.Advanced;
+import nl.sense_os.service.constants.SensePrefs.Main.Ambience;
+import nl.sense_os.service.constants.SensePrefs.Main.DevProx;
+import nl.sense_os.service.constants.SensePrefs.Main.External.MyGlucoHealth;
+import nl.sense_os.service.constants.SensePrefs.Main.External.OBD2Dongle;
+import nl.sense_os.service.constants.SensePrefs.Main.External.TanitaScale;
+import nl.sense_os.service.constants.SensePrefs.Main.External.ZephyrBioHarness;
+import nl.sense_os.service.constants.SensePrefs.Main.External.ZephyrHxM;
+import nl.sense_os.service.constants.SensePrefs.Main.Location;
+import nl.sense_os.service.constants.SensePrefs.Main.Motion;
+import nl.sense_os.service.constants.SensePrefs.Main.Quiz;
+import nl.sense_os.service.constants.SensePrefs.Status;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -27,24 +44,6 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
-
-import nl.sense_os.app.dialogs.LoginDialog;
-import nl.sense_os.app.dialogs.RegisterDialog;
-import nl.sense_os.service.ISenseService;
-import nl.sense_os.service.constants.SensePrefs;
-import nl.sense_os.service.constants.SensePrefs.Auth;
-import nl.sense_os.service.constants.SensePrefs.Main.Advanced;
-import nl.sense_os.service.constants.SensePrefs.Main.Ambience;
-import nl.sense_os.service.constants.SensePrefs.Main.DevProx;
-import nl.sense_os.service.constants.SensePrefs.Main.External.MyGlucoHealth;
-import nl.sense_os.service.constants.SensePrefs.Main.External.OBD2Dongle;
-import nl.sense_os.service.constants.SensePrefs.Main.External.TanitaScale;
-import nl.sense_os.service.constants.SensePrefs.Main.External.ZephyrBioHarness;
-import nl.sense_os.service.constants.SensePrefs.Main.External.ZephyrHxM;
-import nl.sense_os.service.constants.SensePrefs.Main.Location;
-import nl.sense_os.service.constants.SensePrefs.Main.Motion;
-import nl.sense_os.service.constants.SensePrefs.Main.Quiz;
-import nl.sense_os.service.constants.SensePrefs.Status;
 
 public class SenseSettings extends PreferenceActivity {
 
@@ -423,6 +422,7 @@ public class SenseSettings extends PreferenceActivity {
             // ambience preferences
             editor.putBoolean(Ambience.LIGHT, service.getPrefBool(Ambience.LIGHT, true));
             editor.putBoolean(Ambience.MIC, service.getPrefBool(Ambience.MIC, true));
+            editor.putBoolean(Ambience.PRESSURE, service.getPrefBool(Ambience.PRESSURE, true));
 
             // motion preferences
             editor.putBoolean(Motion.FALL_DETECT, service.getPrefBool(Motion.FALL_DETECT, false));
@@ -435,6 +435,7 @@ public class SenseSettings extends PreferenceActivity {
             // neighboring devices
             editor.putBoolean(DevProx.BLUETOOTH, service.getPrefBool(DevProx.BLUETOOTH, true));
             editor.putBoolean(DevProx.WIFI, service.getPrefBool(DevProx.WIFI, true));
+            editor.putBoolean(DevProx.NFC, service.getPrefBool(DevProx.NFC, true));
 
             // pop quiz preferences
             editor.putString(Quiz.RATE, service.getPrefString(Quiz.RATE, "0"));

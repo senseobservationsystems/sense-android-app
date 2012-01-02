@@ -181,6 +181,11 @@
                     android:summary="Use Wi-Fi to find neighboring devices"
                     android:title="Wi-Fi"
                     android:defaultValue="True" />
+                <CheckBoxPreference
+                    android:key="proximity_nfc"
+                    android:summary="Use NFC to find neighboring devices"
+                    android:title="NFC"
+                    android:defaultValue="True" />
             </PreferenceCategory>
         </PreferenceScreen>
 
