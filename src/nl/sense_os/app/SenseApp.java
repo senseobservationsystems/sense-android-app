@@ -818,7 +818,14 @@ public class SenseApp extends Activity {
 
         if (null != service) {
             try {
-                service.toggleMain(active);
+                if (active && null == service.getPrefString(Auth.LOGIN_USERNAME, null)) {
+                    // cannot activate the service: Sense does not know the username yet
+                    Log.w(TAG, "Cannot start Sense Platform without username");
+                    showDialog(Dialogs.LOGIN);
+                } else {
+                    // normal situation
+                    service.toggleMain(active);
+                }
             } catch (RemoteException e) {
                 Log.e(TAG, "Exception toggling Sense Platform service main status!");
             }

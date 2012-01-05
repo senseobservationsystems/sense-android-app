@@ -474,7 +474,7 @@ public class SenseSettings extends PreferenceActivity {
             editor.putBoolean(OBD2Dongle.MAIN, service.getPrefBool(OBD2Dongle.MAIN, false));
 
             // advanced settings
-            editor.putBoolean(Auth.DEV_MODE, service.getPrefBool(Auth.DEV_MODE, false));
+            editor.putBoolean(Advanced.DEV_MODE, service.getPrefBool(Advanced.DEV_MODE, false));
             editor.putBoolean(Advanced.COMPRESS, service.getPrefBool(Advanced.COMPRESS, true));
             editor.putBoolean(Advanced.USE_COMMONSENSE,
                     service.getPrefBool(Advanced.USE_COMMONSENSE, true));
@@ -501,14 +501,14 @@ public class SenseSettings extends PreferenceActivity {
         setupRegisterPref();
         setupQuizPref();
 
-        final Preference devMode = findPreference(Auth.DEV_MODE);
+        final Preference devMode = findPreference(Advanced.DEV_MODE);
         devMode.setOnPreferenceClickListener(new OnPreferenceClickListener() {
 
             @Override
             public boolean onPreferenceClick(Preference preference) {
                 SharedPreferences prefs = PreferenceManager
                         .getDefaultSharedPreferences(SenseSettings.this);
-                if (prefs.getBoolean(Auth.DEV_MODE, false)) {
+                if (prefs.getBoolean(Advanced.DEV_MODE, false)) {
                     showDialog(DIALOG_DEV_MODE);
                     return true;
                 } else {
