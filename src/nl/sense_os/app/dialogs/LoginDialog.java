@@ -1,6 +1,5 @@
 package nl.sense_os.app.dialogs;
 
-import nl.sense_os.app.R;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -9,6 +8,8 @@ import android.view.View;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
+
+import nl.sense_os.app.R;
 
 public class LoginDialog extends Dialog {
 
@@ -22,7 +23,7 @@ public class LoginDialog extends Dialog {
         setContentView(R.layout.dialog_login);
 
         setTitle(R.string.dialog_login_title);
-        setFeatureDrawableResource(Window.FEATURE_LEFT_ICON, R.drawable.ic_launcher_sense);
+        setFeatureDrawableResource(Window.FEATURE_LEFT_ICON, R.drawable.ic_dialog_sense);
 
         usernameField = (EditText) findViewById(R.id.login_username);
         passField = (EditText) findViewById(R.id.login_pass);
