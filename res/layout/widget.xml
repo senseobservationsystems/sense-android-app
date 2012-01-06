@@ -1,49 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget"
     android:layout_width="320dp"
-    android:layout_height="100dp">
+    android:layout_height="100dp" >
+
     <ImageView
         android:id="@+id/widget_phone_state_btn"
         android:layout_width="60dp"
         android:layout_height="100dp"
+        android:contentDescription="@string/content_descr_wi_pst"
         android:src="@drawable/wi_pst_off_selector" />
+
     <ImageView
         android:id="@+id/widget_location_btn"
         android:layout_width="50dp"
         android:layout_height="100dp"
         android:layout_toRightOf="@id/widget_phone_state_btn"
+        android:contentDescription="@string/content_descr_wi_loc"
         android:src="@drawable/wi_loc_off_selector" />
+
     <ImageView
         android:id="@+id/widget_motion_btn"
         android:layout_width="50dp"
         android:layout_height="100dp"
         android:layout_toRightOf="@id/widget_location_btn"
+        android:contentDescription="@string/content_descr_wi_mot"
         android:src="@drawable/wi_mot_off_selector" />
+
     <ImageView
         android:id="@+id/widget_ambience_btn"
         android:layout_width="50dp"
         android:layout_height="100dp"
         android:layout_toRightOf="@id/widget_motion_btn"
+        android:contentDescription="@string/content_descr_wi_amb"
         android:src="@drawable/wi_amb_off_selector" />
+
     <ImageView
         android:id="@+id/widget_devices_btn"
         android:layout_width="50dp"
         android:layout_height="100dp"
         android:layout_toRightOf="@id/widget_ambience_btn"
+        android:contentDescription="@string/content_descr_wi_dev"
         android:src="@drawable/wi_dev_off_selector" />
+
     <ImageView
         android:id="@+id/widget_sample_btn"
         android:layout_width="60dp"
         android:layout_height="50dp"
         android:layout_toRightOf="@id/widget_devices_btn"
+        android:contentDescription="@string/content_descr_wi_smp"
         android:src="@drawable/wi_smp_0_selector" />
+
     <ImageView
         android:id="@+id/widget_sync_btn"
         android:layout_width="60dp"
         android:layout_height="50dp"
-        android:layout_toRightOf="@id/widget_devices_btn"
         android:layout_below="@id/widget_sample_btn"
+        android:layout_toRightOf="@id/widget_devices_btn"
+        android:contentDescription="@string/content_descr_wi_syn"
         android:src="@drawable/wi_syn_0_selector" />
+
 </RelativeLayout>

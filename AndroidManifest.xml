@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="nl.sense_os.app"
-    android:versionName="2.2.0"
-    android:versionCode="20111206">
+    android:versionName="2.3.0"
+    android:versionCode="20120106">
 
     <uses-feature
         android:name="android.hardware.location.gps"
@@ -28,6 +27,10 @@
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
+    <!-- implied by permission NFC, but not required -->
+    <uses-feature
+        android:name="android.hardware.nfc"
+        android:required="false" />
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -37,6 +40,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.NFC" />
     <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -56,159 +60,178 @@
     <!-- android:largeScreens="true" -->
     <!-- android:anyDensity="true" /> -->
 
-
     <application
-        android:label="@string/sense_app_name"
-        android:icon="@drawable/ic_launcher_sense" >
+        android:icon="@drawable/ic_launcher_sense"
+        android:label="@string/sense_app_name" >
 
         <!-- COMPONENTS OF SENSE PLATFORM FRONT-END -->
         <activity
-            android:launchMode="singleInstance"
-            android:configChanges="orientation"
             android:name="SenseApp"
-            android:theme="@android:style/Theme.Light"
-            android:process="nl.sense_os.app">
+            android:configChanges="orientation"
+            android:launchMode="singleInstance"
+            android:process="nl.sense_os.app"
+            android:theme="@android:style/Theme.Light" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter>
                 <action android:name="nl.sense_os.platform.SenseApp" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="SenseSettings"
+            android:configChanges="orientation"
+            android:process="nl.sense_os.app" >
+            <intent-filter>
+                <action android:name="nl.sense_os.platform.SenseSettings" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
-        <activity
-            android:configChanges="orientation"
-            android:name="SenseSettings"
-            android:process="nl.sense_os.app">
-            <intent-filter>
-                <action android:name="nl.sense_os.platform.SenseSettings" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
-        
-        <service android:name=".appwidget.SenseWidgetUpdater">
+        <service android:name=".appwidget.SenseWidgetUpdater" >
             <intent-filter>
                 <action android:name="nl.sense_os.platform.AppWidgetUpdate" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
                 <action android:name="nl.sense_os.platform.StartPhoneState" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
                 <action android:name="nl.sense_os.platform.StopPhoneState" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
                 <action android:name="nl.sense_os.platform.StartLocation" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
                 <action android:name="nl.sense_os.platform.StopLocation" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
                 <action android:name="nl.sense_os.platform.StartMotion" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
                 <action android:name="nl.sense_os.platform.StopMotion" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
                 <action android:name="nl.sense_os.platform.StartAmbience" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
                 <action android:name="nl.sense_os.platform.StopAmbience" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
                 <action android:name="nl.sense_os.platform.StartDevices" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
                 <action android:name="nl.sense_os.platform.StopDevices" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
 
-        <!-- COMPONENTS OF GENERIC SENSE PLATFORM -->  
+        <!-- COMPONENTS OF GENERIC SENSE PLATFORM -->
         <service
             android:name="nl.sense_os.service.SenseService"
-            android:process="nl.sense_os.service">
+            android:process="nl.sense_os.service" >
             <intent-filter>
                 <action android:name="nl.sense_os.platform.SenseService" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
-
         <service
             android:name="nl.sense_os.service.MsgHandler"
-            android:process="nl.sense_os.msgs">
+            android:process="nl.sense_os.msgs" >
             <intent-filter>
                 <action android:name="nl.sense_os.platform.MsgHandler.NEW_DATA" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
                 <action android:name="nl.sense_os.platform.MsgHandler.SEND_DATA" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
+        <service android:name="nl.sense_os.service.states.EpiStateMonitor" >
+        </service>
 
-        <service
-            android:name="nl.sense_os.service.feedback.FeedbackChecker"
-            android:process="nl.sense_os.service">
+        <activity
+            android:name="nl.sense_os.service.deviceprox.NfcScan"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:configChanges="orientation" >
             <intent-filter>
-                <action android:name="nl.sense_os.platform.FeedbackCheck" />
-                <category android:name="android.intent.category.DEFAULT" />
+                <action android:name="android.nfc.action.TECH_DISCOVERED" />
             </intent-filter>
-        </service>
 
-        <service android:name="nl.sense_os.service.states.EpiStateMonitor"></service>
+            <meta-data
+                android:name="android.nfc.action.TECH_DISCOVERED"
+                android:resource="@xml/nfc" />
+        </activity>
 
         <receiver
             android:name="nl.sense_os.service.BootRx"
-            android:process="nl.sense_os.service">
+            android:process="nl.sense_os.service.monitoring" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+
                 <category android:name="android.intent.category.HOME" />
             </intent-filter>
         </receiver>
-
         <receiver
             android:name="nl.sense_os.service.AliveChecker"
-            android:process="nl.sense_os.service.alivechecker">
+            android:process="nl.sense_os.service.monitoring" >
             <intent-filter>
                 <action android:name="nl.sense_os.platform.AliveCheck" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
+        <receiver
+            android:name="nl.sense_os.service.NetworkMonitor"
+            android:process="nl.sense_os.service" >
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
 
-        <!-- <receiver -->
-        <!-- android:name="nl.sense_os.service.feedback.FeedbackRx" -->
-        <!-- android:process="nl.sense_os.service"> -->
-        <!-- <intent-filter> -->
-        <!-- <action android:name="@string/action_sense_feedback_check_alarm" /> -->
-        <!-- <category android:name="android.intent.category.DEFAULT" /> -->
-        <!-- </intent-filter> -->
-        <!-- </receiver> -->
-
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
         <receiver
             android:name="nl.sense_os.service.DataTransmitter"
-            android:process="nl.sense_os.service.datatransmitter">
+            android:process="nl.sense_os.service.datatransmitter" >
             <intent-filter>
                 <action android:name="nl.sense_os.platform.DataTransmit" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
-
-        <receiver android:name=".appwidget.SenseWidgetProvider">
+        <receiver android:name=".appwidget.SenseWidgetProvider" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>            
+            </intent-filter>
+
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_provider_info" />
@@ -216,9 +239,8 @@
 
         <provider
             android:name="nl.sense_os.service.provider.SensorDataProvider"
-            android:exported="true"
-            android:authorities="nl.sense_os.platform.provider.LocalStorage" />
-
+            android:authorities="nl.sense_os.platform.provider.LocalStorage"
+            android:exported="true" />
     </application>
 
 </manifest>

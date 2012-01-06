@@ -1,6 +1,5 @@
 package nl.sense_os.app.dialogs;
 
-import nl.sense_os.app.R;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -10,6 +9,8 @@ import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import nl.sense_os.app.R;
 
 public class RegisterDialog extends Dialog {
 
@@ -34,7 +35,7 @@ public class RegisterDialog extends Dialog {
         setContentView(R.layout.dialog_register);
 
         setTitle(R.string.dialog_reg_title);
-        setFeatureDrawableResource(Window.FEATURE_LEFT_ICON, R.drawable.ic_launcher_sense);
+        setFeatureDrawableResource(Window.FEATURE_LEFT_ICON, R.drawable.ic_dialog_sense);
 
         usernameField = (EditText) findViewById(R.id.reg_username);
         passField1 = (EditText) findViewById(R.id.reg_pass1);
