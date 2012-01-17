@@ -15,7 +15,7 @@ import nl.sense_os.service.constants.SensePrefs.Main.Advanced;
 import nl.sense_os.service.constants.SensePrefs.Main.Ambience;
 import nl.sense_os.service.constants.SensePrefs.Main.DevProx;
 import nl.sense_os.service.constants.SensePrefs.Main.External.MyGlucoHealth;
-import nl.sense_os.service.constants.SensePrefs.Main.External.OBD2Dongle;
+import nl.sense_os.service.constants.SensePrefs.Main.External.OBD2Sensor;
 import nl.sense_os.service.constants.SensePrefs.Main.External.TanitaScale;
 import nl.sense_os.service.constants.SensePrefs.Main.External.ZephyrBioHarness;
 import nl.sense_os.service.constants.SensePrefs.Main.External.ZephyrHxM;
@@ -471,7 +471,7 @@ public class SenseSettings extends PreferenceActivity {
             editor.putBoolean(TanitaScale.MAIN, service.getPrefBool(TanitaScale.MAIN, false));
 
             // ODB-II dongle
-            editor.putBoolean(OBD2Dongle.MAIN, service.getPrefBool(OBD2Dongle.MAIN, false));
+            editor.putBoolean(OBD2Sensor.MAIN, service.getPrefBool(OBD2Sensor.MAIN, false));
 
             // advanced settings
             editor.putBoolean(Advanced.DEV_MODE, service.getPrefBool(Advanced.DEV_MODE, false));
