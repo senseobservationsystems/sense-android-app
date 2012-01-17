@@ -272,10 +272,10 @@
                 </PreferenceCategory>
             </PreferenceScreen>
             <CheckBoxPreference
-                android:title="OBD-II Dongle"
+                android:title="OBD-II sensor"
                 android:defaultValue="False"
-                android:key="obd2dongle"
-                android:summary="Use a paired OBD-II dongle" />
+                android:key="obd2sensor"
+                android:summary="Use a paired OBD-II sensor" />
             <CheckBoxPreference
                 android:enabled="False"
                 android:title="MyGlucoHealth"
