@@ -35,6 +35,7 @@ import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.CheckBox;
@@ -223,13 +224,6 @@ public class SenseApp extends Activity {
         static final int PROGRESS = 4;
         static final int REGISTER = 5;
         static final int UPDATE_ALERT = 6;
-    };
-
-    private class MenuItems {
-        private static final int FAQ = 1;
-        private static final int LOGIN = 2;
-        private static final int REGISTER = 3;
-        private static final int SETTINGS = 4;
     };
 
     /**
@@ -482,7 +476,7 @@ public class SenseApp extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.sense_app);
+        setContentView(R.layout.main);
     }
 
     @Override
@@ -519,14 +513,16 @@ public class SenseApp extends Activity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(Menu.NONE, MenuItems.SETTINGS, Menu.NONE, getString(R.string.menu_preferences))
-                .setIcon(android.R.drawable.ic_menu_preferences);
-        menu.add(Menu.NONE, MenuItems.FAQ, Menu.NONE, getString(R.string.menu_faq)).setIcon(
-                android.R.drawable.ic_menu_help);
-        menu.add(Menu.NONE, MenuItems.LOGIN, Menu.NONE, getString(R.string.menu_login)).setIcon(
-                R.drawable.ic_menu_login);
-        menu.add(Menu.NONE, MenuItems.REGISTER, Menu.NONE, getString(R.string.menu_register))
-                .setIcon(R.drawable.ic_menu_invite);
+        // menu.add(Menu.NONE, MenuItems.SETTINGS, Menu.NONE, getString(R.string.menu_preferences))
+        // .setIcon(android.R.drawable.ic_menu_preferences);
+        // menu.add(Menu.NONE, MenuItems.FAQ, Menu.NONE, getString(R.string.menu_faq)).setIcon(
+        // android.R.drawable.ic_menu_help);
+        // menu.add(Menu.NONE, MenuItems.LOGIN, Menu.NONE, getString(R.string.menu_login)).setIcon(
+        // R.drawable.ic_menu_login);
+        // menu.add(Menu.NONE, MenuItems.REGISTER, Menu.NONE, getString(R.string.menu_register))
+        // .setIcon(R.drawable.ic_menu_invite);
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu, menu);
         return true;
     }
 
@@ -543,20 +539,20 @@ public class SenseApp extends Activity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-        case MenuItems.FAQ:
+        case R.id.menu_faq:
             showDialog(Dialogs.FAQ);
             break;
-        case MenuItems.SETTINGS:
+        case R.id.menu_preferences:
             startActivity(new Intent(getString(R.string.action_sense_settings)));
             break;
-        case MenuItems.LOGIN:
+        case R.id.menu_login:
             showDialog(Dialogs.LOGIN);
             break;
-        case MenuItems.REGISTER:
+        case R.id.menu_register:
             showDialog(Dialogs.REGISTER);
             break;
         default:
-            Log.w(TAG, "Unexpected menu button pressed, ignoring input...");
+            Log.w(TAG, "Unexpected option item selected: " + item);
             return false;
         }
         return true;

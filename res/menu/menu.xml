@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item android:id="@+id/menu_faq" android:icon="@android:drawable/ic_menu_help" android:title="@string/menu_faq">
+    </item><item android:id="@+id/menu_preferences" android:icon="@android:drawable/ic_menu_preferences" android:title="@string/menu_preferences">
+    </item>
+    
+    <item
+        android:id="@+id/menu_login"
+        android:icon="@drawable/ic_menu_login"
+        android:title="@string/menu_login">
+    </item>
+    <item
+        android:id="@+id/menu_register"
+        android:icon="@drawable/ic_menu_invite"
+        android:title="@string/menu_register">
+    </item>
+
+</menu>

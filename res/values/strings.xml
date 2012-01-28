@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="sense_app_name">Sense Platform</string>
+    <string name="sense_app_label">Sense</string>
 
     <!-- button labels -->
     <string name="button_faq">FAQ</string>
