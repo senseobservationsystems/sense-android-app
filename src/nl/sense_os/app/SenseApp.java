@@ -33,6 +33,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -258,10 +259,13 @@ public class SenseApp extends Activity {
             service = ISenseService.Stub.asInterface(binder);
             try {
                 service.getStatus(callback);
-                if (service
-                        .getSessionId("]C@+[G1be,f)@3mz|2cj4gq~Jz(8WE&_$7g:,-KOI;v:iQt<r;1OQ@=mr}jmE8>!") == null) {
+                long lastLogin = service.getPrefLong(SensePrefs.Main.LAST_LOGGED_IN, -1);
+                if (lastLogin == -1) {
                     // sense has never been logged in
                     showDialog(Dialogs.HELP);
+                } else {
+                    CharSequence loginDate = DateFormat.format("dd/MM/yyyy kk:mm", lastLogin);
+                    Log.v(TAG, "Last succesful login: " + loginDate);
                 }
             } catch (final RemoteException e) {
                 Log.e(TAG, "Error checking service status after binding. ", e);
@@ -513,14 +517,6 @@ public class SenseApp extends Activity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // menu.add(Menu.NONE, MenuItems.SETTINGS, Menu.NONE, getString(R.string.menu_preferences))
-        // .setIcon(android.R.drawable.ic_menu_preferences);
-        // menu.add(Menu.NONE, MenuItems.FAQ, Menu.NONE, getString(R.string.menu_faq)).setIcon(
-        // android.R.drawable.ic_menu_help);
-        // menu.add(Menu.NONE, MenuItems.LOGIN, Menu.NONE, getString(R.string.menu_login)).setIcon(
-        // R.drawable.ic_menu_login);
-        // menu.add(Menu.NONE, MenuItems.REGISTER, Menu.NONE, getString(R.string.menu_register))
-        // .setIcon(R.drawable.ic_menu_invite);
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu, menu);
         return true;
