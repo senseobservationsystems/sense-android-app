@@ -125,7 +125,7 @@
                     android:key="ambience_light"
                     android:defaultValue="True"
                     android:summary="Measures the light intensity"
-                    android:title="Light" /><CheckBoxPreference android:title="Pressure" android:summary="Measures pressure (if available)" android:defaultValue="true" android:key="ambience_pressure" />
+                    android:title="Light" /><CheckBoxPreference android:key="ambience_camera_light" android:defaultValue="True" android:summary="Measures the light intensity from the camera" android:title="Camera light" /><CheckBoxPreference android:title="Pressure" android:summary="Measures pressure (if available)" android:defaultValue="true" android:key="ambience_pressure" />
             </PreferenceCategory>
         </PreferenceScreen>
 
