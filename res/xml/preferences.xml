@@ -121,7 +121,7 @@
                     android:defaultValue="True"
                     android:summary="Measures noise or records audio"
                     android:key="ambience_mic" />
-                <CheckBoxPreference
+                <CheckBoxPreference android:title="Audio Spectrum" android:defaultValue="True" android:summary="Measures dB / frequency" android:key="ambience_audio" /><CheckBoxPreference
                     android:key="ambience_light"
                     android:defaultValue="True"
                     android:summary="Measures the light intensity"
