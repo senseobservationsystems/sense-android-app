@@ -1,18 +1,23 @@
 package nl.sense_os.app.dialogs;
 
+import nl.sense_os.app.R;
+import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.ISenseServiceCallback;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
+import android.os.RemoteException;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import nl.sense_os.app.R;
-
 public class RegisterDialog extends Dialog {
+
+    private static final String TAG = "RegisterDialog";
 
     private EditText usernameField;
     private EditText passField1;
@@ -21,7 +26,11 @@ public class RegisterDialog extends Dialog {
     private EditText surnameField;
     private EditText emailField;
     private EditText phoneField;
-    private AsyncTask<String, ?, ?> onSubmit;
+
+    private final Context context;
+
+    private ISenseService service;
+    private ISenseServiceCallback callback;
 
     /**
      * Constructs a new dialog. Nota bene: make sure to call {@link #setOnSubmitTask(AsyncTask)}
@@ -31,6 +40,9 @@ public class RegisterDialog extends Dialog {
      */
     public RegisterDialog(final Context context) {
         super(context);
+
+        this.context = context;
+
         requestWindowFeature(Window.FEATURE_LEFT_ICON);
         setContentView(R.layout.dialog_register);
 
@@ -50,28 +62,7 @@ public class RegisterDialog extends Dialog {
 
             @Override
             public void onClick(View v) {
-                final String username = usernameField.getText().toString();
-                final String pass1 = passField1.getText().toString();
-                final String pass2 = passField2.getText().toString();
-                final String name = nameField.getText().toString();
-                final String surname = surnameField.getText().toString();
-                final String email = emailField.getText().toString();
-                final String phone = phoneField.getText().toString();
-
-                if (pass1.equals(pass2)) {
-
-                    // start registration
-                    onSubmit.execute(username, pass1, name, surname, email, phone);
-
-                    // dismiss myself
-                    RegisterDialog.this.dismiss();
-
-                } else {
-                    Toast.makeText(context, R.string.toast_reg_pass, Toast.LENGTH_SHORT).show();
-
-                    passField1.setText("");
-                    passField2.setText("");
-                }
+                submit();
             }
         });
         Button cancelButton = (Button) findViewById(R.id.reg_btn_cancel);
@@ -99,11 +90,41 @@ public class RegisterDialog extends Dialog {
         });
     }
 
-    /**
-     * @param onSubmit
-     *            The AsyncTask to perform the login when the registration form is submitted.
-     */
-    public void setOnSubmitTask(AsyncTask<String, ?, ?> onSubmit) {
-        this.onSubmit = onSubmit;
+    public void setCallback(ISenseServiceCallback callback) {
+        this.callback = callback;
+    }
+
+    public void setSenseService(ISenseService service) {
+        this.service = service;
+    }
+
+    private void submit() {
+        final String username = usernameField.getText().toString();
+        final String pass1 = passField1.getText().toString();
+        final String pass2 = passField2.getText().toString();
+        final String name = nameField.getText().toString();
+        final String surname = surnameField.getText().toString();
+        final String email = emailField.getText().toString();
+        final String phone = phoneField.getText().toString();
+
+        if (pass1.equals(pass2)) {
+
+            try {
+                service.register(username, pass1, name, surname, email, phone, callback);
+            } catch (RemoteException e) {
+                Log.e(TAG, "Failed to register: '" + e + "'");
+                try {
+                    callback.onRegisterResult(-1);
+                } catch (RemoteException e2) {
+                    // give up
+                }
+            }
+
+        } else {
+            Toast.makeText(context, R.string.toast_reg_pass, Toast.LENGTH_SHORT).show();
+
+            passField1.setText("");
+            passField2.setText("");
+        }
     }
 }
