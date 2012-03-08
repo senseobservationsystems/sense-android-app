@@ -18,16 +18,17 @@
     <string name="dialog_login_title">Enter login details:</string>
     <string name="dialog_login_hint_username">Username</string>
     <string name="dialog_login_hint_pass">Password</string>
-    <string name="dialog_reg_title">Enter new login details:</string>
-    <string name="dialog_reg_hint_username">Username (required)</string>
-    <string name="dialog_reg_hint_pass">Password (required)</string>
+    <string name="dialog_reg_title">Enter new account details:</string>
+    <string name="dialog_reg_hint_username">Username</string>
+    <string name="dialog_reg_hint_pass">Password</string>
     <string name="dialog_reg_hint_pass2">Retype password</string>
-    <string name="dialog_reg_hint_name">First name</string>
-    <string name="dialog_reg_hint_surname">Last name</string>
     <string name="dialog_reg_hint_email">Email</string>
-    <string name="dialog_reg_hint_phone">Phone</string>
+    <string name="dialog_reg_hint_name">First name (optional)</string>
+    <string name="dialog_reg_hint_surname">Last name (optional)</string>
+    <string name="dialog_reg_hint_phone">Phone (optional)</string>
     <string name="dialog_progress_title">One moment please</string>
     <string name="dialog_progress_login_msg">Checking login credentials&#8230;</string>
+    <string name="dialog_progress_reg_msg">Registering CommonSense account&#8230;</string>
     <string name="dialog_update_msg">After weeks of waiting, the CommonSense web interface is finally in a presentable state. Although it is still far from finished, you can have a peek at the collected data by logging in at http://common.sense-os.nl.\n\nWe recommend using a regular computer instead of your Android, because the interface is not really suited for smaller screens.\n\nHappy experimenting!</string>
     <string name="dialog_update_title">Announcement</string>
     <string name="dialog_welcome_title">Welcome to Sense</string>
@@ -40,6 +41,7 @@
     <string name="menu_register">Register</string>
 
     <!-- miscellaneous text resources for toast messages -->
+    <string name="toast_missing_fields">Not all required fields were filled in, please try again.</string>
     <string name="toast_login_fail">Login failed! Possible connection problems.</string>
     <string name="toast_login_forbidden">Login failed! Invalid username or password.</string>
     <string name="toast_login_ok">Login successful.</string>

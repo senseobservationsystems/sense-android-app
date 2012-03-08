@@ -6,36 +6,28 @@
 
 package nl.sense_os.app;
 
-import nl.sense_os.app.dialogs.LoginDialog;
-import nl.sense_os.app.dialogs.RegisterDialog;
+import nl.sense_os.app.login.LoginActivity;
+import nl.sense_os.app.register.RegisterActivity;
 import nl.sense_os.service.ISenseService;
 import nl.sense_os.service.ISenseServiceCallback;
 import nl.sense_os.service.SenseService;
-import nl.sense_os.service.commonsense.SenseApi;
 import nl.sense_os.service.constants.SensePrefs;
 import nl.sense_os.service.constants.SensePrefs.Auth;
 import nl.sense_os.service.constants.SenseStatusCodes;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
-import android.content.DialogInterface.OnDismissListener;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
-import android.preference.PreferenceManager;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.Menu;
@@ -48,113 +40,26 @@ import android.widget.Toast;
 
 public class SenseApp extends Activity {
 
-    /**
-     * AsyncTask to check the login data with CommonSense. Takes username and unhashed password as
-     * arguments. Clears any open login dialogs before start, and displays a progress dialog during
-     * operation. If the check fails, the login dialog is shown again.
-     */
-    private class CheckLoginTaskk extends AsyncTask<String, Void, Integer> {
-        private static final String TAG = "CheckLoginTask";
-
-        @Override
-        protected Integer doInBackground(String... params) {
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Integer result) {
-
-        }
-
-        @Override
-        protected void onPreExecute() {
-            // close the login dialog before showing the progress dialog
-            try {
-                dismissDialog(Dialogs.LOGIN);
-            } catch (final IllegalArgumentException e) {
-                // no problem: login dialog was not displayed
-            }
-
-            showDialog(Dialogs.PROGRESS);
-        }
-    }
-
-    /**
-     * AsyncTask to register a new phone/user with CommonSense. Takes username and unhashed password
-     * as arguments. Clears any open registeration dialogs before start, and displays a progress
-     * dialog during operation. If the check fails, the registration dialog is shown again.
-     */
-    private class CheckRegisterTaskk extends AsyncTask<String, Void, Integer> {
-        private static final String TAG = "CheckRegisterTask";
-
-        @Override
-        protected Integer doInBackground(String... params) {
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Integer result) {
-            // Log.d(TAG, "Registration result: " + result.intValue());
-
-            try {
-                dismissDialog(Dialogs.PROGRESS);
-            } catch (final IllegalArgumentException e) {
-                // do nothing
-            }
-
-            if (result.intValue() == -2) {
-                showToast(getString(R.string.toast_reg_conflict), Toast.LENGTH_LONG);
-                showDialog(Dialogs.REGISTER);
-            } else if (result.intValue() == -1) {
-                showToast(getString(R.string.toast_reg_fail), Toast.LENGTH_LONG);
-                showDialog(Dialogs.REGISTER);
-            } else {
-                showToast(getString(R.string.toast_reg_ok), Toast.LENGTH_LONG);
-
-                toggleMain(true);
-
-                // check if this is the very first login
-                final SharedPreferences appPrefs = PreferenceManager
-                        .getDefaultSharedPreferences(SenseApp.this);
-                if (appPrefs.getBoolean(SenseSettings.PREF_FIRST_LOGIN, true)) {
-                    final Editor editor = appPrefs.edit();
-                    editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
-                    editor.commit();
-
-                    togglePhoneState(true);
-                } else {
-                    // the user logged in at least once before
-                }
-            }
-
-            checkServiceStatus();
-        }
-
-        @Override
-        protected void onPreExecute() {
-            // close the login dialog before showing the progress dialog
-            try {
-                dismissDialog(Dialogs.REGISTER);
-            } catch (final IllegalArgumentException e) {
-                // do nothing
-            }
-            showDialog(Dialogs.PROGRESS);
-        }
-    }
-
     private class Dialogs {
         static final int FAQ = 1;
         static final int HELP = 2;
-        static final int LOGIN = 3;
-        static final int PROGRESS = 4;
-        static final int REGISTER = 5;
-        static final int UPDATE_ALERT = 6;
+        static final int UPDATE_ALERT = 3;
     };
 
     /**
      * Service stub for callbacks from the Sense service.
      */
     private class SenseCallback extends ISenseServiceCallback.Stub {
+
+        @Override
+        public void onChangeLoginResult(int result) throws RemoteException {
+            // not used
+        }
+
+        @Override
+        public void onRegisterResult(int result) throws RemoteException {
+            // not used
+        }
 
         @Override
         public void statusReport(final int status) {
@@ -167,108 +72,6 @@ public class SenseApp extends Activity {
                     updateUi(status);
                 }
             });
-        }
-
-        @Override
-        public void onChangeLoginResult(int result) throws RemoteException {
-            Log.d(TAG, "Change login result: " + result);
-
-            try {
-                dismissDialog(Dialogs.PROGRESS);
-            } catch (final IllegalArgumentException e) {
-                // do nothing, perhaps the progress dialog was already dismissed
-            }
-
-            if (result == -2) {
-                showToast(getString(R.string.toast_login_forbidden), Toast.LENGTH_LONG);
-                runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        showDialog(Dialogs.LOGIN);
-                    }
-                });
-
-            } else if (result == -1) {
-                showToast(getString(R.string.toast_login_fail), Toast.LENGTH_LONG);
-                runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        showDialog(Dialogs.LOGIN);
-                    }
-                });
-
-            } else {
-                showToast(getString(R.string.toast_login_ok), Toast.LENGTH_LONG);
-
-                toggleMain(true);
-
-                // check if this is the very first login
-                final SharedPreferences appPrefs = PreferenceManager
-                        .getDefaultSharedPreferences(SenseApp.this);
-                if (appPrefs.getBoolean(SenseSettings.PREF_FIRST_LOGIN, true)) {
-                    final Editor editor = appPrefs.edit();
-                    editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
-                    editor.commit();
-
-                    togglePhoneState(true);
-                } else {
-                    // the user logged in at least once before
-                }
-            }
-
-            checkServiceStatus();
-        }
-
-        @Override
-        public void onRegisterResult(int result) throws RemoteException {
-            Log.d(TAG, "Registration result: " + result);
-
-            try {
-                dismissDialog(Dialogs.PROGRESS);
-            } catch (final IllegalArgumentException e) {
-                // do nothing
-            }
-
-            if (result == -2) {
-                showToast(getString(R.string.toast_reg_conflict), Toast.LENGTH_LONG);
-                runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        showDialog(Dialogs.REGISTER);
-                    }
-                });
-            } else if (result == -1) {
-                showToast(getString(R.string.toast_reg_fail), Toast.LENGTH_LONG);
-                runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        showDialog(Dialogs.REGISTER);
-                    }
-                });
-            } else {
-                showToast(getString(R.string.toast_reg_ok), Toast.LENGTH_LONG);
-
-                toggleMain(true);
-
-                // check if this is the very first login
-                final SharedPreferences appPrefs = PreferenceManager
-                        .getDefaultSharedPreferences(SenseApp.this);
-                if (appPrefs.getBoolean(SenseSettings.PREF_FIRST_LOGIN, true)) {
-                    final Editor editor = appPrefs.edit();
-                    editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
-                    editor.commit();
-
-                    togglePhoneState(true);
-                } else {
-                    // the user logged in at least once before
-                }
-            }
-
-            checkServiceStatus();
         }
     }
 
@@ -400,14 +203,14 @@ public class SenseApp extends Activity {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                showDialog(Dialogs.LOGIN);
+                startLogin();
             }
         });
         builder.setNeutralButton(R.string.button_reg, new OnClickListener() {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                showDialog(Dialogs.REGISTER);
+                startRegister();
             }
         });
         builder.setNegativeButton(R.string.button_faq, new OnClickListener() {
@@ -516,44 +319,6 @@ public class SenseApp extends Activity {
         case Dialogs.FAQ:
             dialog = createDialogFaq();
             break;
-        case Dialogs.LOGIN:
-            dialog = new LoginDialog(this);
-            dialog.setOnDismissListener(new OnDismissListener() {
-
-                @Override
-                public void onDismiss(DialogInterface dialog) {
-                    Log.d(TAG, "Login dialog dismissed");
-                    String username = ((LoginDialog) dialog).getUsername();
-                    String password = ((LoginDialog) dialog).getPassword();
-                    if (password != null && password.length() > 0) {
-                        showDialog(Dialogs.PROGRESS);
-                        try {
-                            service.changeLogin(username, SenseApi.hashPassword(password), callback);
-                        } catch (RemoteException e) {
-                            Log.e(TAG, "Failed to change login: '" + e + "'");
-                        }
-                    } else {
-                        // password field was empty: dialog was canceled
-                    }
-                }
-            });
-            dialog.setOnCancelListener(new OnCancelListener() {
-
-                @Override
-                public void onCancel(DialogInterface dialog) {
-                    Log.d(TAG, "Login dialog canceled");
-                }
-            });
-            break;
-        case Dialogs.PROGRESS:
-            dialog = new ProgressDialog(this);
-            dialog.setTitle("One moment please");
-            ((ProgressDialog) dialog).setMessage("Checking login credentials...");
-            dialog.setCancelable(false);
-            break;
-        case Dialogs.REGISTER:
-            dialog = new RegisterDialog(this);
-            break;
         case Dialogs.UPDATE_ALERT:
             dialog = createDialogUpdateAlert();
             break;
@@ -594,10 +359,10 @@ public class SenseApp extends Activity {
             startActivity(new Intent(getString(R.string.action_sense_settings)));
             break;
         case R.id.menu_login:
-            showDialog(Dialogs.LOGIN);
+            startLogin();
             break;
         case R.id.menu_register:
-            showDialog(Dialogs.REGISTER);
+            startRegister();
             break;
         default:
             Log.w(TAG, "Unexpected option item selected: " + item);
@@ -607,52 +372,9 @@ public class SenseApp extends Activity {
     }
 
     @Override
-    protected void onPause() {
-
-        // unregister service state listener
-        try {
-            unregisterReceiver(serviceListener);
-        } catch (IllegalArgumentException e) {
-            // listener was not registered
-        }
-
-        super.onPause();
-    }
-
-    @Override
-    protected void onPrepareDialog(int id, Dialog dialog) {
-        // make sure the service is started when we try to register or log in
-        switch (id) {
-        case Dialogs.LOGIN:
-            bindToSenseService();
-
-            // ((LoginDialog) dialog).setSenseService(service);
-            // ((LoginDialog) dialog).setCallback(callback);
-
-            // get username preset from Sense service
-            if (service != null) {
-                try {
-                    String usernamePreset = service.getPrefString(Auth.LOGIN_USERNAME, "");
-                    ((LoginDialog) dialog).setUsername(usernamePreset);
-                } catch (RemoteException e) {
-                    Log.e(TAG, "Failed to get username from Sense Platform service", e);
-                }
-            }
-            break;
-        case Dialogs.REGISTER:
-            bindToSenseService();
-
-            ((RegisterDialog) dialog).setSenseService(service);
-            ((RegisterDialog) dialog).setCallback(callback);
-            break;
-        default:
-            break;
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
+    protected void onStart() {
+        Log.v(TAG, "onStart");
+        super.onStart();
 
         // bind to service as soon as possible
         bindToSenseService();
@@ -664,6 +386,20 @@ public class SenseApp extends Activity {
         checkServiceStatus();
     }
 
+    @Override
+    protected void onStop() {
+        Log.v(TAG, "onStop");
+
+        // unregister service state listener
+        try {
+            unregisterReceiver(serviceListener);
+        } catch (IllegalArgumentException e) {
+            // listener was not registered
+        }
+
+        super.onStop();
+    }
+
     private void showToast(final CharSequence text, final int duration) {
         runOnUiThread(new Runnable() {
 
@@ -672,6 +408,14 @@ public class SenseApp extends Activity {
                 Toast.makeText(SenseApp.this, text, duration).show();
             }
         });
+    }
+
+    private void startLogin() {
+        startActivity(new Intent(this, LoginActivity.class));
+    }
+
+    private void startRegister() {
+        startActivity(new Intent(this, RegisterActivity.class));
     }
 
     private void toggleAmbience(boolean active) {
@@ -878,7 +622,7 @@ public class SenseApp extends Activity {
                 if (active && null == service.getPrefString(Auth.LOGIN_USERNAME, null)) {
                     // cannot activate the service: Sense does not know the username yet
                     Log.w(TAG, "Cannot start Sense Platform without username");
-                    showDialog(Dialogs.LOGIN);
+                    startLogin();
                 } else {
                     // normal situation
                     service.toggleMain(active);

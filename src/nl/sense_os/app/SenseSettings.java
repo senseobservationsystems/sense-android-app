@@ -6,10 +6,8 @@
  */
 package nl.sense_os.app;
 
-import nl.sense_os.app.dialogs.LoginDialog;
-import nl.sense_os.app.dialogs.RegisterDialog;
+import nl.sense_os.app.register.RegisterActivity;
 import nl.sense_os.service.ISenseService;
-import nl.sense_os.service.ISenseServiceCallback;
 import nl.sense_os.service.constants.SensePrefs;
 import nl.sense_os.service.constants.SensePrefs.Auth;
 import nl.sense_os.service.constants.SensePrefs.Main.Advanced;
@@ -26,7 +24,6 @@ import nl.sense_os.service.constants.SensePrefs.Main.Quiz;
 import nl.sense_os.service.constants.SensePrefs.Status;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -35,7 +32,6 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -45,71 +41,8 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 public class SenseSettings extends PreferenceActivity {
-
-    /**
-     * AsyncTask to check the login data with CommonSense. Takes the username and unhashed password
-     * as arguments. Clears any open login dialogs before start, and displays a progress dialog
-     * during operation. If the login fails, the login dialog is shown again.
-     */
-    private class CheckLoginTaskk extends AsyncTask<String, Void, Integer> {
-
-        @Override
-        protected Integer doInBackground(String... params) {
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Integer result) {
-
-        }
-
-        @Override
-        protected void onPreExecute() {
-
-            // close the login dialog before showing the progress dialog
-            try {
-                dismissDialog(DIALOG_LOGIN);
-            } catch (final IllegalArgumentException e) {
-                // do nothing
-            }
-
-            showDialog(DIALOG_PROGRESS);
-        }
-    }
-
-    /**
-     * AsyncTask to register a new phone/user with CommonSense. Takes the username and unhashed
-     * password as arguments. Clears any open registration dialogs before start, and displays a
-     * progress dialog during operation. If the registration fails, the registration dialog is shown
-     * again.
-     */
-    private class CheckRegisterTaskk extends AsyncTask<String, Void, Integer> {
-
-        @Override
-        protected Integer doInBackground(String... params) {
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Integer result) {
-
-        }
-
-        @Override
-        protected void onPreExecute() {
-
-            // close the login dialog before showing the progress dialog
-            try {
-                dismissDialog(DIALOG_REGISTER);
-            } catch (final IllegalArgumentException e) {
-                // do nothing
-            }
-            showDialog(DIALOG_PROGRESS);
-        }
-    }
 
     /**
      * Listener for changes in the preferences. Any changes are immediately sent to the Sense
@@ -175,139 +108,18 @@ public class SenseSettings extends PreferenceActivity {
         }
     };
 
-    private class SenseCallback extends ISenseServiceCallback.Stub {
-
-        @Override
-        public void onChangeLoginResult(int result) throws RemoteException {
-            try {
-                dismissDialog(DIALOG_PROGRESS);
-            } catch (final IllegalArgumentException e) {
-                // do nothing
-            }
-            if (result == -2) {
-                Toast.makeText(SenseSettings.this, R.string.toast_login_forbidden,
-                        Toast.LENGTH_LONG).show();
-                showDialog(DIALOG_LOGIN);
-            } else if (result == -1) {
-                Toast.makeText(SenseSettings.this, R.string.toast_login_fail, Toast.LENGTH_LONG)
-                        .show();
-                showDialog(DIALOG_LOGIN);
-            } else {
-                Toast.makeText(SenseSettings.this, R.string.toast_login_ok, Toast.LENGTH_LONG)
-                        .show();
-
-                // toggle main service state
-                if (service != null) {
-                    try {
-                        service.toggleMain(true);
-                    } catch (RemoteException e) {
-                        Log.e(TAG, "RemoteException starting Sense service after login.", e);
-                    }
-                }
-
-                // check if this is the very first login
-                final SharedPreferences appPrefs = PreferenceManager
-                        .getDefaultSharedPreferences(SenseSettings.this);
-                if (appPrefs.getBoolean(PREF_FIRST_LOGIN, true)) {
-                    final Editor editor = appPrefs.edit();
-                    editor.putBoolean(PREF_FIRST_LOGIN, false);
-                    editor.commit();
-
-                    // toggle phone state sensors
-                    if (service != null) {
-                        try {
-                            service.togglePhoneState(true);
-                        } catch (RemoteException e) {
-                            Log.e(TAG, "RemoteException starting phone state sensor after login.",
-                                    e);
-                        }
-                    }
-                } else {
-                    // the user logged in at least once
-                }
-
-                // update login preference summary
-                showSummaries();
-            }
-        }
-
-        @Override
-        public void onRegisterResult(int result) throws RemoteException {
-            try {
-                dismissDialog(DIALOG_PROGRESS);
-            } catch (final IllegalArgumentException e) {
-                // do nothing
-            }
-
-            if (result == -2) {
-                Toast.makeText(SenseSettings.this, R.string.toast_reg_conflict, Toast.LENGTH_LONG)
-                        .show();
-                showDialog(DIALOG_REGISTER);
-            } else if (result == -1) {
-                Toast.makeText(SenseSettings.this, R.string.toast_reg_fail, Toast.LENGTH_LONG)
-                        .show();
-                showDialog(DIALOG_REGISTER);
-            } else {
-                Toast.makeText(SenseSettings.this, getString(R.string.toast_reg_ok),
-                        Toast.LENGTH_LONG).show();
-
-                // toggle main service state
-                if (service != null) {
-                    try {
-                        service.toggleMain(true);
-                    } catch (RemoteException e) {
-                        Log.e(TAG, "RemoteException starting Sense service after registration.", e);
-                    }
-                }
-
-                // check if this is the very first login
-                final SharedPreferences appPrefs = PreferenceManager
-                        .getDefaultSharedPreferences(SenseSettings.this);
-                if (appPrefs.getBoolean(PREF_FIRST_LOGIN, true)) {
-                    final Editor editor = appPrefs.edit();
-                    editor.putBoolean(PREF_FIRST_LOGIN, false);
-                    editor.commit();
-
-                    // toggle phone state sensors
-                    if (service != null) {
-                        try {
-                            service.togglePhoneState(true);
-                        } catch (RemoteException e) {
-                            Log.e(TAG,
-                                    "RemoteException starting phone state sensor after registration.",
-                                    e);
-                        }
-                    }
-                } else {
-                    // the user logged in at least once
-                }
-
-                // update login preference summary
-                showSummaries();
-            }
-        }
-
-        @Override
-        public void statusReport(int status) throws RemoteException {
-            // not used
-        }
-    }
-
     /**
      * Sense App specific preference to keep track of whether the user has logged in at least once.
      */
     public static final String PREF_FIRST_LOGIN = "first_login_complete";
 
     private static final String TAG = "Sense Settings";
-    private static final int DIALOG_LOGIN = 1;
-    private static final int DIALOG_PROGRESS = 2;
-    private static final int DIALOG_REGISTER = 3;
-    private static final int DIALOG_DEV_MODE = 4;
+
+    private static final int DIALOG_DEV_MODE = 1;
 
     private PrefSyncListener changeListener = new PrefSyncListener();
     private boolean isServiceBound;
     private ISenseService service;
-    private ISenseServiceCallback callback = new SenseCallback();
     private final ServiceConnection serviceConn = new ServiceConnection() {
 
         @Override
@@ -356,14 +168,6 @@ public class SenseSettings extends PreferenceActivity {
         return builder.create();
     }
 
-    private Dialog createDialogLoginProgress() {
-        final ProgressDialog dialog = new ProgressDialog(this);
-        dialog.setTitle(R.string.dialog_progress_title);
-        dialog.setMessage(getString(R.string.dialog_progress_login_msg));
-        dialog.setCancelable(false);
-        return dialog;
-    }
-
     /**
      * Loads all preferences from the Sense Platform service, and puts them into this activity's
      * default preferences.
@@ -371,7 +175,7 @@ public class SenseSettings extends PreferenceActivity {
     private void loadPreferences() {
 
         if (null == service) {
-            Log.e(TAG, "Cannot load Sense Platform preferences! service=null");
+            Log.w(TAG, "Cannot load Sense Platform preferences! service=null");
             return;
         }
 
@@ -495,15 +299,6 @@ public class SenseSettings extends PreferenceActivity {
     protected Dialog onCreateDialog(int id) {
         Dialog dialog = null;
         switch (id) {
-        case DIALOG_LOGIN:
-            dialog = new LoginDialog(this);
-            break;
-        case DIALOG_REGISTER:
-            dialog = new RegisterDialog(this);
-            break;
-        case DIALOG_PROGRESS:
-            dialog = createDialogLoginProgress();
-            break;
         case DIALOG_DEV_MODE:
             dialog = createDialogDevMode();
             break;
@@ -515,13 +310,12 @@ public class SenseSettings extends PreferenceActivity {
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
+    protected void onStop() {
         SharedPreferences appPrefs = PreferenceManager.getDefaultSharedPreferences(this);
         appPrefs.unregisterOnSharedPreferenceChangeListener(changeListener);
 
         unbindFromSenseService();
+        super.onStop();
     }
 
     @Override
@@ -539,40 +333,16 @@ public class SenseSettings extends PreferenceActivity {
     }
 
     @Override
-    protected void onPrepareDialog(int id, Dialog dialog) {
-        // make sure the service is started when we try to register or log in
-        switch (id) {
-        case DIALOG_LOGIN:
-            bindToSenseService();
-
-            // TODO
-            // ((LoginDialog) dialog).setSenseService(service);
-            // ((LoginDialog) dialog).setCallback(callback);
-
-            // get username preset from Sense service
-            if (null != service) {
-                try {
-                    String usernamePreset = service.getPrefString(Auth.LOGIN_USERNAME, "");
-                    ((LoginDialog) dialog).setUsername(usernamePreset);
-                } catch (RemoteException e) {
-                    Log.e(TAG, "Failed to get username from Sense Platform service", e);
-                }
-            }
-            break;
-        case DIALOG_REGISTER:
-            bindToSenseService();
-            ((RegisterDialog) dialog).setSenseService(service);
-            ((RegisterDialog) dialog).setCallback(callback);
-            break;
-        default:
-            break;
-        }
+    protected void onResume() {
+        super.onResume();
+        showSummaries();
     }
 
     @Override
-    protected void onResume() {
+    protected void onStart() {
+        super.onStart();
         bindToSenseService();
-        super.onResume();
+        loadPreferences();
     }
 
     /**
@@ -584,7 +354,7 @@ public class SenseSettings extends PreferenceActivity {
 
             @Override
             public boolean onPreferenceClick(Preference preference) {
-                showDialog(DIALOG_LOGIN);
+                startActivity(new Intent(SenseSettings.this, nl.sense_os.app.login.LoginActivity.class));
                 return true;
             }
         });
@@ -628,7 +398,7 @@ public class SenseSettings extends PreferenceActivity {
 
             @Override
             public boolean onPreferenceClick(Preference preference) {
-                showDialog(DIALOG_REGISTER);
+                startActivity(new Intent(SenseSettings.this, RegisterActivity.class));
                 return true;
             }
         });
@@ -639,6 +409,11 @@ public class SenseSettings extends PreferenceActivity {
      */
     private void showSummaries() {
         // Log.v(TAG, "Show summaries...");
+
+        if (null == service) {
+            Log.w(TAG, "Cannot show preference summaries! service=null");
+            return;
+        }
 
         // get username from Sense Platform service
         Preference loginPref = findPreference("login_placeholder");

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style parent="@android:style/Theme.Holo.Light" name="Sense.Rings"></style>   
-    <style parent="@android:style/Theme.Holo.Light" name="Sense.Prefs"></style> 
+    <style name="Sense.Rings" parent="@android:style/Theme.Holo.Light"></style>
+    <style name="Sense.Prefs" parent="@android:style/Theme.Holo.Light"></style>
+    <style name="Sense.Dialog" parent="@android:style/Theme.Holo.Light.Dialog.NoActionBar"></style>
 </resources>

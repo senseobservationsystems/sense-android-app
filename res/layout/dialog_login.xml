@@ -21,25 +21,5 @@
             android:id="@+id/login_pass"
             android:hint="@string/dialog_login_hint_pass"
             android:imeOptions="actionGo" />
-        <LinearLayout
-            android:layout_height="wrap_content"
-            android:layout_width="fill_parent"
-            android:background="@android:color/darker_gray"
-            android:padding="5dp">
-            <Button
-                android:text="@string/button_login"
-                android:layout_height="50dp"
-                android:layout_width="0px"
-                android:layout_weight="1"
-                android:id="@+id/login_btn_login" />
-
-            <Button
-                android:id="@+id/login_btn_cancel"
-                android:layout_width="0px"
-                android:layout_height="50dp"
-                android:layout_weight="1"
-                android:text="@android:string/cancel" />
-
-        </LinearLayout>
     </LinearLayout>
 </ScrollView>
