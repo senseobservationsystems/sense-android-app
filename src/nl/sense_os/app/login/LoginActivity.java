@@ -120,12 +120,14 @@ public class LoginActivity extends Activity {
 
     private Dialog createLoginDialog() {
 
+        // create builder
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
         // prepare content view
         View view = getLayoutInflater().inflate(R.layout.dialog_login, null);
         final EditText usernameField = (EditText) view.findViewById(R.id.login_username);
         final EditText passField = (EditText) view.findViewById(R.id.login_pass);
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.dialog_login_title);
         builder.setIcon(R.drawable.ic_dialog_sense);
         builder.setView(view);
@@ -216,14 +218,14 @@ public class LoginActivity extends Activity {
 
     @Override
     protected void onStart() {
-        Log.v(TAG, "onStart");
+        // Log.v(TAG, "onStart");
         super.onStart();
         bindToSenseService();
     }
 
     @Override
     protected void onStop() {
-        Log.v(TAG, "onStop");
+        // Log.v(TAG, "onStop");
         unbindFromSenseService();
         super.onStop();
     }

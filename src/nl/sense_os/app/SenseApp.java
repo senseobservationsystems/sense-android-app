@@ -25,6 +25,7 @@ import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -44,6 +45,7 @@ public class SenseApp extends Activity {
         static final int FAQ = 1;
         static final int HELP = 2;
         static final int UPDATE_ALERT = 3;
+        public static final int LOGOUT = 4;
     };
 
     /**
@@ -182,7 +184,13 @@ public class SenseApp extends Activity {
     }
 
     private Dialog createDialogFaq() {
+        // create builder
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // specifically set dark theme for Android 3.0+
+            builder = new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_DARK);
+        }
+
         builder.setIcon(android.R.drawable.ic_dialog_info);
         builder.setTitle(R.string.dialog_faq_title);
         builder.setMessage(R.string.dialog_faq_msg);
@@ -195,7 +203,13 @@ public class SenseApp extends Activity {
      *         Login.
      */
     private Dialog createDialogHelp() {
+        // create builder
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // specifically set dark theme for Android 3.0+
+            builder = new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_DARK);
+        }
+
         builder.setIcon(android.R.drawable.ic_dialog_info);
         builder.setTitle(R.string.dialog_welcome_title);
         builder.setMessage(R.string.dialog_welcome_msg);
@@ -227,12 +241,54 @@ public class SenseApp extends Activity {
      * @return a dialog to alert the user for changes in the CommonSense.
      */
     private Dialog createDialogUpdateAlert() {
+        // create builder
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // specifically set dark theme for Android 3.0+
+            builder = new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_DARK);
+        }
+
         builder.setIcon(android.R.drawable.ic_dialog_alert);
         builder.setMessage(R.string.dialog_update_msg);
         builder.setTitle(R.string.dialog_update_title);
         builder.setPositiveButton(android.R.string.ok, null);
         builder.setCancelable(false);
+        return builder.create();
+    }
+
+    /**
+     * @return a dialog to confirm if the user want to log out.
+     */
+    private Dialog createDialogLogout() {
+
+        // create builder
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // specifically set dark theme for Android 3.0+
+            builder = new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_DARK);
+        }
+
+        // get username
+        String username = null;
+        if (null != service) {
+            try {
+                username = service.getPrefString(Auth.LOGIN_USERNAME, null);
+            } catch (RemoteException e) {
+                // should never happen
+            }
+        }
+
+        builder.setIcon(android.R.drawable.ic_dialog_alert);
+        builder.setMessage(R.string.dialog_logout_msg);
+        builder.setTitle(getString(R.string.dialog_logout_title, username));
+        builder.setPositiveButton(R.string.button_logout, new OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                logout();
+            }
+        });
+        builder.setNegativeButton(android.R.string.cancel, null);
         return builder.create();
     }
 
@@ -325,6 +381,9 @@ public class SenseApp extends Activity {
         case Dialogs.HELP:
             dialog = createDialogHelp();
             break;
+        case Dialogs.LOGOUT:
+            dialog = createDialogLogout();
+            break;
         default:
             Log.w(TAG, "Trying to create unexpected dialog, ignoring input...");
             break;
@@ -361,6 +420,9 @@ public class SenseApp extends Activity {
         case R.id.menu_login:
             startLogin();
             break;
+        case R.id.menu_logout:
+            showDialog(Dialogs.LOGOUT);
+            break;
         case R.id.menu_register:
             startRegister();
             break;
@@ -371,9 +433,53 @@ public class SenseApp extends Activity {
         return true;
     }
 
+    private void logout() {
+        try {
+            service.logout();
+            service.toggleMain(false);
+            service.getStatus(callback);
+        } catch (RemoteException e) {
+            Log.e(TAG, "failed to log out: " + e);
+        }
+    }
+
+    @Override
+    protected void onPrepareDialog(int id, Dialog dialog) {
+        if (id == Dialogs.LOGOUT) {
+            String username = null;
+            if (null != service) {
+                try {
+                    username = service.getPrefString(Auth.LOGIN_USERNAME, null);
+                } catch (RemoteException e) {
+                    Log.w(TAG, "Failed to get USERNAME pref: " + e);
+                }
+                dialog.setTitle(getString(R.string.dialog_logout_title, username));
+            }
+        }
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+
+        boolean loggedIn = false;
+        if (null != service) {
+            try {
+                loggedIn = service.getPrefString(Auth.LOGIN_USERNAME, null) != null;
+            } catch (RemoteException e) {
+                Log.e(TAG, "Failed to get USERNAME preference from service: " + e);
+            }
+        }
+
+        menu.findItem(R.id.menu_login).setVisible(!loggedIn);
+        menu.findItem(R.id.menu_logout).setVisible(loggedIn);
+        menu.findItem(R.id.menu_register).setVisible(!loggedIn);
+
+        return true;
+    }
+
     @Override
     protected void onStart() {
-        Log.v(TAG, "onStart");
+        // Log.v(TAG, "onStart");
         super.onStart();
 
         // bind to service as soon as possible
@@ -388,7 +494,7 @@ public class SenseApp extends Activity {
 
     @Override
     protected void onStop() {
-        Log.v(TAG, "onStop");
+        // Log.v(TAG, "onStop");
 
         // unregister service state listener
         try {

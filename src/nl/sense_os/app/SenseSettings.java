@@ -6,6 +6,7 @@
  */
 package nl.sense_os.app;
 
+import nl.sense_os.app.login.LoginActivity;
 import nl.sense_os.app.register.RegisterActivity;
 import nl.sense_os.service.ISenseService;
 import nl.sense_os.service.constants.SensePrefs;
@@ -32,6 +33,7 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -115,7 +117,8 @@ public class SenseSettings extends PreferenceActivity {
 
     private static final String TAG = "Sense Settings";
 
-    private static final int DIALOG_DEV_MODE = 1;
+    private static final int DIALOG_DEV_MODE = 0;
+    private static final int DIALOG_LOGOUT = 1;
 
     private PrefSyncListener changeListener = new PrefSyncListener();
     private boolean isServiceBound;
@@ -155,7 +158,14 @@ public class SenseSettings extends PreferenceActivity {
     }
 
     private Dialog createDialogDevMode() {
-        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        // create builder
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // specifically set dark theme for Android 3.0+
+            builder = new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_DARK);
+        }
+
         builder.setTitle(R.string.dialog_dev_mode_title);
         builder.setMessage(R.string.dialog_dev_mode_msg);
         builder.setPositiveButton(android.R.string.ok, new OnClickListener() {
@@ -165,6 +175,42 @@ public class SenseSettings extends PreferenceActivity {
                 // do nothing
             }
         });
+        return builder.create();
+    }
+
+    /**
+     * @return a dialog to confirm if the user want to log out.
+     */
+    private Dialog createDialogLogout() {
+
+        // create builder
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // specifically set dark theme for Android 3.0+
+            builder = new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_DARK);
+        }
+
+        // get username
+        String username = null;
+        if (null != service) {
+            try {
+                username = service.getPrefString(Auth.LOGIN_USERNAME, null);
+            } catch (RemoteException e) {
+                // should never happen
+            }
+        }
+
+        builder.setIcon(android.R.drawable.ic_dialog_alert);
+        builder.setMessage(R.string.dialog_logout_msg);
+        builder.setTitle(getString(R.string.dialog_logout_title, username));
+        builder.setPositiveButton(R.string.button_logout, new OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                logout();
+            }
+        });
+        builder.setNegativeButton(android.R.string.cancel, null);
         return builder.create();
     }
 
@@ -267,6 +313,17 @@ public class SenseSettings extends PreferenceActivity {
         prefs.registerOnSharedPreferenceChangeListener(changeListener);
     }
 
+    private void logout() {
+        try {
+            service.logout();
+            service.toggleMain(false);
+        } catch (RemoteException e) {
+            Log.e(TAG, "failed to log out: " + e);
+        }
+
+        showSummaries();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -302,6 +359,9 @@ public class SenseSettings extends PreferenceActivity {
         case DIALOG_DEV_MODE:
             dialog = createDialogDevMode();
             break;
+        case DIALOG_LOGOUT:
+            dialog = createDialogLogout();
+            break;
         default:
             dialog = super.onCreateDialog(id);
             break;
@@ -309,13 +369,21 @@ public class SenseSettings extends PreferenceActivity {
         return dialog;
     }
 
-    @Override
-    protected void onStop() {
-        SharedPreferences appPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        appPrefs.unregisterOnSharedPreferenceChangeListener(changeListener);
+    private void onLoginClick() {
+        boolean loggedIn = false;
+        if (service != null) {
+            try {
+                loggedIn = service.getPrefString(Auth.LOGIN_USERNAME, null) != null;
+            } catch (RemoteException e) {
+                Log.w(TAG, "Failed to get USERNAME preference: " + e);
+            }
+        }
 
-        unbindFromSenseService();
-        super.onStop();
+        if (loggedIn) {
+            showDialog(DIALOG_LOGOUT);
+        } else {
+            startActivity(new Intent(SenseSettings.this, LoginActivity.class));
+        }
     }
 
     @Override
@@ -333,7 +401,23 @@ public class SenseSettings extends PreferenceActivity {
     }
 
     @Override
+    protected void onPrepareDialog(int id, Dialog dialog) {
+        if (id == DIALOG_LOGOUT) {
+            String username = null;
+            if (null != service) {
+                try {
+                    username = service.getPrefString(Auth.LOGIN_USERNAME, null);
+                } catch (RemoteException e) {
+                    Log.w(TAG, "Failed to get USERNAME pref: " + e);
+                }
+                dialog.setTitle(getString(R.string.dialog_logout_title, username));
+            }
+        }
+    }
+
+    @Override
     protected void onResume() {
+        // Log.v(TAG, "onResume");
         super.onResume();
         showSummaries();
     }
@@ -345,6 +429,15 @@ public class SenseSettings extends PreferenceActivity {
         loadPreferences();
     }
 
+    @Override
+    protected void onStop() {
+        SharedPreferences appPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        appPrefs.unregisterOnSharedPreferenceChangeListener(changeListener);
+
+        unbindFromSenseService();
+        super.onStop();
+    }
+
     /**
      * Sets up the Login preference to display a login dialog.
      */
@@ -354,7 +447,7 @@ public class SenseSettings extends PreferenceActivity {
 
             @Override
             public boolean onPreferenceClick(Preference preference) {
-                startActivity(new Intent(SenseSettings.this, nl.sense_os.app.login.LoginActivity.class));
+                onLoginClick();
                 return true;
             }
         });
@@ -417,14 +510,22 @@ public class SenseSettings extends PreferenceActivity {
 
         // get username from Sense Platform service
         Preference loginPref = findPreference("login_placeholder");
-        String username = "";
+        Preference regPref = findPreference("register_placeholder");
+        String username = null;
         try {
-            username = service.getPrefString(Auth.LOGIN_USERNAME, "");
+            username = service.getPrefString(Auth.LOGIN_USERNAME, null);
         } catch (RemoteException e) {
-            Log.e(TAG, "Failed to get username from Sense Platform service", e);
+            Log.w(TAG, "Failed to get username from Sense Platform service", e);
         }
-        final String summary = username.length() > 0 ? username : "Enter your login details";
-        loginPref.setSummary(summary);
+        if (null != username) {
+            loginPref.setTitle(R.string.pref_logout_title);
+            loginPref.setSummary(getString(R.string.pref_logout_summary, username));
+            regPref.setEnabled(false);
+        } else {
+            loginPref.setTitle(R.string.pref_login_title);
+            loginPref.setSummary(R.string.pref_login_summary);
+            regPref.setEnabled(true);
+        }
 
         // get sample rate preference setting
         final Preference samplePref = findPreference(SensePrefs.Main.SAMPLE_RATE);
@@ -432,7 +533,7 @@ public class SenseSettings extends PreferenceActivity {
         try {
             sampleRate = service.getPrefString(SensePrefs.Main.SAMPLE_RATE, "0");
         } catch (RemoteException e) {
-            Log.e(TAG, "Failed to get username from Sense Platform service", e);
+            Log.w(TAG, "Failed to get SAMPLE_RATE from Sense Platform service", e);
         }
         switch (Integer.parseInt(sampleRate)) {
         case -2: // real time

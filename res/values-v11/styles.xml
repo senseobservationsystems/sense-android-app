@@ -2,5 +2,5 @@
 <resources>
     <style name="Sense.Rings" parent="@android:style/Theme.Holo.Light"></style>
     <style name="Sense.Prefs" parent="@android:style/Theme.Holo.Light"></style>
-    <style name="Sense.Dialog" parent="@android:style/Theme.Holo.Light.Dialog.NoActionBar"></style>
+    <style name="Sense.Dialog" parent="@android:style/Theme.Holo.Dialog.NoActionBar"></style>
 </resources>

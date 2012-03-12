@@ -6,7 +6,7 @@
         android:title="General Settings" >
         <Preference
             android:key="login_placeholder"
-            android:title="Change login" />
+            android:title="@string/menu_login" />
         <Preference
             android:key="register_placeholder"
             android:summary="Register a new user"
