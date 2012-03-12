@@ -51,7 +51,7 @@
 
     <uses-sdk
         android:minSdkVersion="7"
-        android:targetSdkVersion="10" />
+        android:targetSdkVersion="11" />
 
     <!-- we support all screen sizes by default, thanks to SDK version >= 4 -->
     <!-- <supports-screens -->
@@ -62,15 +62,15 @@
 
     <application
         android:icon="@drawable/ic_launcher_sense"
-        android:label="@string/sense_app_name" >
+        android:label="@string/sense_app_name"
+        android:logo="@drawable/ic_logo_sense" >
 
         <!-- COMPONENTS OF SENSE PLATFORM FRONT-END -->
         <activity
             android:name="SenseApp"
             android:configChanges="orientation"
-            android:launchMode="singleInstance"
-            android:process="nl.sense_os.app"
-            android:theme="@android:style/Theme.Light" >
+            android:label="@string/sense_app_label"
+            android:theme="@style/Sense.Rings" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -83,9 +83,16 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".login.LoginActivity"
+            android:theme="@style/Sense.Dialog" />
+        <activity
+            android:name=".register.RegisterActivity"
+            android:theme="@style/Sense.Dialog" />
+        <activity
             android:name="SenseSettings"
             android:configChanges="orientation"
-            android:process="nl.sense_os.app" >
+            android:label="@string/sense_app_label"
+            android:theme="@style/Sense.Prefs" >
             <intent-filter>
                 <action android:name="nl.sense_os.platform.SenseSettings" />
 
@@ -180,8 +187,8 @@
 
         <activity
             android:name="nl.sense_os.service.deviceprox.NfcScan"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"
-            android:configChanges="orientation" >
+            android:configChanges="orientation"
+            android:theme="@style/Sense.Dialog" >
             <intent-filter>
                 <action android:name="android.nfc.action.TECH_DISCOVERED" />
             </intent-filter>

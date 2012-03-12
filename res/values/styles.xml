@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="SenseRings" parent="@android:style/Theme.Light.NoTitleBar">
-        <item name="android:background">@drawable/bg_rings</item>
-    </style>
+    <style name="Sense.Rings" parent="@android:style/Theme.Light.NoTitleBar"></style>
+    <style name="Sense.Prefs" parent="@android:style/Theme.Black"></style>
+    <style name="Sense.Dialog" parent="@android:style/Theme.Translucent.NoTitleBar"></style>
 </resources>

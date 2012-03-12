@@ -6,8 +6,8 @@
 
 package nl.sense_os.app;
 
-import nl.sense_os.app.dialogs.LoginDialog;
-import nl.sense_os.app.dialogs.RegisterDialog;
+import nl.sense_os.app.login.LoginActivity;
+import nl.sense_os.app.register.RegisterActivity;
 import nl.sense_os.service.ISenseService;
 import nl.sense_os.service.ISenseServiceCallback;
 import nl.sense_os.service.SenseService;
@@ -17,7 +17,6 @@ import nl.sense_os.service.constants.SenseStatusCodes;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -26,15 +25,14 @@ import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
-import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
-import android.preference.PreferenceManager;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.CheckBox;
@@ -43,199 +41,27 @@ import android.widget.Toast;
 
 public class SenseApp extends Activity {
 
-    /**
-     * AsyncTask to check the login data with CommonSense. Takes username and unhashed password as
-     * arguments. Clears any open login dialogs before start, and displays a progress dialog during
-     * operation. If the check fails, the login dialog is shown again.
-     */
-    private class CheckLoginTask extends AsyncTask<String, Void, Integer> {
-        private static final String TAG = "CheckLoginTask";
-
-        @Override
-        protected Integer doInBackground(String... params) {
-            int result = -1;
-
-            String username = params[0];
-            String password = params[1];
-
-            if (service != null) {
-                try {
-                    result = service.changeLogin(username, password);
-                } catch (final RemoteException e) {
-                    Log.e(TAG, "RemoteException checking login", e);
-                }
-            } else {
-                Log.w(TAG, "Skipping login task: service=null. Is the service bound?");
-            }
-            return result;
-        }
-
-        @Override
-        protected void onPostExecute(Integer result) {
-            try {
-                dismissDialog(Dialogs.PROGRESS);
-            } catch (final IllegalArgumentException e) {
-                // do nothing, perhaps the progress dialog was already dismissed
-            }
-
-            if (result.intValue() == -2) {
-                Toast.makeText(SenseApp.this, R.string.toast_login_forbidden, Toast.LENGTH_LONG)
-                        .show();
-                showDialog(Dialogs.LOGIN);
-            } else if (result.intValue() == -1) {
-                Toast.makeText(SenseApp.this, R.string.toast_login_fail, Toast.LENGTH_LONG).show();
-                showDialog(Dialogs.LOGIN);
-            } else {
-                Toast.makeText(SenseApp.this, R.string.toast_login_ok, Toast.LENGTH_LONG).show();
-
-                toggleMain(true);
-
-                // check if this is the very first login
-                final SharedPreferences appPrefs = PreferenceManager
-                        .getDefaultSharedPreferences(SenseApp.this);
-                if (appPrefs.getBoolean(SenseSettings.PREF_FIRST_LOGIN, true)) {
-                    final Editor editor = appPrefs.edit();
-                    editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
-                    editor.commit();
-
-                    togglePhoneState(true);
-                } else {
-                    // the user logged in at least once before
-                }
-            }
-
-            checkServiceStatus();
-        }
-
-        @Override
-        protected void onPreExecute() {
-            // close the login dialog before showing the progress dialog
-            try {
-                dismissDialog(Dialogs.LOGIN);
-            } catch (final IllegalArgumentException e) {
-                // no problem: login dialog was not displayed
-            }
-
-            showDialog(Dialogs.PROGRESS);
-        }
-    }
-
-    /**
-     * AsyncTask to register a new phone/user with CommonSense. Takes username and unhashed password
-     * as arguments. Clears any open registeration dialogs before start, and displays a progress
-     * dialog during operation. If the check fails, the registration dialog is shown again.
-     */
-    private class CheckRegisterTask extends AsyncTask<String, Void, Integer> {
-        private static final String TAG = "CheckRegisterTask";
-
-        @Override
-        protected Integer doInBackground(String... params) {
-            int result = -1;
-
-            String username = null;
-            String password = null;
-            String name = null;
-            String surname = null;
-            String email = null;
-            String phone = null;
-            if (params.length == 2) {
-                username = params[0];
-                password = params[1];
-            } else if (params.length == 6) {
-                username = params[0];
-                password = params[1];
-                name = params[2];
-                surname = params[3];
-                email = params[4];
-                phone = params[5];
-            } else {
-                Log.w(TAG, "Unexpected amount of parameters!");
-                return -1;
-            }
-
-            if (service != null) {
-                try {
-                    result = service.register(username, password, name, surname, email, phone);
-                } catch (final RemoteException e) {
-                    Log.e(TAG, "RemoteException registering new user:", e);
-                }
-            } else {
-                Log.w(TAG, "Skipping registration task: service=null. Is the service bound?");
-            }
-            return result;
-        }
-
-        @Override
-        protected void onPostExecute(Integer result) {
-            // Log.d(TAG, "Registration result: " + result.intValue());
-
-            try {
-                dismissDialog(Dialogs.PROGRESS);
-            } catch (final IllegalArgumentException e) {
-                // do nothing
-            }
-
-            if (result.intValue() == -2) {
-                Toast.makeText(SenseApp.this, R.string.toast_reg_conflict, Toast.LENGTH_LONG)
-                        .show();
-                showDialog(Dialogs.REGISTER);
-            } else if (result.intValue() == -1) {
-                Toast.makeText(SenseApp.this, R.string.toast_reg_fail, Toast.LENGTH_LONG).show();
-                showDialog(Dialogs.REGISTER);
-            } else {
-                Toast.makeText(SenseApp.this, R.string.toast_reg_ok, Toast.LENGTH_LONG).show();
-
-                toggleMain(true);
-
-                // check if this is the very first login
-                final SharedPreferences appPrefs = PreferenceManager
-                        .getDefaultSharedPreferences(SenseApp.this);
-                if (appPrefs.getBoolean(SenseSettings.PREF_FIRST_LOGIN, true)) {
-                    final Editor editor = appPrefs.edit();
-                    editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
-                    editor.commit();
-
-                    togglePhoneState(true);
-                } else {
-                    // the user logged in at least once before
-                }
-            }
-
-            checkServiceStatus();
-        }
-
-        @Override
-        protected void onPreExecute() {
-            // close the login dialog before showing the progress dialog
-            try {
-                dismissDialog(Dialogs.REGISTER);
-            } catch (final IllegalArgumentException e) {
-                // do nothing
-            }
-            showDialog(Dialogs.PROGRESS);
-        }
-    }
-
     private class Dialogs {
         static final int FAQ = 1;
         static final int HELP = 2;
-        static final int LOGIN = 3;
-        static final int PROGRESS = 4;
-        static final int REGISTER = 5;
-        static final int UPDATE_ALERT = 6;
-    };
-
-    private class MenuItems {
-        private static final int FAQ = 1;
-        private static final int LOGIN = 2;
-        private static final int REGISTER = 3;
-        private static final int SETTINGS = 4;
+        static final int UPDATE_ALERT = 3;
+        public static final int LOGOUT = 4;
     };
 
     /**
      * Service stub for callbacks from the Sense service.
      */
     private class SenseCallback extends ISenseServiceCallback.Stub {
+
+        @Override
+        public void onChangeLoginResult(int result) throws RemoteException {
+            // not used
+        }
+
+        @Override
+        public void onRegisterResult(int result) throws RemoteException {
+            // not used
+        }
 
         @Override
         public void statusReport(final int status) {
@@ -264,10 +90,13 @@ public class SenseApp extends Activity {
             service = ISenseService.Stub.asInterface(binder);
             try {
                 service.getStatus(callback);
-                if (service
-                        .getSessionId("]C@+[G1be,f)@3mz|2cj4gq~Jz(8WE&_$7g:,-KOI;v:iQt<r;1OQ@=mr}jmE8>!") == null) {
+                long lastLogin = service.getPrefLong(SensePrefs.Main.LAST_LOGGED_IN, -1);
+                if (lastLogin == -1) {
                     // sense has never been logged in
                     showDialog(Dialogs.HELP);
+                } else {
+                    CharSequence loginDate = DateFormat.format("dd/MM/yyyy kk:mm", lastLogin);
+                    Log.v(TAG, "Last succesful login: " + loginDate);
                 }
             } catch (final RemoteException e) {
                 Log.e(TAG, "Error checking service status after binding. ", e);
@@ -355,7 +184,13 @@ public class SenseApp extends Activity {
     }
 
     private Dialog createDialogFaq() {
+        // create builder
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // specifically set dark theme for Android 3.0+
+            builder = new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_DARK);
+        }
+
         builder.setIcon(android.R.drawable.ic_dialog_info);
         builder.setTitle(R.string.dialog_faq_title);
         builder.setMessage(R.string.dialog_faq_msg);
@@ -368,7 +203,13 @@ public class SenseApp extends Activity {
      *         Login.
      */
     private Dialog createDialogHelp() {
+        // create builder
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // specifically set dark theme for Android 3.0+
+            builder = new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_DARK);
+        }
+
         builder.setIcon(android.R.drawable.ic_dialog_info);
         builder.setTitle(R.string.dialog_welcome_title);
         builder.setMessage(R.string.dialog_welcome_msg);
@@ -376,14 +217,14 @@ public class SenseApp extends Activity {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                showDialog(Dialogs.LOGIN);
+                startLogin();
             }
         });
         builder.setNeutralButton(R.string.button_reg, new OnClickListener() {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                showDialog(Dialogs.REGISTER);
+                startRegister();
             }
         });
         builder.setNegativeButton(R.string.button_faq, new OnClickListener() {
@@ -400,12 +241,54 @@ public class SenseApp extends Activity {
      * @return a dialog to alert the user for changes in the CommonSense.
      */
     private Dialog createDialogUpdateAlert() {
+        // create builder
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // specifically set dark theme for Android 3.0+
+            builder = new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_DARK);
+        }
+
         builder.setIcon(android.R.drawable.ic_dialog_alert);
         builder.setMessage(R.string.dialog_update_msg);
         builder.setTitle(R.string.dialog_update_title);
         builder.setPositiveButton(android.R.string.ok, null);
         builder.setCancelable(false);
+        return builder.create();
+    }
+
+    /**
+     * @return a dialog to confirm if the user want to log out.
+     */
+    private Dialog createDialogLogout() {
+
+        // create builder
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // specifically set dark theme for Android 3.0+
+            builder = new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_DARK);
+        }
+
+        // get username
+        String username = null;
+        if (null != service) {
+            try {
+                username = service.getPrefString(Auth.LOGIN_USERNAME, null);
+            } catch (RemoteException e) {
+                // should never happen
+            }
+        }
+
+        builder.setIcon(android.R.drawable.ic_dialog_alert);
+        builder.setMessage(R.string.dialog_logout_msg);
+        builder.setTitle(getString(R.string.dialog_logout_title, username));
+        builder.setPositiveButton(R.string.button_logout, new OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                logout();
+            }
+        });
+        builder.setNegativeButton(android.R.string.cancel, null);
         return builder.create();
     }
 
@@ -482,7 +365,7 @@ public class SenseApp extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.sense_app);
+        setContentView(R.layout.main);
     }
 
     @Override
@@ -492,23 +375,14 @@ public class SenseApp extends Activity {
         case Dialogs.FAQ:
             dialog = createDialogFaq();
             break;
-        case Dialogs.LOGIN:
-            dialog = new LoginDialog(this);
-            break;
-        case Dialogs.PROGRESS:
-            dialog = new ProgressDialog(this);
-            dialog.setTitle("One moment please");
-            ((ProgressDialog) dialog).setMessage("Checking login credentials...");
-            dialog.setCancelable(false);
-            break;
-        case Dialogs.REGISTER:
-            dialog = new RegisterDialog(this);
-            break;
         case Dialogs.UPDATE_ALERT:
             dialog = createDialogUpdateAlert();
             break;
         case Dialogs.HELP:
             dialog = createDialogHelp();
+            break;
+        case Dialogs.LOGOUT:
+            dialog = createDialogLogout();
             break;
         default:
             Log.w(TAG, "Trying to create unexpected dialog, ignoring input...");
@@ -519,14 +393,8 @@ public class SenseApp extends Activity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(Menu.NONE, MenuItems.SETTINGS, Menu.NONE, getString(R.string.menu_preferences))
-                .setIcon(android.R.drawable.ic_menu_preferences);
-        menu.add(Menu.NONE, MenuItems.FAQ, Menu.NONE, getString(R.string.menu_faq)).setIcon(
-                android.R.drawable.ic_menu_help);
-        menu.add(Menu.NONE, MenuItems.LOGIN, Menu.NONE, getString(R.string.menu_login)).setIcon(
-                R.drawable.ic_menu_login);
-        menu.add(Menu.NONE, MenuItems.REGISTER, Menu.NONE, getString(R.string.menu_register))
-                .setIcon(R.drawable.ic_menu_invite);
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu, menu);
         return true;
     }
 
@@ -543,69 +411,76 @@ public class SenseApp extends Activity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-        case MenuItems.FAQ:
+        case R.id.menu_faq:
             showDialog(Dialogs.FAQ);
             break;
-        case MenuItems.SETTINGS:
+        case R.id.menu_preferences:
             startActivity(new Intent(getString(R.string.action_sense_settings)));
             break;
-        case MenuItems.LOGIN:
-            showDialog(Dialogs.LOGIN);
+        case R.id.menu_login:
+            startLogin();
             break;
-        case MenuItems.REGISTER:
-            showDialog(Dialogs.REGISTER);
+        case R.id.menu_logout:
+            showDialog(Dialogs.LOGOUT);
+            break;
+        case R.id.menu_register:
+            startRegister();
             break;
         default:
-            Log.w(TAG, "Unexpected menu button pressed, ignoring input...");
+            Log.w(TAG, "Unexpected option item selected: " + item);
             return false;
         }
         return true;
     }
 
-    @Override
-    protected void onPause() {
-
-        // unregister service state listener
+    private void logout() {
         try {
-            unregisterReceiver(serviceListener);
-        } catch (IllegalArgumentException e) {
-            // listener was not registered
+            service.logout();
+            service.toggleMain(false);
+            service.getStatus(callback);
+        } catch (RemoteException e) {
+            Log.e(TAG, "failed to log out: " + e);
         }
-
-        super.onPause();
     }
 
     @Override
     protected void onPrepareDialog(int id, Dialog dialog) {
-        // make sure the service is started when we try to register or log in
-        switch (id) {
-        case Dialogs.LOGIN:
-            bindToSenseService();
-
-            ((LoginDialog) dialog).setOnSubmitTask(new CheckLoginTask());
-
-            // get username preset from Sense service
-            if (service != null) {
+        if (id == Dialogs.LOGOUT) {
+            String username = null;
+            if (null != service) {
                 try {
-                    String usernamePreset = service.getPrefString(Auth.LOGIN_USERNAME, "");
-                    ((LoginDialog) dialog).setUsername(usernamePreset);
+                    username = service.getPrefString(Auth.LOGIN_USERNAME, null);
                 } catch (RemoteException e) {
-                    Log.e(TAG, "Failed to get username from Sense Platform service", e);
+                    Log.w(TAG, "Failed to get USERNAME pref: " + e);
                 }
+                dialog.setTitle(getString(R.string.dialog_logout_title, username));
             }
-            break;
-        case Dialogs.REGISTER:
-            bindToSenseService();
-            ((RegisterDialog) dialog).setOnSubmitTask(new CheckRegisterTask());
-            break;
-        default:
-            break;
         }
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
+    public boolean onPrepareOptionsMenu(Menu menu) {
+
+        boolean loggedIn = false;
+        if (null != service) {
+            try {
+                loggedIn = service.getPrefString(Auth.LOGIN_USERNAME, null) != null;
+            } catch (RemoteException e) {
+                Log.e(TAG, "Failed to get USERNAME preference from service: " + e);
+            }
+        }
+
+        menu.findItem(R.id.menu_login).setVisible(!loggedIn);
+        menu.findItem(R.id.menu_logout).setVisible(loggedIn);
+        menu.findItem(R.id.menu_register).setVisible(!loggedIn);
+
+        return true;
+    }
+
+    @Override
+    protected void onStart() {
+        // Log.v(TAG, "onStart");
+        super.onStart();
 
         // bind to service as soon as possible
         bindToSenseService();
@@ -615,6 +490,38 @@ public class SenseApp extends Activity {
         registerReceiver(serviceListener, filter);
 
         checkServiceStatus();
+    }
+
+    @Override
+    protected void onStop() {
+        // Log.v(TAG, "onStop");
+
+        // unregister service state listener
+        try {
+            unregisterReceiver(serviceListener);
+        } catch (IllegalArgumentException e) {
+            // listener was not registered
+        }
+
+        super.onStop();
+    }
+
+    private void showToast(final CharSequence text, final int duration) {
+        runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                Toast.makeText(SenseApp.this, text, duration).show();
+            }
+        });
+    }
+
+    private void startLogin() {
+        startActivity(new Intent(this, LoginActivity.class));
+    }
+
+    private void startRegister() {
+        startActivity(new Intent(this, RegisterActivity.class));
     }
 
     private void toggleAmbience(boolean active) {
@@ -655,7 +562,7 @@ public class SenseApp extends Activity {
                     String msg = getString(R.string.toast_toggle_ambience).replace("?",
                             intervalString)
                             + extraString;
-                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                    showToast(msg, Toast.LENGTH_LONG);
                 }
 
             } catch (RemoteException e) {
@@ -699,7 +606,7 @@ public class SenseApp extends Activity {
                         Log.e(TAG, "Unexpected device prox preference.");
                     }
                     final String msg = getString(R.string.toast_toggle_dev_prox);
-                    Toast.makeText(this, msg.replace("?", interval), Toast.LENGTH_LONG).show();
+                    showToast(msg.replace("?", interval), Toast.LENGTH_LONG);
                 }
 
             } catch (RemoteException e) {
@@ -746,7 +653,7 @@ public class SenseApp extends Activity {
                     }
                     final String msg = getString(R.string.toast_toggle_external_sensors).replace(
                             "?", interval);
-                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                    showToast(msg, Toast.LENGTH_LONG);
                 }
 
             } catch (RemoteException e) {
@@ -793,7 +700,7 @@ public class SenseApp extends Activity {
                     }
                     final String msg = getString(R.string.toast_toggle_location).replace("?",
                             interval);
-                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                    showToast(msg, Toast.LENGTH_LONG);
                 }
 
             } catch (RemoteException e) {
@@ -821,7 +728,7 @@ public class SenseApp extends Activity {
                 if (active && null == service.getPrefString(Auth.LOGIN_USERNAME, null)) {
                     // cannot activate the service: Sense does not know the username yet
                     Log.w(TAG, "Cannot start Sense Platform without username");
-                    showDialog(Dialogs.LOGIN);
+                    startLogin();
                 } else {
                     // normal situation
                     service.toggleMain(active);
@@ -867,7 +774,7 @@ public class SenseApp extends Activity {
                     }
                     final String msg = getString(R.string.toast_toggle_motion).replace("?",
                             interval);
-                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                    showToast(msg, Toast.LENGTH_LONG);
                 }
 
             } catch (RemoteException e) {
@@ -893,7 +800,7 @@ public class SenseApp extends Activity {
                 // show informational toast
                 if (active) {
                     final String msg = getString(R.string.toast_toggle_phonestate);
-                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                    showToast(msg, Toast.LENGTH_LONG);
                 }
 
             } catch (RemoteException e) {

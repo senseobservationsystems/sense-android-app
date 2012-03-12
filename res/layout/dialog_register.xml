@@ -31,6 +31,13 @@
         <EditText
             android:layout_height="wrap_content"
             android:layout_width="fill_parent"
+            android:inputType="textEmailAddress"
+            android:id="@+id/reg_email"
+            android:hint="@string/dialog_reg_hint_email"
+            android:imeOptions="actionNext" />
+        <EditText
+            android:layout_height="wrap_content"
+            android:layout_width="fill_parent"
             android:inputType="textPersonName"
             android:id="@+id/reg_name"
             android:hint="@string/dialog_reg_hint_name"
@@ -45,36 +52,9 @@
         <EditText
             android:layout_height="wrap_content"
             android:layout_width="fill_parent"
-            android:inputType="textEmailAddress"
-            android:id="@+id/reg_email"
-            android:hint="@string/dialog_reg_hint_email"
-            android:imeOptions="actionNext" />
-        <EditText
-            android:layout_height="wrap_content"
-            android:layout_width="fill_parent"
             android:inputType="phone"
             android:id="@+id/reg_phone"
             android:hint="@string/dialog_reg_hint_phone"
-            android:imeOptions="actionDone" />
-        <LinearLayout
-            android:layout_height="wrap_content"
-            android:layout_width="fill_parent"
-            android:background="@android:color/darker_gray"
-            android:padding="5dp">
-            <Button
-                android:text="@string/button_reg"
-                android:layout_height="50dp"
-                android:layout_width="0px"
-                android:layout_weight="1"
-                android:id="@+id/reg_btn_register" />
-
-            <Button
-                android:id="@+id/reg_btn_cancel"
-                android:layout_width="0px"
-                android:layout_height="50dp"
-                android:layout_weight="1"
-                android:text="@android:string/cancel" />
-
-        </LinearLayout>
+            android:imeOptions="actionGo" />
     </LinearLayout>
 </ScrollView>
