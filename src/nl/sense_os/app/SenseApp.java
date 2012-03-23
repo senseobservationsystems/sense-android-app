@@ -14,6 +14,7 @@ import nl.sense_os.service.SenseService;
 import nl.sense_os.service.constants.SensePrefs;
 import nl.sense_os.service.constants.SensePrefs.Auth;
 import nl.sense_os.service.constants.SenseStatusCodes;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -183,6 +184,7 @@ public class SenseApp extends Activity {
         }
     }
 
+    @TargetApi(11)
     private Dialog createDialogFaq() {
         // create builder
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -202,6 +204,7 @@ public class SenseApp extends Activity {
      * @return a help dialog, which explains the goal of Sense and clicks through to Registration or
      *         Login.
      */
+    @TargetApi(11)
     private Dialog createDialogHelp() {
         // create builder
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -229,6 +232,7 @@ public class SenseApp extends Activity {
         });
         builder.setNegativeButton(R.string.button_faq, new OnClickListener() {
 
+            @SuppressWarnings("deprecation")
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 showDialog(Dialogs.FAQ);
@@ -240,6 +244,7 @@ public class SenseApp extends Activity {
     /**
      * @return a dialog to alert the user for changes in the CommonSense.
      */
+    @TargetApi(11)
     private Dialog createDialogUpdateAlert() {
         // create builder
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -259,6 +264,7 @@ public class SenseApp extends Activity {
     /**
      * @return a dialog to confirm if the user want to log out.
      */
+    @TargetApi(11)
     private Dialog createDialogLogout() {
 
         // create builder

@@ -23,6 +23,7 @@ import nl.sense_os.service.constants.SensePrefs.Main.Location;
 import nl.sense_os.service.constants.SensePrefs.Main.Motion;
 import nl.sense_os.service.constants.SensePrefs.Main.Quiz;
 import nl.sense_os.service.constants.SensePrefs.Status;
+import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ComponentName;
@@ -157,6 +158,7 @@ public class SenseSettings extends PreferenceActivity {
         }
     }
 
+    @TargetApi(11)
     private Dialog createDialogDevMode() {
 
         // create builder
@@ -181,6 +183,7 @@ public class SenseSettings extends PreferenceActivity {
     /**
      * @return a dialog to confirm if the user want to log out.
      */
+    @TargetApi(11)
     private Dialog createDialogLogout() {
 
         // create builder
