@@ -2,17 +2,12 @@ package nl.sense_os.app.login;
 
 import nl.sense_os.app.R;
 import nl.sense_os.app.SenseSettings;
+import nl.sense_os.app.dialogs.WaitDialog;
+import nl.sense_os.app.login.LoginDialog.ILoginActivity;
 import nl.sense_os.service.ISenseService;
 import nl.sense_os.service.ISenseServiceCallback;
 import nl.sense_os.service.commonsense.SenseApi;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.ComponentName;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnCancelListener;
-import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
@@ -21,12 +16,11 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
-import android.view.View;
-import android.widget.EditText;
 import android.widget.Toast;
 
-public class LoginActivity extends Activity {
+public class LoginActivity extends FragmentActivity implements ILoginActivity {
 
     private class SenseCallback extends ISenseServiceCallback.Stub {
 
@@ -34,10 +28,12 @@ public class LoginActivity extends Activity {
         public void onChangeLoginResult(int result) throws RemoteException {
             Log.d(TAG, "Change login result: " + result);
 
-            try {
-                dismissDialog(DIALOG_PROGRESS);
-            } catch (final IllegalArgumentException e) {
-                // do nothing, perhaps the progress dialog was already dismissed
+            if (null != waitDialog) {
+                try {
+                    waitDialog.dismiss();
+                } catch (final IllegalArgumentException e) {
+                    // do nothing, perhaps the progress dialog was already dismissed
+                }
             }
 
             if (result == -2) {
@@ -46,7 +42,7 @@ public class LoginActivity extends Activity {
 
                     @Override
                     public void run() {
-                        showDialog(DIALOG_LOGIN);
+                        showLoginDialog();
                     }
                 });
 
@@ -56,7 +52,7 @@ public class LoginActivity extends Activity {
 
                     @Override
                     public void run() {
-                        showDialog(DIALOG_LOGIN);
+                        showLoginDialog();
                     }
                 });
 
@@ -93,15 +89,14 @@ public class LoginActivity extends Activity {
         }
     };
 
-    private static final int DIALOG_LOGIN = 1;
-    private static final int DIALOG_PROGRESS = 2;
-
     private static final String TAG = "LoginActivity";
 
     private final ISenseServiceCallback callback = new SenseCallback();
     private boolean isServiceBound;
     private ISenseService service;
     private final ServiceConnection serviceConn = new SenseServiceConn();
+
+    private WaitDialog waitDialog;
 
     /**
      * Binds to the Sense Service, creating it if necessary.
@@ -118,52 +113,10 @@ public class LoginActivity extends Activity {
         }
     }
 
-    private Dialog createLoginDialog() {
-
-        // create builder
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
-        // prepare content view
-        View view = getLayoutInflater().inflate(R.layout.dialog_login, null);
-        final EditText usernameField = (EditText) view.findViewById(R.id.login_username);
-        final EditText passField = (EditText) view.findViewById(R.id.login_pass);
-
-        builder.setTitle(R.string.dialog_login_title);
-        builder.setIcon(R.drawable.ic_dialog_sense);
-        builder.setView(view);
-        builder.setPositiveButton(R.string.button_login, new OnClickListener() {
-
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                String username = usernameField.getText() == null ? null : usernameField.getText()
-                        .toString();
-                String password = passField.getText() == null ? null : passField.getText()
-                        .toString();
-                if (null != username && null != password && username.length() > 0) {
-                    submit(username, password);
-                } else {
-                    showToast(getString(R.string.toast_missing_fields), Toast.LENGTH_LONG);
-                    finish();
-                }
-            }
-        });
-        builder.setNegativeButton(android.R.string.cancel, new OnClickListener() {
-
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                setResult(RESULT_CANCELED);
-                finish();
-            }
-        });
-        builder.setOnCancelListener(new OnCancelListener() {
-
-            @Override
-            public void onCancel(DialogInterface dialog) {
-                setResult(RESULT_CANCELED);
-                finish();
-            }
-        });
-        return builder.create();
+    @Override
+    public void onCancel() {
+        setResult(RESULT_CANCELED);
+        finish();
     }
 
     @Override
@@ -172,26 +125,7 @@ public class LoginActivity extends Activity {
 
         setResult(RESULT_CANCELED);
 
-        showDialog(DIALOG_LOGIN);
-    }
-
-    @Override
-    protected Dialog onCreateDialog(int id) {
-        Dialog dialog;
-        switch (id) {
-        case DIALOG_LOGIN:
-            dialog = createLoginDialog();
-            break;
-        case DIALOG_PROGRESS:
-            dialog = new ProgressDialog(this);
-            dialog.setTitle(R.string.dialog_progress_title);
-            ((ProgressDialog) dialog).setMessage(getString(R.string.dialog_progress_login_msg));
-            dialog.setCancelable(false);
-            break;
-        default:
-            dialog = super.onCreateDialog(id);
-        }
-        return dialog;
+        showLoginDialog();
     }
 
     private void onLoginSuccess() {
@@ -230,6 +164,28 @@ public class LoginActivity extends Activity {
         super.onStop();
     }
 
+    @Override
+    public void onSubmit(String username, String password) {
+        if ((null != username) && (null != password) && (username.length() > 0)
+                && (password.length() > 0)) {
+            submit(username, password);
+            showWaitDialog();
+
+        } else {
+            onWrongInput();
+        }
+    }
+
+    private void onWrongInput() {
+        showToast(getString(R.string.toast_missing_fields), Toast.LENGTH_LONG);
+        showLoginDialog();
+    }
+
+    private void showLoginDialog() {
+        LoginDialog dialog = LoginDialog.newInstance(this);
+        dialog.show(getSupportFragmentManager(), "login");
+    }
+
     private void showToast(final CharSequence text, final int duration) {
         runOnUiThread(new Runnable() {
 
@@ -240,21 +196,18 @@ public class LoginActivity extends Activity {
         });
     }
 
-    private void submit(String username, String password) {
-        try {
-            dismissDialog(DIALOG_LOGIN);
-        } catch (IllegalArgumentException e) {
-            // ignore
-        }
+    private void showWaitDialog() {
+        waitDialog = WaitDialog.newInstance(R.string.dialog_progress_login_msg);
+        waitDialog.show(getSupportFragmentManager(), "wait");
+    }
 
+    private void submit(String username, String password) {
         try {
             service.changeLogin(username, SenseApi.hashPassword(password), callback);
         } catch (RemoteException e) {
             Log.e(TAG, "Failed to call changeLogin: '" + e + "'");
             finish();
         }
-
-        showDialog(DIALOG_PROGRESS);
     }
 
     /**
@@ -262,7 +215,7 @@ public class LoginActivity extends Activity {
      */
     private void unbindFromSenseService() {
 
-        if (true == isServiceBound && null != serviceConn) {
+        if ((true == isServiceBound) && (null != serviceConn)) {
             // Log.v(TAG, "Unbind from Sense Platform service");
             unbindService(serviceConn);
         } else {

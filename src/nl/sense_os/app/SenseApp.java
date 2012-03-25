@@ -6,6 +6,11 @@
 
 package nl.sense_os.app;
 
+import nl.sense_os.app.dialogs.FaqDialog;
+import nl.sense_os.app.dialogs.LogoutConfirmDialog;
+import nl.sense_os.app.dialogs.LogoutConfirmDialog.LogoutActivity;
+import nl.sense_os.app.dialogs.WelcomeDialog;
+import nl.sense_os.app.dialogs.WelcomeDialog.WelcomeActivity;
 import nl.sense_os.app.login.LoginActivity;
 import nl.sense_os.app.register.RegisterActivity;
 import nl.sense_os.service.ISenseService;
@@ -13,23 +18,18 @@ import nl.sense_os.service.ISenseServiceCallback;
 import nl.sense_os.service.SenseService;
 import nl.sense_os.service.constants.SensePrefs;
 import nl.sense_os.service.constants.SensePrefs.Auth;
+import nl.sense_os.service.constants.SensePrefs.Status;
 import nl.sense_os.service.constants.SenseStatusCodes;
-import android.annotation.TargetApi;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.support.v4.app.FragmentActivity;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.Menu;
@@ -40,14 +40,7 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class SenseApp extends Activity {
-
-    private class Dialogs {
-        static final int FAQ = 1;
-        static final int HELP = 2;
-        static final int UPDATE_ALERT = 3;
-        public static final int LOGOUT = 4;
-    };
+public class SenseApp extends FragmentActivity implements WelcomeActivity, LogoutActivity {
 
     /**
      * Service stub for callbacks from the Sense service.
@@ -94,7 +87,7 @@ public class SenseApp extends Activity {
                 long lastLogin = service.getPrefLong(SensePrefs.Main.LAST_LOGGED_IN, -1);
                 if (lastLogin == -1) {
                     // sense has never been logged in
-                    showDialog(Dialogs.HELP);
+                    showWelcomeDialog();
                 } else {
                     CharSequence loginDate = DateFormat.format("dd/MM/yyyy kk:mm", lastLogin);
                     Log.v(TAG, "Last succesful login: " + loginDate);
@@ -184,118 +177,15 @@ public class SenseApp extends Activity {
         }
     }
 
-    @TargetApi(11)
-    private Dialog createDialogFaq() {
-        // create builder
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            // specifically set dark theme for Android 3.0+
-            builder = new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_DARK);
+    @Override
+    public void logout() {
+        try {
+            service.logout();
+            service.toggleMain(false);
+            service.getStatus(callback);
+        } catch (RemoteException e) {
+            Log.e(TAG, "failed to log out: " + e);
         }
-
-        builder.setIcon(android.R.drawable.ic_dialog_info);
-        builder.setTitle(R.string.dialog_faq_title);
-        builder.setMessage(R.string.dialog_faq_msg);
-        builder.setPositiveButton(android.R.string.ok, null);
-        return builder.create();
-    }
-
-    /**
-     * @return a help dialog, which explains the goal of Sense and clicks through to Registration or
-     *         Login.
-     */
-    @TargetApi(11)
-    private Dialog createDialogHelp() {
-        // create builder
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            // specifically set dark theme for Android 3.0+
-            builder = new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_DARK);
-        }
-
-        builder.setIcon(android.R.drawable.ic_dialog_info);
-        builder.setTitle(R.string.dialog_welcome_title);
-        builder.setMessage(R.string.dialog_welcome_msg);
-        builder.setPositiveButton(R.string.button_login, new OnClickListener() {
-
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                startLogin();
-            }
-        });
-        builder.setNeutralButton(R.string.button_reg, new OnClickListener() {
-
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                startRegister();
-            }
-        });
-        builder.setNegativeButton(R.string.button_faq, new OnClickListener() {
-
-            @SuppressWarnings("deprecation")
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                showDialog(Dialogs.FAQ);
-            }
-        });
-        return builder.create();
-    }
-
-    /**
-     * @return a dialog to alert the user for changes in the CommonSense.
-     */
-    @TargetApi(11)
-    private Dialog createDialogUpdateAlert() {
-        // create builder
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            // specifically set dark theme for Android 3.0+
-            builder = new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_DARK);
-        }
-
-        builder.setIcon(android.R.drawable.ic_dialog_alert);
-        builder.setMessage(R.string.dialog_update_msg);
-        builder.setTitle(R.string.dialog_update_title);
-        builder.setPositiveButton(android.R.string.ok, null);
-        builder.setCancelable(false);
-        return builder.create();
-    }
-
-    /**
-     * @return a dialog to confirm if the user want to log out.
-     */
-    @TargetApi(11)
-    private Dialog createDialogLogout() {
-
-        // create builder
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            // specifically set dark theme for Android 3.0+
-            builder = new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_DARK);
-        }
-
-        // get username
-        String username = null;
-        if (null != service) {
-            try {
-                username = service.getPrefString(Auth.LOGIN_USERNAME, null);
-            } catch (RemoteException e) {
-                // should never happen
-            }
-        }
-
-        builder.setIcon(android.R.drawable.ic_dialog_alert);
-        builder.setMessage(R.string.dialog_logout_msg);
-        builder.setTitle(getString(R.string.dialog_logout_title, username));
-        builder.setPositiveButton(R.string.button_logout, new OnClickListener() {
-
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                logout();
-            }
-        });
-        builder.setNegativeButton(android.R.string.cancel, null);
-        return builder.create();
     }
 
     /**
@@ -375,29 +265,6 @@ public class SenseApp extends Activity {
     }
 
     @Override
-    protected Dialog onCreateDialog(int id) {
-        Dialog dialog = null;
-        switch (id) {
-        case Dialogs.FAQ:
-            dialog = createDialogFaq();
-            break;
-        case Dialogs.UPDATE_ALERT:
-            dialog = createDialogUpdateAlert();
-            break;
-        case Dialogs.HELP:
-            dialog = createDialogHelp();
-            break;
-        case Dialogs.LOGOUT:
-            dialog = createDialogLogout();
-            break;
-        default:
-            Log.w(TAG, "Trying to create unexpected dialog, ignoring input...");
-            break;
-        }
-        return dialog;
-    }
-
-    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu, menu);
@@ -418,7 +285,7 @@ public class SenseApp extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
         case R.id.menu_faq:
-            showDialog(Dialogs.FAQ);
+            showFaq();
             break;
         case R.id.menu_preferences:
             startActivity(new Intent(getString(R.string.action_sense_settings)));
@@ -427,7 +294,7 @@ public class SenseApp extends Activity {
             startLogin();
             break;
         case R.id.menu_logout:
-            showDialog(Dialogs.LOGOUT);
+            showLogoutConfirm();
             break;
         case R.id.menu_register:
             startRegister();
@@ -439,29 +306,22 @@ public class SenseApp extends Activity {
         return true;
     }
 
-    private void logout() {
-        try {
-            service.logout();
-            service.toggleMain(false);
-            service.getStatus(callback);
-        } catch (RemoteException e) {
-            Log.e(TAG, "failed to log out: " + e);
-        }
-    }
+    private void showLogoutConfirm() {
 
-    @Override
-    protected void onPrepareDialog(int id, Dialog dialog) {
-        if (id == Dialogs.LOGOUT) {
-            String username = null;
-            if (null != service) {
-                try {
-                    username = service.getPrefString(Auth.LOGIN_USERNAME, null);
-                } catch (RemoteException e) {
-                    Log.w(TAG, "Failed to get USERNAME pref: " + e);
-                }
-                dialog.setTitle(getString(R.string.dialog_logout_title, username));
+        String username = null;
+        if (null != service) {
+            try {
+                username = service.getPrefString(Auth.LOGIN_USERNAME, null);
+            } catch (RemoteException e) {
+                Log.w(TAG, "Failed to get USERNAME pref: " + e);
             }
         }
+        Bundle args = new Bundle();
+        args.putString("username", username);
+
+        LogoutConfirmDialog logoutDialog = new LogoutConfirmDialog(this);
+        logoutDialog.setArguments(args);
+        logoutDialog.show(getSupportFragmentManager(), "logout");
     }
 
     @Override
@@ -512,6 +372,21 @@ public class SenseApp extends Activity {
         super.onStop();
     }
 
+    @Override
+    public void showFaq() {
+        FaqDialog faqDialog = new FaqDialog();
+        faqDialog.show(getSupportFragmentManager(), "faq");
+    }
+
+    /**
+     * Shows a help dialog, which explains the goal of Sense and clicks through to Registration or
+     * Login.
+     */
+    private void showWelcomeDialog() {
+        WelcomeDialog welcomeDialog = WelcomeDialog.newInstance(this);
+        welcomeDialog.show(getSupportFragmentManager(), "welcome");
+    }
+
     private void showToast(final CharSequence text, final int duration) {
         runOnUiThread(new Runnable() {
 
@@ -522,11 +397,13 @@ public class SenseApp extends Activity {
         });
     }
 
-    private void startLogin() {
+    @Override
+    public void startLogin() {
         startActivity(new Intent(this, LoginActivity.class));
     }
 
-    private void startRegister() {
+    @Override
+    public void startRegister() {
         startActivity(new Intent(this, RegisterActivity.class));
     }
 
@@ -890,7 +767,7 @@ public class SenseApp extends Activity {
      * 
      * @param status
      *            The status of the service.
-     * @see {@link Constants#STATUSCODE_RUNNING}
+     * @see {@link Status#STATUSCODE_RUNNING}
      */
     private void updateUi(int status) {
 

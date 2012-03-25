@@ -45,6 +45,14 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.MenuItem;
 
+/**
+ * Shows the Sense preferences as defines in /res/values/preferences.xml. Calls the SenseService to
+ * set/get the preferences for the actual service.<br/>
+ * <br/>
+ * Uses a lot of deprecated API because we cannot use PreferenceFragments so we need to rely on
+ * older solutions.
+ */
+@SuppressWarnings("deprecation")
 public class SenseSettings extends PreferenceActivity {
 
     /**

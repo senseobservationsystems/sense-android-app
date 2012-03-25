@@ -84,9 +84,11 @@
         </activity>
         <activity
             android:name=".login.LoginActivity"
+            android:configChanges="orientation"
             android:theme="@style/Sense.Dialog" />
         <activity
             android:name=".register.RegisterActivity"
+            android:configChanges="orientation"
             android:theme="@style/Sense.Dialog" />
         <activity
             android:name="SenseSettings"
