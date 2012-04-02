@@ -1,6 +1,7 @@
 package nl.sense_os.app.dialogs;
 
 import nl.sense_os.app.R;
+import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
@@ -21,6 +22,7 @@ public class LogoutConfirmDialog extends DialogFragment {
         this.listener = listener;
     }
 
+    @TargetApi(11)
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
 
