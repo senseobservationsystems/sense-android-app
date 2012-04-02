@@ -244,13 +244,6 @@ public class SenseApp extends FragmentActivity implements WelcomeActivity, Logou
                 // phoneState.setChecked(!oldState);
                 togglePhoneState(!oldState);
             }
-        } else if (v.getId() == R.id.popquiz_field) {
-            final CheckBox quiz = (CheckBox) findViewById(R.id.popquiz_cb);
-            if (quiz.isEnabled()) {
-                oldState = quiz.isChecked();
-                // quiz.setChecked(!oldState);
-                togglePopQuiz(!oldState);
-            }
         } else if (v.getId() == R.id.prefs_field) {
             startActivity(new Intent(getString(R.string.action_sense_settings)));
         } else {
@@ -697,56 +690,6 @@ public class SenseApp extends FragmentActivity implements WelcomeActivity, Logou
         checkServiceStatus();
     }
 
-    private void togglePopQuiz(boolean active) {
-
-        Log.w(TAG, "Toggle Questionnare not implemented");
-
-        // final SharedPreferences statusPrefs = getSharedPreferences(SensePrefs.STATUS_PREFS,
-        // MODE_WORLD_WRITEABLE);
-        // final Editor editor = statusPrefs.edit();
-        // editor.putBoolean(SensePrefs.Keys.PREF_STATUS_POPQUIZ, active).commit();
-        //
-        // if (null != this.service) {
-        // try {
-        // this.service.togglePopQuiz(active, callback);
-        //
-        // // show informational toast
-        // if (active) {
-        //
-        // final SharedPreferences mainPrefs = getSharedPreferences(SensePrefs.MAIN_PREFS,
-        // MODE_WORLD_WRITEABLE);
-        // final int rate = Integer.parseInt(mainPrefs.getString(SensePrefs.Keys.PREF_QUIZ_RATE,
-        // "0"));
-        // String interval = "ERROR";
-        // switch (rate) {
-        // case -1 : // often (5 mins)
-        // interval = "5 minutes";
-        // break;
-        // case 0 : // normal (15 mins)
-        // interval = "15 minutes";
-        // break;
-        // case 1 : // rarely (1 hour)
-        // interval = "hour";
-        // break;
-        // default :
-        // Log.e(TAG, "Unexpected quiz rate preference: " + rate);
-        // break;
-        // }
-        //
-        // String msg = getString(R.string.toast_toggle_quiz).replace("?", interval);
-        // Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
-        // }
-        //
-        // } catch (RemoteException e) {
-        // Log.e(TAG, "RemoteException toggling periodic popup service.");
-        // }
-        // } else {
-        // Log.w(TAG, "Could not toggle periodic popup service: Sense service is not bound.");
-        // }
-
-        checkServiceStatus();
-    }
-
     /**
      * Unbinds from the Sense service, resets {@link #service} and {@link #isServiceBound}.
      */
@@ -874,19 +817,6 @@ public class SenseApp extends FragmentActivity implements WelcomeActivity, Logou
         text2.setEnabled(running);
         if (external_sensors) {
             // Log.v(TAG, "'external sensors' enabled");
-        }
-
-        // enable pop quiz list row
-        button = (CheckBox) findViewById(R.id.popquiz_cb);
-        final boolean popQuiz = (status & SenseStatusCodes.QUIZ) > 0;
-        button.setChecked(popQuiz);
-        button.setEnabled(false);
-        text1 = findViewById(R.id.popquiz_firstline);
-        text2 = findViewById(R.id.popquiz_secondLine);
-        text1.setEnabled(false);
-        text2.setEnabled(false);
-        if (popQuiz) {
-            // Log.v(TAG, "'questionnaire' enabled");
         }
     }
 }
