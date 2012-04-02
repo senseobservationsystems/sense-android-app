@@ -207,8 +207,8 @@
                 <CheckBoxPreference
                     android:defaultValue="True"
                     android:key="proximity_nfc"
-                    android:summary="Use NFC to find neighboring devices"
-                    android:title="NFC" />
+                    android:summary="Scan NFC tags (cannot be disabled)"
+                    android:title="NFC" android:enabled="false"/>
             </PreferenceCategory>
         </PreferenceScreen>
         <PreferenceScreen
