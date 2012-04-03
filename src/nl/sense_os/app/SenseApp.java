@@ -245,7 +245,7 @@ public class SenseApp extends FragmentActivity implements WelcomeActivity, Logou
                 togglePhoneState(!oldState);
             }
         } else if (v.getId() == R.id.prefs_field) {
-            startActivity(new Intent(getString(R.string.action_sense_settings)));
+            startActivity(new Intent(this, SenseSettings.class));
         } else {
             Log.e(TAG, "Unknown button pressed!");
         }
@@ -281,7 +281,7 @@ public class SenseApp extends FragmentActivity implements WelcomeActivity, Logou
             showFaq();
             break;
         case R.id.menu_preferences:
-            startActivity(new Intent(getString(R.string.action_sense_settings)));
+            startActivity(new Intent(this, SenseSettings.class));
             break;
         case R.id.menu_login:
             startLogin();
