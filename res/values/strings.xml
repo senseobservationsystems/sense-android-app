@@ -55,7 +55,6 @@
     <string name="toast_login_fail">Login failed! Possible connection problems.</string>
     <string name="toast_login_forbidden">Login failed! Invalid username or password.</string>
     <string name="toast_login_ok">Login successful.</string>
-    <string name="toast_quiz_refresh">Quiz questions are being refreshed…</string>
     <string name="toast_reg_fail">Registration failed! Possible connection problems.</string>
     <string name="toast_reg_conflict">Registration failed! The user already exists.</string>
     <string name="toast_reg_ok">Registration successful.</string>
@@ -66,8 +65,6 @@
     <string name="toast_toggle_external_sensors">External sensors will update every ?.</string>
     <string name="toast_toggle_ambience">Ambience measurements will update ?.</string>
     <string name="toast_toggle_phonestate">Changes in phone state will be shared with CommonSense.</string>
-    <string name="toast_toggle_quiz">A question will pop up every ?.</string>
-    <string name="action_sense_settings">nl.sense_os.platform.SenseSettings</string>
 
     <!-- action for the app widget -->
     <string name="action_widget_update">nl.sense_os.platform.AppWidgetUpdate</string>
@@ -102,8 +99,6 @@
     <string name="main_scr_dev_details">Wireless devices near you</string>
     <string name="main_scr_ext_title">External sensors</string>
     <string name="main_scr_ext_details">External bluetooth sensors</string>
-    <string name="main_scr_qst_title">Questionnaire</string>
-    <string name="main_scr_qst_details">Periodically pops up questions</string>
     <string name="preferences">Preferences</string>
     <string name="content_descr_spacer">spacer</string>
     <string name="content_descr_wi_pst">widget phone state button</string>

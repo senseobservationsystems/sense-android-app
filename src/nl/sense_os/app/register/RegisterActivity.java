@@ -2,16 +2,11 @@ package nl.sense_os.app.register;
 
 import nl.sense_os.app.R;
 import nl.sense_os.app.SenseSettings;
+import nl.sense_os.app.dialogs.WaitDialog;
+import nl.sense_os.app.register.RegisterDialog.IRegisterActivity;
 import nl.sense_os.service.ISenseService;
 import nl.sense_os.service.ISenseServiceCallback;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.ComponentName;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnCancelListener;
-import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
@@ -20,12 +15,11 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
-import android.view.View;
-import android.widget.EditText;
 import android.widget.Toast;
 
-public class RegisterActivity extends Activity {
+public class RegisterActivity extends FragmentActivity implements IRegisterActivity {
 
     private class SenseCallback extends ISenseServiceCallback.Stub {
 
@@ -38,10 +32,12 @@ public class RegisterActivity extends Activity {
         public void onRegisterResult(int result) throws RemoteException {
             Log.d(TAG, "Registration result: " + result);
 
-            try {
-                dismissDialog(DIALOG_PROGRESS);
-            } catch (final IllegalArgumentException e) {
-                // do nothing
+            if (null != waitDialog) {
+                try {
+                    waitDialog.dismiss();
+                } catch (final IllegalArgumentException e) {
+                    // do nothing
+                }
             }
 
             if (result == -2) {
@@ -50,7 +46,7 @@ public class RegisterActivity extends Activity {
 
                     @Override
                     public void run() {
-                        showDialog(DIALOG_REGISTER);
+                        showRegisterDialog();
                     }
                 });
             } else if (result == -1) {
@@ -59,7 +55,7 @@ public class RegisterActivity extends Activity {
 
                     @Override
                     public void run() {
-                        showDialog(DIALOG_REGISTER);
+                        showRegisterDialog();
                     }
                 });
             } else {
@@ -90,15 +86,13 @@ public class RegisterActivity extends Activity {
         }
     };
 
-    private static final int DIALOG_REGISTER = 1;
-    private static final int DIALOG_PROGRESS = 2;
-
     private static final String TAG = "RegisterActivity";
 
     private final ISenseServiceCallback callback = new SenseCallback();
     private boolean isServiceBound;
     private ISenseService service;
     private final ServiceConnection serviceConn = new SenseServiceConn();
+    private WaitDialog waitDialog;
 
     /**
      * Binds to the Sense Service, creating it if necessary.
@@ -115,72 +109,9 @@ public class RegisterActivity extends Activity {
         }
     }
 
-    private Dialog createRegisterDialog() {
-
-        // create builder
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
-        // prepare content view
-        View view = getLayoutInflater().inflate(R.layout.dialog_register, null);
-        final EditText usernameField = (EditText) view.findViewById(R.id.reg_username);
-        final EditText passField1 = (EditText) view.findViewById(R.id.reg_pass1);
-        final EditText passField2 = (EditText) view.findViewById(R.id.reg_pass2);
-        final EditText nameField = (EditText) view.findViewById(R.id.reg_name);
-        final EditText surnameField = (EditText) view.findViewById(R.id.reg_surname);
-        final EditText emailField = (EditText) view.findViewById(R.id.reg_email);
-        final EditText phoneField = (EditText) view.findViewById(R.id.reg_phone);
-
-        builder.setTitle(R.string.dialog_reg_title);
-        builder.setIcon(R.drawable.ic_dialog_sense);
-        builder.setView(view);
-        builder.setPositiveButton(R.string.button_reg, new OnClickListener() {
-
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                String username = usernameField.getText() == null ? null : usernameField.getText()
-                        .toString();
-                String password = passField1.getText() == null ? null : passField1.getText()
-                        .toString();
-                String passCheck = passField2.getText() == null ? null : passField2.getText()
-                        .toString();
-                String name = nameField.getText() == null ? null : nameField.getText().toString();
-                String surname = surnameField.getText() == null ? null : surnameField.getText()
-                        .toString();
-                String email = emailField.getText() == null ? null : emailField.getText()
-                        .toString();
-                String phone = phoneField.getText() == null ? null : phoneField.getText()
-                        .toString();
-                if (username != null && username.length() > 0 && password != null
-                        && password.length() > 0 && email != null && email.length() > 0) {
-                    if (password.equals(passCheck)) {
-                        submit(username, password, name, surname, email, phone);
-                    } else {
-                        showToast(getString(R.string.toast_reg_pass), Toast.LENGTH_LONG);
-                        finish();
-                    }
-                } else {
-                    showToast(getString(R.string.toast_missing_fields), Toast.LENGTH_LONG);
-                    finish();
-                }
-            }
-        });
-        builder.setNegativeButton(android.R.string.cancel, new OnClickListener() {
-
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                setResult(RESULT_CANCELED);
-                finish();
-            }
-        });
-        builder.setOnCancelListener(new OnCancelListener() {
-
-            @Override
-            public void onCancel(DialogInterface dialog) {
-                setResult(RESULT_CANCELED);
-                finish();
-            }
-        });
-        return builder.create();
+    @Override
+    public void onCancel() {
+        finish();
     }
 
     @Override
@@ -189,26 +120,12 @@ public class RegisterActivity extends Activity {
 
         setResult(RESULT_CANCELED);
 
-        showDialog(DIALOG_REGISTER);
+        showRegisterDialog();
     }
 
-    @Override
-    protected Dialog onCreateDialog(int id) {
-        Dialog dialog;
-        switch (id) {
-        case DIALOG_REGISTER:
-            dialog = createRegisterDialog();
-            break;
-        case DIALOG_PROGRESS:
-            dialog = new ProgressDialog(this);
-            dialog.setTitle(R.string.dialog_progress_title);
-            ((ProgressDialog) dialog).setMessage(getString(R.string.dialog_progress_reg_msg));
-            dialog.setCancelable(false);
-            break;
-        default:
-            dialog = super.onCreateDialog(id);
-        }
-        return dialog;
+    private void onNoPassMatch() {
+        showToast(getString(R.string.toast_reg_pass), Toast.LENGTH_LONG);
+        showRegisterDialog();
     }
 
     private void onRegisterSuccess() {
@@ -247,6 +164,34 @@ public class RegisterActivity extends Activity {
         super.onStop();
     }
 
+    @Override
+    public void onSubmit(String username, String password, String password2, String name,
+            String surname, String email, String phone) {
+        if ((username != null) && (username.length() > 0) && (password != null)
+                && (password.length() > 0) && (email != null) && (email.length() > 0)) {
+            if (password.equals(password2)) {
+                submit(username, password, name, surname, email, phone);
+                showWaitDialog();
+
+            } else {
+                onNoPassMatch();
+            }
+
+        } else {
+            onWrongInput();
+        }
+    }
+
+    private void onWrongInput() {
+        showToast(getString(R.string.toast_missing_fields), Toast.LENGTH_LONG);
+        showRegisterDialog();
+    }
+
+    private void showRegisterDialog() {
+        RegisterDialog dialog = RegisterDialog.newInstance(this);
+        dialog.show(getSupportFragmentManager(), "register");
+    }
+
     private void showToast(final CharSequence text, final int duration) {
         runOnUiThread(new Runnable() {
 
@@ -257,22 +202,19 @@ public class RegisterActivity extends Activity {
         });
     }
 
+    private void showWaitDialog() {
+        waitDialog = WaitDialog.newInstance(R.string.dialog_progress_reg_msg);
+        waitDialog.show(getSupportFragmentManager(), "wait");
+    }
+
     private void submit(String username, String password, String name, String surname,
             String email, String phone) {
-        try {
-            dismissDialog(DIALOG_REGISTER);
-        } catch (IllegalArgumentException e) {
-            // ignore
-        }
-
         try {
             service.register(username, password, name, surname, email, phone, callback);
         } catch (RemoteException e) {
             Log.e(TAG, "Failed to call register: '" + e + "'");
             finish();
         }
-
-        showDialog(DIALOG_PROGRESS);
     }
 
     /**
@@ -280,7 +222,7 @@ public class RegisterActivity extends Activity {
      */
     private void unbindFromSenseService() {
 
-        if (true == isServiceBound && null != serviceConn) {
+        if ((true == isServiceBound) && (null != serviceConn)) {
             // Log.v(TAG, "Unbind from Sense Platform service");
             unbindService(serviceConn);
         } else {

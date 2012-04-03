@@ -23,6 +23,7 @@ import nl.sense_os.service.constants.SensePrefs.Main.Location;
 import nl.sense_os.service.constants.SensePrefs.Main.Motion;
 import nl.sense_os.service.constants.SensePrefs.Main.Quiz;
 import nl.sense_os.service.constants.SensePrefs.Status;
+import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ComponentName;
@@ -44,6 +45,14 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.MenuItem;
 
+/**
+ * Shows the Sense preferences as defines in /res/values/preferences.xml. Calls the SenseService to
+ * set/get the preferences for the actual service.<br/>
+ * <br/>
+ * Uses a lot of deprecated API because we cannot use PreferenceFragments so we need to rely on
+ * older solutions.
+ */
+@SuppressWarnings("deprecation")
 public class SenseSettings extends PreferenceActivity {
 
     /**
@@ -157,6 +166,7 @@ public class SenseSettings extends PreferenceActivity {
         }
     }
 
+    @TargetApi(11)
     private Dialog createDialogDevMode() {
 
         // create builder
@@ -181,6 +191,7 @@ public class SenseSettings extends PreferenceActivity {
     /**
      * @return a dialog to confirm if the user want to log out.
      */
+    @TargetApi(11)
     private Dialog createDialogLogout() {
 
         // create builder
@@ -333,7 +344,6 @@ public class SenseSettings extends PreferenceActivity {
         // setup some preferences with custom dialogs
         setupLoginPref();
         setupRegisterPref();
-        setupQuizPref();
 
         final Preference devMode = findPreference(Advanced.DEV_MODE);
         devMode.setOnPreferenceClickListener(new OnPreferenceClickListener() {
@@ -448,35 +458,6 @@ public class SenseSettings extends PreferenceActivity {
             @Override
             public boolean onPreferenceClick(Preference preference) {
                 onLoginClick();
-                return true;
-            }
-        });
-    }
-
-    private void setupQuizPref() {
-        final Preference popQuizRefresh = findPreference(Quiz.SYNC);
-        popQuizRefresh.setOnPreferenceClickListener(new OnPreferenceClickListener() {
-
-            @Override
-            public boolean onPreferenceClick(Preference preference) {
-
-                Log.w(TAG, "Questionnaire not restarted: code is disabled!");
-                // // start quiz sync broadcast
-                // final Intent refreshIntent = new Intent(
-                // "nl.sense_os.service.AlarmPopQuestionUpdate");
-                // final PendingIntent refreshPI =
-                // PendingIntent.getBroadcast(SenseSettings.this, 0,
-                // refreshIntent, 0);
-                // final AlarmManager mgr = (AlarmManager)
-                // getSystemService(ALARM_SERVICE);
-                // // mgr.set(AlarmManager.RTC_WAKEUP, 0, refreshPI);
-                //
-                // // show confirmation Toast
-                // Toast.makeText(SenseSettings.this,
-                // R.string.toast_quiz_refresh,
-                // Toast.LENGTH_LONG)
-                // .show();
-                //
                 return true;
             }
         });
