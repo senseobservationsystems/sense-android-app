@@ -1,5 +1,10 @@
 package nl.sense_os.app.appwidget;
 
+import nl.sense_os.app.R;
+import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.ISenseServiceCallback;
+import nl.sense_os.service.constants.SensePrefs.Main;
+import nl.sense_os.service.constants.SenseStatusCodes;
 import android.app.IntentService;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
@@ -11,12 +16,6 @@ import android.os.RemoteException;
 import android.util.Log;
 import android.widget.RemoteViews;
 
-import nl.sense_os.app.R;
-import nl.sense_os.service.ISenseService;
-import nl.sense_os.service.ISenseServiceCallback;
-import nl.sense_os.service.constants.SensePrefs.Main;
-import nl.sense_os.service.constants.SenseStatusCodes;
-
 public class SenseWidgetUpdater extends IntentService {
 
     /**
@@ -27,6 +26,16 @@ public class SenseWidgetUpdater extends IntentService {
         @Override
         public void statusReport(int status) {
             updateWidgets(status);
+        }
+
+        @Override
+        public void onChangeLoginResult(int result) throws RemoteException {
+            // not used
+        }
+
+        @Override
+        public void onRegisterResult(int result) throws RemoteException {
+            // not used
         }
     }
 

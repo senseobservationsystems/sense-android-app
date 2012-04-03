@@ -1,373 +1,401 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
     <PreferenceCategory
-        android:title="General Settings"
-        android:key="general_category">
+        android:key="general_category"
+        android:title="General Settings" >
         <Preference
-            android:title="Change login"
-            android:key="login_placeholder" />
+            android:key="login_placeholder"
+            android:title="@string/menu_login" />
         <Preference
-            android:title="New user"
+            android:key="register_placeholder"
             android:summary="Register a new user"
-            android:key="register_placeholder" />
+            android:title="New user" />
+
         <ListPreference
-            android:title="Sensor sample rate"
-            android:summary="Sampling frequency of the sensing modules"
+            android:defaultValue="0"
             android:dialogTitle="Sample rate"
             android:entries="@array/pref_sample_rate_keys"
             android:entryValues="@array/pref_sample_rate_vals"
-            android:defaultValue="0"
-            android:positiveButtonText="@android:string/ok"
+            android:key="commonsense_rate"
             android:negativeButtonText="@android:string/cancel"
-            android:key="commonsense_rate" />
+            android:positiveButtonText="@android:string/ok"
+            android:summary="Sampling frequency of the sensing modules"
+            android:title="Sensor sample rate" />
         <ListPreference
-            android:title="CommonSense sync rate"
-            android:summary="Amount of communication with server"
+            android:defaultValue="0"
             android:dialogTitle="Sync rate"
             android:entries="@array/pref_sync_rate_keys"
             android:entryValues="@array/pref_sync_rate_vals"
-            android:defaultValue="0"
-            android:positiveButtonText="@android:string/ok"
+            android:key="sync_rate"
             android:negativeButtonText="@android:string/cancel"
-            android:key="sync_rate" />
+            android:positiveButtonText="@android:string/ok"
+            android:summary="Amount of communication with server"
+            android:title="CommonSense sync rate" />
+
         <CheckBoxPreference
-            android:title="Autostart"
-            android:summary="Start Sense service at phone startup"
             android:defaultValue="false"
-            android:key="autostart" />
+            android:key="autostart"
+            android:summary="Start Sense service at phone startup"
+            android:title="Autostart" />
     </PreferenceCategory>
-
     <PreferenceCategory
-        android:title="Specific service settings"
-        android:key="spec_service_category">
-
+        android:key="spec_service_category"
+        android:title="Specific service settings" >
         <PreferenceScreen
-            android:title="Phone status"
-            android:summary="Settings for battery sensor etc."
             android:enabled="true"
-            android:key="phone_status_screen">
-            <PreferenceCategory android:title="Main settings">
+            android:key="phone_status_screen"
+            android:summary="Settings for battery sensor etc."
+            android:title="Phone status" >
+            <PreferenceCategory android:title="Main settings" >
                 <CheckBoxPreference
-                    android:title="Battery"
+                    android:defaultValue="true"
+                    android:key="phonestate_battery"
                     android:summary="Measures battery level and charge status"
+                    android:title="Battery" />
+                <CheckBoxPreference
                     android:defaultValue="true"
-                    android:key="phonestate_battery" />
-                <CheckBoxPreference android:title="Call state" android:summary="Detects the call state and phone numbers" android:defaultValue="true" android:key="phonestate_call_state" /><CheckBoxPreference
-                    android:title="Screen activity"
+                    android:key="phonestate_call_state"
+                    android:summary="Detects the call state and phone numbers"
+                    android:title="Call state" />
+                <CheckBoxPreference
+                    android:defaultValue="true"
+                    android:key="phonestate_screen_activity"
                     android:summary="Detects screen on/off events"
-                    android:defaultValue="true"
-                    android:key="phonestate_screen_activity" />
-                
+                    android:title="Screen activity" />
                 <CheckBoxPreference
-                    android:title="Proximity"
+                    android:defaultValue="true"
+                    android:key="phonestate_proximity"
                     android:summary="Measures distance of objects from screen"
-                    android:defaultValue="true"
-                    android:key="phonestate_proximity" />
-                
+                    android:title="Proximity" />
                 <CheckBoxPreference
-                    android:title="Data connection"
+                    android:defaultValue="true"
+                    android:key="phonestate_data_connection"
                     android:summary="Detects connection state and type (Wi-Fi or mobile)"
-                    android:defaultValue="true"
-                    android:key="phonestate_data_connection" />
-                
+                    android:title="Data connection" />
                 <CheckBoxPreference
-                    android:title="Service state"
+                    android:defaultValue="true"
+                    android:key="phonestate_service_state"
                     android:summary="Detects mobile service state"
-                    android:defaultValue="true"
-                    android:key="phonestate_service_state" />
+                    android:title="Service state" />
                 <CheckBoxPreference
-                    android:title="Signal strength"
-                    android:summary="Measures mobile signal strength"
                     android:defaultValue="true"
-                    android:key="phonestate_signal_strength" /><CheckBoxPreference android:title="IP address" android:summary="Detects current IP address (if available)" android:defaultValue="true" android:key="phonestate_ip" /><CheckBoxPreference android:title="Unread messages" android:summary="Detects number of unread messages" android:defaultValue="true" android:key="phonestate_unread_msg" />
-                
+                    android:key="phonestate_signal_strength"
+                    android:summary="Measures mobile signal strength"
+                    android:title="Signal strength" />
+                <CheckBoxPreference
+                    android:defaultValue="true"
+                    android:key="phonestate_ip"
+                    android:summary="Detects current IP address (if available)"
+                    android:title="IP address" />
+                <CheckBoxPreference
+                    android:defaultValue="true"
+                    android:key="phonestate_unread_msg"
+                    android:summary="Detects number of unread messages"
+                    android:title="Unread messages" />
             </PreferenceCategory>
         </PreferenceScreen>
-
         <PreferenceScreen
-            android:title="Location"
+            android:enabled="true"
             android:key="location_screen"
             android:summary="Settings for location sensors"
-            android:enabled="true">
-            <PreferenceCategory android:title="Main settings">
+            android:title="Location" >
+            <PreferenceCategory android:title="Main settings" >
                 <CheckBoxPreference
-                    android:title="GPS provider"
+                    android:defaultValue="true"
+                    android:key="location_gps"
                     android:summary="Use GPS location provider"
-                    android:defaultValue="true"
-                    android:key="location_gps" />
+                    android:title="GPS provider" />
                 <CheckBoxPreference
-                    android:title="Network provider"
+                    android:defaultValue="true"
+                    android:key="location_network"
                     android:summary="Use Wi-Fi/cell location provider"
-                    android:defaultValue="true"
-                    android:key="location_network" />
+                    android:title="Network provider" />
             </PreferenceCategory>
-            <PreferenceCategory android:title="Advanced settings">
+            <PreferenceCategory android:title="Advanced settings" >
                 <CheckBoxPreference
-                    android:title="Automatic GPS"
-                    android:summary="Don't use GPS when not useful"
                     android:defaultValue="true"
-                    android:key="automatic_gps" />
+                    android:key="automatic_gps"
+                    android:summary="Don&apos;t use GPS when not useful"
+                    android:title="Automatic GPS" />
             </PreferenceCategory>
         </PreferenceScreen>
-
         <PreferenceScreen
-            android:title="Ambience"
-            android:summary="Settings for sound and light sensors"
+            android:enabled="true"
             android:key="ambience_screen"
-            android:enabled="true">
-            <PreferenceCategory android:title="Main settings">
+            android:summary="Settings for sound and light sensors"
+            android:title="Ambience" >
+            <PreferenceCategory android:title="Main settings" >
                 <CheckBoxPreference
-                    android:title="Microphone"
                     android:defaultValue="True"
-                    android:summary="Measures noise or records audio"
-                    android:key="ambience_mic" />
+                    android:key="ambience_mic"
+                    android:summary="Ambient sound level or real-time audio recording"
+                    android:title="Microphone" />
                 <CheckBoxPreference
+                    android:defaultValue="True"
+                    android:key="ambience_audio_spectrum"
+                    android:summary="Frequency spectrum of sounds"
+                    android:title="Audio spectrum" />
+                <CheckBoxPreference
+                    android:defaultValue="True"
                     android:key="ambience_light"
+                    android:summary="Light intensity (crude)"
+                    android:title="Light" />
+                <CheckBoxPreference
                     android:defaultValue="True"
-                    android:summary="Measures the light intensity"
-                    android:title="Light" /><CheckBoxPreference android:title="Pressure" android:summary="Measures pressure (if available)" android:defaultValue="true" android:key="ambience_pressure" />
+                    android:key="ambience_camera_light"
+                    android:summary="Light intensity (fancy, uses camera)"
+                    android:title="Light (Camera)" />
+                <CheckBoxPreference
+                    android:defaultValue="true"
+                    android:key="ambience_pressure"
+                    android:summary="Barometric pressure (if available)"
+                    android:title="Pressure" />
             </PreferenceCategory>
         </PreferenceScreen>
-
         <PreferenceScreen
-            android:title="Motion"
-            android:summary="Settings for accelerometer and gyroscope"
+            android:enabled="true"
             android:key="motion_screen"
-            android:enabled="true">
-            <PreferenceCategory android:title="Main settings">
+            android:summary="Settings for accelerometer and gyroscope"
+            android:title="Motion" >
+            <PreferenceCategory android:title="Main settings" >
                 <CheckBoxPreference
+                    android:defaultValue="False"
                     android:key="motion_fall_detector"
-                    android:title="Fall detection"
                     android:summary="Detects a human fall"
-                    android:defaultValue="False" />
+                    android:title="Fall detection" />
                 <CheckBoxPreference
+                    android:defaultValue="False"
                     android:key="motion_fall_detector_demo"
-                    android:title="Fall detection for demo's"
                     android:summary="Detects a simple free fall"
-                    android:defaultValue="False" />
+                    android:title="Fall detection for demo&apos;s" />
                 <CheckBoxPreference
+                    android:defaultValue="False"
                     android:key="motion_energy"
                     android:summary="Motion energy"
-                    android:title="Measure kinetic energy"
-                    android:defaultValue="False" />
+                    android:title="Measure kinetic energy" />
             </PreferenceCategory>
-            <PreferenceCategory android:title="Additional settings">
+            <PreferenceCategory android:title="Additional settings" >
                 <CheckBoxPreference
-                    android:title="Unregister between samples"
-                    android:summary="Saves battery, might break screen rotation"
                     android:defaultValue="True"
-                    android:key="motion_unregister" />
+                    android:key="motion_unregister"
+                    android:summary="Saves battery, might break screen rotation"
+                    android:title="Unregister between samples" />
                 <CheckBoxPreference
-                    android:title="Screen-off workaround"
-                    android:summary="Fixes some issues on phones with Android 2.1 or older"
                     android:defaultValue="false"
-                    android:key="screenoff_fix" />
+                    android:key="screenoff_fix"
+                    android:summary="Fixes some issues on phones with Android 2.1 or older"
+                    android:title="Screen-off workaround" />
             </PreferenceCategory>
         </PreferenceScreen>
-
         <PreferenceScreen
-            android:title="Neighboring devices"
             android:enabled="true"
             android:key="neigh_devices_screen"
-            android:summary="Settings for network context sensors">
-            <PreferenceCategory android:title="Main settings">
+            android:summary="Settings for network context sensors"
+            android:title="Neighboring devices" >
+            <PreferenceCategory android:title="Main settings" >
                 <CheckBoxPreference
-                    android:summary="Use Bluetooth to find neighboring devices"
                     android:defaultValue="true"
-                    android:title="Bluetooth"
-                    android:key="proximity_bt" />
+                    android:key="proximity_bt"
+                    android:summary="Use Bluetooth to find neighboring devices"
+                    android:title="Bluetooth" />
                 <CheckBoxPreference
+                    android:defaultValue="True"
                     android:key="proximity_wifi"
                     android:summary="Use Wi-Fi to find neighboring devices"
-                    android:title="Wi-Fi"
-                    android:defaultValue="True" />
+                    android:title="Wi-Fi" />
                 <CheckBoxPreference
+                    android:defaultValue="True"
                     android:key="proximity_nfc"
                     android:summary="Use NFC to find neighboring devices"
-                    android:title="NFC"
-                    android:defaultValue="True" />
+                    android:title="NFC" />
             </PreferenceCategory>
         </PreferenceScreen>
-
         <PreferenceScreen
-            android:title="External sensors"
             android:enabled="true"
             android:key="ext_sensors_screen"
-            android:summary="Settings for external (Bluetooth) sensors">
+            android:summary="Settings for external (Bluetooth) sensors"
+            android:title="External sensors" >
             <CheckBoxPreference
-                android:title="Zephyr BioHarness"
                 android:defaultValue="False"
                 android:key="zephyrBioHarness"
-                android:summary="Use a paired Zephyr BioHarness" />
+                android:summary="Use a paired Zephyr BioHarness"
+                android:title="Zephyr BioHarness" />
+
             <PreferenceScreen
                 android:enabled="True"
-                android:title="Zephyr BioHarness settings"
-                android:summary="Select BioHarness sensors">
-                <PreferenceCategory android:title="General sensor data">
+                android:summary="Select BioHarness sensors"
+                android:title="Zephyr BioHarness settings" >
+                <PreferenceCategory android:title="General sensor data" >
                     <CheckBoxPreference
-                        android:key="zephyrBioHarness_acc"
                         android:defaultValue="True"
-                        android:title="Acceleration"
-                        android:summary="Acceleration data of 3-axis (m/s^2)" />
+                        android:key="zephyrBioHarness_acc"
+                        android:summary="Acceleration data of 3-axis (m/s^2)"
+                        android:title="Acceleration" />
                     <CheckBoxPreference
+                        android:defaultValue="True"
                         android:key="zephyrBioHarness_heartRate"
                         android:summary="Heart rate (BPM)"
-                        android:title="Heart rate"
-                        android:defaultValue="True" />
+                        android:title="Heart rate" />
                     <CheckBoxPreference
+                        android:defaultValue="True"
                         android:key="zephyrBioHarness_temp"
                         android:summary="Skin temperature (C)"
-                        android:title="Skin temperature"
-                        android:defaultValue="True" />
+                        android:title="Skin temperature" />
                     <CheckBoxPreference
+                        android:defaultValue="True"
                         android:key="zephyrBioHarness_resp"
-                        android:title="Respiration rate"
                         android:summary="Respiration rate (BPM)"
-                        android:defaultValue="True" />
+                        android:title="Respiration rate" />
                     <CheckBoxPreference
+                        android:defaultValue="True"
                         android:key="zephyrBioHarness_wornStatus"
-                        android:title="Worn status"
                         android:summary="Worn status (boolean)"
-                        android:defaultValue="True" />
+                        android:title="Worn status" />
                     <CheckBoxPreference
+                        android:defaultValue="True"
                         android:key="zephyrBioHarness_battery"
-                        android:title="Battery level"
                         android:summary="Battery level (%)"
-                        android:defaultValue="True" />
+                        android:title="Battery level" />
                 </PreferenceCategory>
             </PreferenceScreen>
+
             <CheckBoxPreference
-                android:title="Zephyr HxM"
                 android:defaultValue="False"
                 android:key="zephyrHxM"
-                android:summary="Use a paired Zephyr HxM device" />
+                android:summary="Use a paired Zephyr HxM device"
+                android:title="Zephyr HxM" />
+
             <PreferenceScreen
                 android:enabled="True"
-                android:title="Zephyr HxM settings"
-                android:summary="Select HxM sensors">
-                <PreferenceCategory android:title="Main settings">
+                android:summary="Select HxM sensors"
+                android:title="Zephyr HxM settings" >
+                <PreferenceCategory android:title="Main settings" >
                     <CheckBoxPreference
-                        android:key="zephyrHxM_heartRate"
-                        android:title="Heart Rate"
-                        android:summary="Heart Rate (BPM)"
-                        android:defaultValue="True" />
-                    <CheckBoxPreference
-                        android:key="zephyrHxM_speed"
-                        android:title="Speed"
                         android:defaultValue="True"
-                        android:summary="Instantaneous speed (m/s^2)" />
+                        android:key="zephyrHxM_heartRate"
+                        android:summary="Heart Rate (BPM)"
+                        android:title="Heart Rate" />
                     <CheckBoxPreference
+                        android:defaultValue="True"
+                        android:key="zephyrHxM_speed"
+                        android:summary="Instantaneous speed (m/s^2)"
+                        android:title="Speed" />
+                    <CheckBoxPreference
+                        android:defaultValue="True"
                         android:key="zephyrHxM_distance"
-                        android:title="Distance"
                         android:summary="Distance (m)"
-                        android:defaultValue="True" />
+                        android:title="Distance" />
                     <CheckBoxPreference
+                        android:defaultValue="True"
                         android:key="zephyrHxM_battery"
-                        android:title="Battery charge indicator"
-                        android:defaultValue="True" />
+                        android:title="Battery charge indicator" />
                     <CheckBoxPreference
                         android:defaultValue="True"
                         android:key="zephyrHxM_strides"
                         android:title="Strides" />
                 </PreferenceCategory>
             </PreferenceScreen>
-            <CheckBoxPreference
-                android:title="OBD-II Dongle"
-                android:defaultValue="False"
-                android:enabled="false"
-                android:key="obd2dongle"
-                android:summary="Use a paired OBD-II dongle" />
-            <CheckBoxPreference
-                android:enabled="False"
-                android:title="MyGlucoHealth"
-                android:summary="Use the MyGlucoHealth MBH-BT1"
-                android:defaultValue="False"
-                android:key="myglucohealth" />
-            <PreferenceScreen
-                android:enabled="False"
-                android:summary="Myglucohealth MGH-BT1 settings"
-                android:selectable="False"
-                android:title="Myglucohealth settings" />
-            <CheckBoxPreference
-                android:enabled="False"
-                android:defaultValue="False"
-                android:key="tanita_scale"
-                android:title="Body Composit Monitor"
-                android:summary="Use the Tanita BC-590BT" />
-            <PreferenceScreen
-                android:enabled="False"
-                android:selectable="False"
-                android:title="Body Composition settings"
-                android:summary="Tanita BC-590BT settings" />
-        </PreferenceScreen>
 
+            <CheckBoxPreference
+                android:defaultValue="False"
+                android:key="obd2sensor"
+                android:summary="Use a paired OBD-II sensor"
+                android:title="OBD-II sensor" />
+            <CheckBoxPreference
+                android:defaultValue="False"
+                android:enabled="False"
+                android:key="myglucohealth"
+                android:summary="Use the MyGlucoHealth MBH-BT1"
+                android:title="MyGlucoHealth" />
+
+            <PreferenceScreen
+                android:enabled="False"
+                android:selectable="False"
+                android:summary="Myglucohealth MGH-BT1 settings"
+                android:title="Myglucohealth settings" />
+
+            <CheckBoxPreference
+                android:defaultValue="False"
+                android:enabled="False"
+                android:key="tanita_scale"
+                android:summary="Use the Tanita BC-590BT"
+                android:title="Body Composit Monitor" />
+
+            <PreferenceScreen
+                android:enabled="False"
+                android:selectable="False"
+                android:summary="Tanita BC-590BT settings"
+                android:title="Body Composition settings" />
+        </PreferenceScreen>
         <PreferenceScreen
-            android:title="Questionnaire"
-            android:summary="Periodic questionnare settings"
+            android:enabled="false"
             android:key="popquiz_screen"
-            android:enabled="false">
-            <PreferenceCategory android:title="Main settings">
+            android:summary="Periodic questionnare settings"
+            android:title="Questionnaire" >
+            <PreferenceCategory android:title="Main settings" >
                 <ListPreference
-                    android:title="Popup interval"
-                    android:summary="Amount of popup questions"
+                    android:defaultValue="0"
                     android:dialogTitle="Popup rate"
                     android:entries="@array/pref_popquiz_rate_keys"
                     android:entryValues="@array/pref_popquiz_rate_vals"
-                    android:defaultValue="0"
-                    android:positiveButtonText="@android:string/ok"
+                    android:key="popquiz_rate"
                     android:negativeButtonText="@android:string/cancel"
-                    android:key="popquiz_rate" />
+                    android:positiveButtonText="@android:string/ok"
+                    android:summary="Amount of popup questions"
+                    android:title="Popup interval" />
+
                 <Preference
-                    android:title="Refresh content"
+                    android:key="popquiz_sync"
                     android:summary="Gets new questions from CommonSense"
-                    android:key="popquiz_sync" />
+                    android:title="Refresh content" />
+
                 <CheckBoxPreference
-                    android:title="Silent mode"
-                    android:summary="Turns off the alerts"
+                    android:defaultValue="false"
                     android:key="popquiz_silent_mode"
-                    android:defaultValue="false" />
+                    android:summary="Turns off the alerts"
+                    android:title="Silent mode" />
             </PreferenceCategory>
         </PreferenceScreen>
     </PreferenceCategory>
-
     <PreferenceCategory
-        android:title="Even more settings"
-        android:key="advanced_category">
-
+        android:key="advanced_category"
+        android:title="Even more settings" >
         <PreferenceScreen
-            android:title="Advanced settings"
-            android:summary="For true Sensei"
+            android:enabled="true"
             android:key="advanced_screen"
-            android:enabled="true">
-            <PreferenceCategory android:title="Main settings">
+            android:summary="For true Sensei"
+            android:title="Advanced settings" >
+            <PreferenceCategory android:title="Main settings" >
                 <CheckBoxPreference
-                    android:title="Development server"
+                    android:defaultValue="false"
+                    android:key="devmode"
                     android:summary="Use unstable version of CommonSense"
-                    android:defaultValue="false"
-                    android:key="devmode" />
+                    android:title="Development server" />
                 <CheckBoxPreference
-                    android:title="Use compression"
+                    android:defaultValue="true"
+                    android:key="compression"
                     android:summary="Costs more CPU, less data traffic"
-                    android:defaultValue="true"
-                    android:key="compression" />
+                    android:title="Use compression" />
                 <CheckBoxPreference
-                    android:title="Use CommonSense"
+                    android:defaultValue="true"
+                    android:key="use_commonsense"
                     android:summary="Share your data with your online platform"
-                    android:defaultValue="true"
-                    android:key="use_commonsense" />
+                    android:title="Use CommonSense" />
             </PreferenceCategory>
-            <PreferenceCategory android:title="Special projects">
+            <PreferenceCategory android:title="Special projects" >
                 <CheckBoxPreference
-                    android:title="Agostino mode"
+                    android:defaultValue="false"
+                    android:key="agostino_mode"
                     android:summary="FOR SCIENCE!"
-                    android:defaultValue="false"
-                    android:key="agostino_mode" />
+                    android:title="Agostino mode" />
                 <CheckBoxPreference
-                    android:title="Epi mode"
-                    android:summary="FOR HEALTH!"
                     android:defaultValue="false"
-                    android:key="epimode" />
+                    android:key="epimode"
+                    android:summary="FOR HEALTH!"
+                    android:title="Epi mode" />
             </PreferenceCategory>
         </PreferenceScreen>
     </PreferenceCategory>
+
 </PreferenceScreen>
