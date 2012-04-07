@@ -4,11 +4,9 @@ import nl.sense_os.app.R;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
-import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
-import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 
@@ -32,8 +30,6 @@ public class LoginDialog extends DialogFragment {
         void onSubmit(String username, String password);
     }
 
-    private static final String TAG = "Login dialog";
-
     public static LoginDialog newInstance(ILoginActivity listener) {
         LoginDialog dialog = new LoginDialog();
         dialog.setListener(listener);
@@ -44,14 +40,13 @@ public class LoginDialog extends DialogFragment {
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        Log.d(TAG, "onCreateDialog");
+        // Log.d(TAG, "onCreateDialog");
 
         // create builder
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
 
         // prepare content view
         View view = getActivity().getLayoutInflater().inflate(R.layout.dialog_login, null);
-        ;
         final EditText usernameField = (EditText) view.findViewById(R.id.login_username);
         final EditText passField = (EditText) view.findViewById(R.id.login_pass);
 
@@ -73,17 +68,16 @@ public class LoginDialog extends DialogFragment {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                listener.onCancel();
-            }
-        });
-        builder.setOnCancelListener(new OnCancelListener() {
-
-            @Override
-            public void onCancel(DialogInterface dialog) {
-                listener.onCancel();
+                dialog.cancel();
             }
         });
         return builder.create();
+    }
+
+    @Override
+    public void onCancel(DialogInterface dialog) {
+        // Log.d(TAG, "onCancel");
+        listener.onCancel();
     }
 
     private void setListener(ILoginActivity listener) {

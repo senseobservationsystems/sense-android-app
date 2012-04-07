@@ -4,7 +4,6 @@ import nl.sense_os.app.R;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
-import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
@@ -92,17 +91,15 @@ public class RegisterDialog extends DialogFragment {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                listener.onCancel();
-            }
-        });
-        builder.setOnCancelListener(new OnCancelListener() {
-
-            @Override
-            public void onCancel(DialogInterface dialog) {
-                listener.onCancel();
+                dialog.cancel();
             }
         });
         return builder.create();
+    }
+
+    @Override
+    public void onCancel(DialogInterface dialog) {
+        listener.onCancel();
     }
 
     private void setListener(IRegisterActivity listener) {
