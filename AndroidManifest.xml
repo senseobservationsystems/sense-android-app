@@ -56,14 +56,14 @@
     <application
         android:icon="@drawable/ic_launcher_sense"
         android:label="@string/sense_app_name"
-        android:logo="@drawable/ic_logo_sense" >
+        android:logo="@drawable/ic_logo_sense"
+        android:theme="@style/Sense.Rings" >
 
         <!-- COMPONENTS OF SENSE PLATFORM FRONT-END -->
         <activity
             android:name="SenseApp"
             android:configChanges="orientation"
-            android:label="@string/sense_app_label"
-            android:theme="@style/Sense.Rings" >
+            android:label="@string/sense_app_label" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -78,10 +78,12 @@
         <activity
             android:name=".login.LoginActivity"
             android:configChanges="orientation"
+            android:label="@string/sense_app_label"
             android:theme="@style/Sense.Dialog" />
         <activity
             android:name=".register.RegisterActivity"
             android:configChanges="orientation"
+            android:label="@string/sense_app_label"
             android:theme="@style/Sense.Dialog" />
         <activity
             android:name="SenseSettings"
@@ -110,16 +112,14 @@
         <!-- COMPONENTS OF GENERIC SENSE PLATFORM -->
         <service
             android:name="nl.sense_os.service.SenseService"
-            android:exported="false"
-            android:process="nl.sense_os.service" >
+            android:exported="false" >
             <intent-filter>
                 <action android:name="nl.sense_os.platform.SenseService" />
             </intent-filter>
         </service>
         <service
             android:name="nl.sense_os.service.MsgHandler"
-            android:exported="false"
-            android:process="nl.sense_os.msgs" >
+            android:exported="false" >
             <intent-filter>
                 <action android:name="nl.sense_os.platform.MsgHandler.NEW_DATA" />
                 <action android:name="nl.sense_os.platform.MsgHandler.SEND_DATA" />
@@ -142,8 +142,7 @@
         </activity>
 
         <receiver
-            android:name="nl.sense_os.service.BootRx"
-            android:process="nl.sense_os.service.monitoring" >
+            android:name="nl.sense_os.service.BootRx" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
 
@@ -151,22 +150,19 @@
             </intent-filter>
         </receiver>
         <receiver
-            android:name="nl.sense_os.service.AliveChecker"
-            android:process="nl.sense_os.service.monitoring" >
+            android:name="nl.sense_os.service.AliveChecker" >
             <intent-filter>
                 <action android:name="nl.sense_os.platform.AliveCheck" />
             </intent-filter>
         </receiver>
         <receiver
-            android:name="nl.sense_os.service.NetworkMonitor"
-            android:process="nl.sense_os.service" >
+            android:name="nl.sense_os.service.NetworkMonitor" >
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
         </receiver>
         <receiver
-            android:name="nl.sense_os.service.DataTransmitter"
-            android:process="nl.sense_os.service.datatransmitter" >
+            android:name="nl.sense_os.service.DataTransmitter" >
             <intent-filter>
                 <action android:name="nl.sense_os.platform.DataTransmit" />
             </intent-filter>
