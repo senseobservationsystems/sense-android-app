@@ -20,10 +20,13 @@
     <string name="dialog_login_hint_username">Username</string>
     <string name="dialog_login_hint_pass">Password</string>
     <string name="dialog_reg_title">Enter new account details:</string>
+    <string name="dialog_reg_optional_header">Optional information:</string>
     <string name="dialog_reg_hint_username">Username</string>
     <string name="dialog_reg_hint_pass">Password</string>
     <string name="dialog_reg_hint_pass2">Retype password</string>
     <string name="dialog_reg_hint_email">Email</string>
+    <string name="dialog_reg_hint_address">Address (optional)</string>
+    <string name="dialog_reg_hint_zipcode">ZIP code (optional)</string>
     <string name="dialog_reg_hint_name">First name (optional)</string>
     <string name="dialog_reg_hint_surname">Last name (optional)</string>
     <string name="dialog_reg_hint_phone">Phone (optional)</string>
