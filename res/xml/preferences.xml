@@ -365,6 +365,7 @@
                     android:key="epimode"
                     android:summary="FOR HEALTH!"
                     android:title="Epi mode" />
+                <CheckBoxPreference android:key="location_feedback" android:summary="FOR PIM!" android:title="Location feedback" android:defaultValue="false"/>
             </PreferenceCategory>
         </PreferenceScreen>
     </PreferenceCategory>
