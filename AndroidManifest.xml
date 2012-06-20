@@ -48,7 +48,12 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-
+    
+    <!-- Permission to received pushed message -->
+   <permission android:name="nl.sense_os.app.permission.C2D_MESSAGE" android:protectionLevel="signature" />
+   <uses-permission android:name="nl.sense_os.app.permission.C2D_MESSAGE" />
+   <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+   	 
     <uses-sdk
         android:minSdkVersion="7"
         android:targetSdkVersion="11" />
@@ -132,6 +137,7 @@
             android:name="nl.sense_os.service.states.EpiStateMonitor"
             android:exported="false" />
 
+        <service android:name="nl.sense_os.service.push.C2DMReceiver"/>        
         <activity
             android:name="nl.sense_os.service.deviceprox.NfcScan"
             android:configChanges="orientation"
@@ -176,6 +182,21 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_provider_info" />
         </receiver>
+        
+        <receiver android:name="com.google.android.c2dm.C2DMBroadcastReceiver" android:permission="com.google.android.c2dm.permission.SEND">
+            <meta-data android:name="com.google.android.c2dm.implementation"
+                   android:value="nl.sense_os.service.push.C2DMReceiver"/>
+          <!-- Receive the actual message -->
+          <intent-filter>
+              <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+              <category android:name="nl.sense_os.app" />
+          </intent-filter>
+          <!-- Receive the registration id -->
+          <intent-filter>
+              <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
+              <category android:name="nl.sense_os.app" />
+          </intent-filter>
+      </receiver>
 
         <provider
             android:name="nl.sense_os.service.provider.SensorDataProvider"
