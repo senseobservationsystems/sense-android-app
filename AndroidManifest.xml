@@ -137,7 +137,7 @@
             android:name="nl.sense_os.service.states.EpiStateMonitor"
             android:exported="false" />
 
-        <service android:name="nl.sense_os.service.push.C2DMReceiver"/>        
+        <service android:name="nl.sense_os.service.push.GCMReceiver"/>        
         <activity
             android:name="nl.sense_os.service.deviceprox.NfcScan"
             android:configChanges="orientation"
@@ -183,19 +183,13 @@
                 android:resource="@xml/widget_provider_info" />
         </receiver>
         
-        <receiver android:name="com.google.android.c2dm.C2DMBroadcastReceiver" android:permission="com.google.android.c2dm.permission.SEND">
-            <meta-data android:name="com.google.android.c2dm.implementation"
-                   android:value="nl.sense_os.service.push.C2DMReceiver"/>
-          <!-- Receive the actual message -->
+        <receiver android:name="nl.sense_os.service.push.GCMBroadcastReceiver" android:permission="com.google.android.c2dm.permission.SEND">
+          <!-- Receive the message -->          
           <intent-filter>
               <action android:name="com.google.android.c2dm.intent.RECEIVE" />
-              <category android:name="nl.sense_os.app" />
-          </intent-filter>
-          <!-- Receive the registration id -->
-          <intent-filter>
               <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
               <category android:name="nl.sense_os.app" />
-          </intent-filter>
+          </intent-filter>          
       </receiver>
 
         <provider
