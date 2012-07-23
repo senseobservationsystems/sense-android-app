@@ -48,12 +48,15 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    
+
     <!-- Permission to received pushed message -->
-   <permission android:name="nl.sense_os.app.permission.C2D_MESSAGE" android:protectionLevel="signature" />
-   <uses-permission android:name="nl.sense_os.app.permission.C2D_MESSAGE" />
-   <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
-   	 
+    <permission
+        android:name="nl.sense_os.app.permission.C2D_MESSAGE"
+        android:protectionLevel="signature" />
+
+    <uses-permission android:name="nl.sense_os.app.permission.C2D_MESSAGE" />
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+
     <uses-sdk
         android:minSdkVersion="7"
         android:targetSdkVersion="11" />
@@ -136,12 +139,13 @@
         <service
             android:name="nl.sense_os.service.states.EpiStateMonitor"
             android:exported="false" />
+        <service android:name="nl.sense_os.service.push.GCMReceiver" />
 
-        <service android:name="nl.sense_os.service.push.GCMReceiver"/>        
         <activity
             android:name="nl.sense_os.service.deviceprox.NfcScan"
             android:configChanges="orientation"
-            android:theme="@style/Sense.Dialog" >
+            android:theme="@style/Sense.Dialog" 
+            android:exported="false" >
             <intent-filter>
                 <action android:name="android.nfc.action.TECH_DISCOVERED" />
             </intent-filter>
@@ -158,22 +162,27 @@
                 <category android:name="android.intent.category.HOME" />
             </intent-filter>
         </receiver>
-        <receiver android:name="nl.sense_os.service.AliveChecker" >
+        <receiver
+            android:name="nl.sense_os.service.AliveChecker"
+            android:exported="false" >
             <intent-filter>
                 <action android:name="nl.sense_os.platform.AliveCheck" />
             </intent-filter>
         </receiver>
-        <receiver android:name="nl.sense_os.service.NetworkMonitor" >
+        <receiver android:name="nl.sense_os.service.NetworkMonitor" 
+            android:exported="false" >
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
         </receiver>
-        <receiver android:name="nl.sense_os.service.DataTransmitter" >
+        <receiver android:name="nl.sense_os.service.DataTransmitter" 
+            android:exported="false" >
             <intent-filter>
                 <action android:name="nl.sense_os.platform.DataTransmit" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".appwidget.SenseWidgetProvider" >
+        <receiver android:name=".appwidget.SenseWidgetProvider" 
+            android:exported="false" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -182,15 +191,18 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_provider_info" />
         </receiver>
-        
-        <receiver android:name="nl.sense_os.service.push.GCMBroadcastReceiver" android:permission="com.google.android.c2dm.permission.SEND">
-          <!-- Receive the message -->          
-          <intent-filter>
-              <action android:name="com.google.android.c2dm.intent.RECEIVE" />
-              <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
-              <category android:name="nl.sense_os.app" />
-          </intent-filter>          
-      </receiver>
+        <receiver
+            android:name="nl.sense_os.service.push.GCMBroadcastReceiver"
+            android:permission="com.google.android.c2dm.permission.SEND" >
+
+            <!-- Receive the message -->
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+                <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
+
+                <category android:name="nl.sense_os.app" />
+            </intent-filter>
+        </receiver>
 
         <provider
             android:name="nl.sense_os.service.provider.SensorDataProvider"
