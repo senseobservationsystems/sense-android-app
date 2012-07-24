@@ -167,13 +167,13 @@ public class SenseApp extends FragmentActivity implements WelcomeActivity, Logou
 			// Log.v(TAG, "Not bound to Sense Platform service! Assume it's not running...");
 
 			// invoke callback method directly to update UI anyway.
-			runOnUiThread(new Runnable() {
-
-				@Override
-				public void run() {
-					updateUi(0);
-				}
-			});
+			// runOnUiThread(new Runnable() {
+			//
+			// @Override
+			// public void run() {
+			// updateUi(0);
+			// }
+			// });
 		}
 	}
 

@@ -144,8 +144,8 @@
         <activity
             android:name="nl.sense_os.service.deviceprox.NfcScan"
             android:configChanges="orientation"
-            android:theme="@style/Sense.Dialog" 
-            android:exported="false" >
+            android:exported="false"
+            android:theme="@style/Sense.Dialog" >
             <intent-filter>
                 <action android:name="android.nfc.action.TECH_DISCOVERED" />
             </intent-filter>
@@ -155,7 +155,9 @@
                 android:resource="@xml/nfc" />
         </activity>
 
-        <receiver android:name="nl.sense_os.service.BootRx" >
+        <receiver
+            android:name="nl.sense_os.service.BootRx"
+            android:exported="false" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
 
@@ -169,19 +171,22 @@
                 <action android:name="nl.sense_os.platform.AliveCheck" />
             </intent-filter>
         </receiver>
-        <receiver android:name="nl.sense_os.service.NetworkMonitor" 
+        <receiver
+            android:name="nl.sense_os.service.NetworkMonitor"
             android:exported="false" >
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
         </receiver>
-        <receiver android:name="nl.sense_os.service.DataTransmitter" 
+        <receiver
+            android:name="nl.sense_os.service.DataTransmitter"
             android:exported="false" >
             <intent-filter>
                 <action android:name="nl.sense_os.platform.DataTransmit" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".appwidget.SenseWidgetProvider" 
+        <receiver
+            android:name=".appwidget.SenseWidgetProvider"
             android:exported="false" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
