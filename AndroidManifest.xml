@@ -117,6 +117,18 @@
             </intent-filter>
         </service>
 
+        <receiver
+            android:name=".appwidget.SenseWidgetProvider"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_provider_info" />
+        </receiver>
+
         <!-- COMPONENTS OF GENERIC SENSE PLATFORM -->
         <service
             android:name="nl.sense_os.service.SenseService"
@@ -133,12 +145,8 @@
                 <action android:name="nl.sense_os.platform.MsgHandler.SEND_DATA" />
             </intent-filter>
         </service>
-        <service
-            android:name="nl.sense_os.service.commonsense.DefaultSensorRegistrationService"
-            android:exported="false" />
-        <service
-            android:name="nl.sense_os.service.states.EpiStateMonitor"
-            android:exported="false" />
+        <service android:name="nl.sense_os.service.commonsense.DefaultSensorRegistrationService" />
+        <service android:name="nl.sense_os.service.states.EpiStateMonitor" />
         <service android:name="nl.sense_os.service.push.GCMReceiver" />
 
         <activity
@@ -184,17 +192,6 @@
             <intent-filter>
                 <action android:name="nl.sense_os.platform.DataTransmit" />
             </intent-filter>
-        </receiver>
-        <receiver
-            android:name=".appwidget.SenseWidgetProvider"
-            android:exported="false" >
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_provider_info" />
         </receiver>
         <receiver
             android:name="nl.sense_os.service.push.GCMBroadcastReceiver"
