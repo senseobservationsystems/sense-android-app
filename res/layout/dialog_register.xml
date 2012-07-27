@@ -1,60 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent">
+    android:layout_height="fill_parent" >
+
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+
         <EditText
-            android:layout_height="wrap_content"
-            android:layout_width="fill_parent"
             android:id="@+id/reg_username"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
             android:hint="@string/dialog_reg_hint_username"
             android:imeOptions="actionNext"
             android:inputType="textEmailAddress" />
+
         <EditText
-            android:layout_height="wrap_content"
-            android:layout_width="fill_parent"
-            android:inputType="textPassword"
             android:id="@+id/reg_pass1"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
             android:hint="@string/dialog_reg_hint_pass"
-            android:imeOptions="actionNext" />
+            android:imeOptions="actionNext"
+            android:inputType="textPassword" />
+
         <EditText
-            android:layout_height="wrap_content"
-            android:layout_width="fill_parent"
-            android:inputType="textPassword"
             android:id="@+id/reg_pass2"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
             android:hint="@string/dialog_reg_hint_pass2"
-            android:imeOptions="actionNext" />
+            android:imeOptions="actionNext"
+            android:inputType="textPassword" />
+
         <EditText
-            android:layout_height="wrap_content"
-            android:layout_width="fill_parent"
-            android:inputType="textEmailAddress"
             android:id="@+id/reg_email"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
             android:hint="@string/dialog_reg_hint_email"
-            android:imeOptions="actionNext" />
-        <EditText
-            android:layout_height="wrap_content"
+            android:imeOptions="actionNext"
+            android:inputType="textEmailAddress" />
+
+        <TextView
+            android:id="@+id/header_main"
             android:layout_width="fill_parent"
-            android:inputType="textPersonName"
+            android:layout_height="wrap_content"
+            android:background="@android:color/darker_gray"
+            android:paddingLeft="2dp"
+            android:text="@string/dialog_reg_optional_header"
+            android:textColor="@android:color/background_light"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/reg_address"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/dialog_reg_hint_address"
+            android:imeOptions="actionNext"
+            android:inputType="textPostalAddress" />
+
+        <EditText
+            android:id="@+id/reg_zipcode"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/dialog_reg_hint_zipcode"
+            android:imeOptions="actionNext"
+            android:inputType="textPostalAddress" />
+
+        <Spinner
+            android:id="@+id/reg_country"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:entries="@array/countries" />
+
+        <EditText
             android:id="@+id/reg_name"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
             android:hint="@string/dialog_reg_hint_name"
-            android:imeOptions="actionNext" />
+            android:imeOptions="actionNext"
+            android:inputType="textPersonName" />
+
         <EditText
-            android:layout_height="wrap_content"
-            android:layout_width="fill_parent"
-            android:inputType="textPersonName"
             android:id="@+id/reg_surname"
-            android:hint="@string/dialog_reg_hint_surname"
-            android:imeOptions="actionNext" />
-        <EditText
-            android:layout_height="wrap_content"
             android:layout_width="fill_parent"
-            android:inputType="phone"
+            android:layout_height="wrap_content"
+            android:hint="@string/dialog_reg_hint_surname"
+            android:imeOptions="actionNext"
+            android:inputType="textPersonName" />
+
+        <EditText
             android:id="@+id/reg_phone"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
             android:hint="@string/dialog_reg_hint_phone"
-            android:imeOptions="actionGo" />
+            android:imeOptions="actionGo"
+            android:inputType="phone" />
     </LinearLayout>
+
 </ScrollView>

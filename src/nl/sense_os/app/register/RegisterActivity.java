@@ -23,67 +23,67 @@ public class RegisterActivity extends FragmentActivity implements IRegisterActiv
 
     private class SenseCallback extends ISenseServiceCallback.Stub {
 
-        @Override
-        public void onChangeLoginResult(int result) throws RemoteException {
-            // not used
-        }
+	@Override
+	public void onChangeLoginResult(int result) throws RemoteException {
+	    // not used
+	}
 
-        @Override
-        public void onRegisterResult(int result) throws RemoteException {
-            Log.d(TAG, "Registration result: " + result);
+	@Override
+	public void onRegisterResult(int result) throws RemoteException {
+	    Log.d(TAG, "Registration result: " + result);
 
-            if (null != waitDialog) {
-                try {
-                    waitDialog.dismiss();
-                } catch (final IllegalArgumentException e) {
-                    // do nothing
-                }
-            }
+	    if (null != waitDialog) {
+		try {
+		    waitDialog.dismiss();
+		} catch (final IllegalArgumentException e) {
+		    // do nothing
+		}
+	    }
 
-            if (result == -2) {
-                showToast(getString(R.string.toast_reg_conflict), Toast.LENGTH_LONG);
-                runOnUiThread(new Runnable() {
+	    if (result == -2) {
+		showToast(getString(R.string.toast_reg_conflict), Toast.LENGTH_LONG);
+		runOnUiThread(new Runnable() {
 
-                    @Override
-                    public void run() {
-                        showRegisterDialog();
-                    }
-                });
-            } else if (result == -1) {
-                showToast(getString(R.string.toast_reg_fail), Toast.LENGTH_LONG);
-                runOnUiThread(new Runnable() {
+		    @Override
+		    public void run() {
+			showRegisterDialog();
+		    }
+		});
+	    } else if (result == -1) {
+		showToast(getString(R.string.toast_reg_fail), Toast.LENGTH_LONG);
+		runOnUiThread(new Runnable() {
 
-                    @Override
-                    public void run() {
-                        showRegisterDialog();
-                    }
-                });
-            } else {
-                showToast(getString(R.string.toast_reg_ok), Toast.LENGTH_LONG);
+		    @Override
+		    public void run() {
+			showRegisterDialog();
+		    }
+		});
+	    } else {
+		showToast(getString(R.string.toast_reg_ok), Toast.LENGTH_LONG);
 
-                onRegisterSuccess();
-            }
-        }
+		onRegisterSuccess();
+	    }
+	}
 
-        @Override
-        public void statusReport(int status) throws RemoteException {
-            // not used
-        }
+	@Override
+	public void statusReport(int status) throws RemoteException {
+	    // not used
+	}
     }
 
     private class SenseServiceConn implements ServiceConnection {
 
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder binder) {
-            service = ISenseService.Stub.asInterface(binder);
-        }
+	@Override
+	public void onServiceConnected(ComponentName name, IBinder binder) {
+	    service = ISenseService.Stub.asInterface(binder);
+	}
 
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            /* this is not called when the service is stopped, only when it is suddenly killed! */
-            service = null;
-            isServiceBound = false;
-        }
+	@Override
+	public void onServiceDisconnected(ComponentName name) {
+	    /* this is not called when the service is stopped, only when it is suddenly killed! */
+	    service = null;
+	    isServiceBound = false;
+	}
     };
 
     private static final String TAG = "RegisterActivity";
@@ -99,122 +99,124 @@ public class RegisterActivity extends FragmentActivity implements IRegisterActiv
      */
     private void bindToSenseService() {
 
-        // start the service if it was not running already
-        if (!isServiceBound) {
-            // Log.v(TAG, "Try to bind to Sense Platform service");
-            final Intent serviceIntent = new Intent(getString(R.string.action_sense_service));
-            isServiceBound = bindService(serviceIntent, serviceConn, BIND_AUTO_CREATE);
-        } else {
-            // already bound
-        }
+	// start the service if it was not running already
+	if (!isServiceBound) {
+	    // Log.v(TAG, "Try to bind to Sense Platform service");
+	    final Intent serviceIntent = new Intent(getString(R.string.action_sense_service));
+	    isServiceBound = bindService(serviceIntent, serviceConn, BIND_AUTO_CREATE);
+	} else {
+	    // already bound
+	}
     }
 
     @Override
     public void onCancel() {
-        finish();
+	finish();
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+	super.onCreate(savedInstanceState);
 
-        setResult(RESULT_CANCELED);
+	setResult(RESULT_CANCELED);
 
-        showRegisterDialog();
+	showRegisterDialog();
     }
 
     private void onNoPassMatch() {
-        showToast(getString(R.string.toast_reg_pass), Toast.LENGTH_LONG);
-        showRegisterDialog();
+	showToast(getString(R.string.toast_reg_pass), Toast.LENGTH_LONG);
+	showRegisterDialog();
     }
 
     private void onRegisterSuccess() {
-        try {
-            service.toggleMain(true);
+	try {
+	    service.toggleMain(true);
 
-            // check if this is the very first login
-            final SharedPreferences appPrefs = PreferenceManager
-                    .getDefaultSharedPreferences(RegisterActivity.this);
-            if (appPrefs.getBoolean(SenseSettings.PREF_FIRST_LOGIN, true)) {
-                final Editor editor = appPrefs.edit();
-                editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
-                editor.commit();
+	    // check if this is the very first login
+	    final SharedPreferences appPrefs = PreferenceManager
+		    .getDefaultSharedPreferences(RegisterActivity.this);
+	    if (appPrefs.getBoolean(SenseSettings.PREF_FIRST_LOGIN, true)) {
+		final Editor editor = appPrefs.edit();
+		editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
+		editor.commit();
 
-                service.togglePhoneState(true);
-            }
-        } catch (RemoteException e) {
-            Log.e(TAG, "Failed to start service after login: '" + e + "'");
-        }
+		service.togglePhoneState(true);
+	    }
+	} catch (RemoteException e) {
+	    Log.e(TAG, "Failed to start service after login: '" + e + "'");
+	}
 
-        setResult(RESULT_OK);
-        finish();
+	setResult(RESULT_OK);
+	finish();
     }
 
     @Override
     protected void onStart() {
-        // Log.v(TAG, "onStart");
-        super.onStart();
-        bindToSenseService();
+	// Log.v(TAG, "onStart");
+	super.onStart();
+	bindToSenseService();
     }
 
     @Override
     protected void onStop() {
-        // Log.v(TAG, "onStop");
-        unbindFromSenseService();
-        super.onStop();
+	// Log.v(TAG, "onStop");
+	unbindFromSenseService();
+	super.onStop();
     }
 
     @Override
-    public void onSubmit(String username, String password, String password2, String name,
-            String surname, String email, String phone) {
-        if ((username != null) && (username.length() > 0) && (password != null)
-                && (password.length() > 0) && (email != null) && (email.length() > 0)) {
-            if (password.equals(password2)) {
-                submit(username, password, name, surname, email, phone);
-                showWaitDialog();
+    public void onSubmit(String username, String password, String password2, String email,
+	    String address, String zipCode, String country, String name, String surname,
+	    String phone) {
+	if ((username != null) && (username.length() > 0) && (password != null)
+		&& (password.length() > 0) && (email != null) && (email.length() > 0)) {
+	    if (password.equals(password2)) {
+		submit(username, password, email, address, zipCode, country, name, surname, phone);
+		showWaitDialog();
 
-            } else {
-                onNoPassMatch();
-            }
+	    } else {
+		onNoPassMatch();
+	    }
 
-        } else {
-            onWrongInput();
-        }
+	} else {
+	    onWrongInput();
+	}
     }
 
     private void onWrongInput() {
-        showToast(getString(R.string.toast_missing_fields), Toast.LENGTH_LONG);
-        showRegisterDialog();
+	showToast(getString(R.string.toast_missing_fields), Toast.LENGTH_LONG);
+	showRegisterDialog();
     }
 
     private void showRegisterDialog() {
-        RegisterDialog dialog = RegisterDialog.newInstance(this);
-        dialog.show(getSupportFragmentManager(), "register");
+	RegisterDialog dialog = RegisterDialog.newInstance(this);
+	dialog.show(getSupportFragmentManager(), "register");
     }
 
     private void showToast(final CharSequence text, final int duration) {
-        runOnUiThread(new Runnable() {
+	runOnUiThread(new Runnable() {
 
-            @Override
-            public void run() {
-                Toast.makeText(RegisterActivity.this, text, duration).show();
-            }
-        });
+	    @Override
+	    public void run() {
+		Toast.makeText(RegisterActivity.this, text, duration).show();
+	    }
+	});
     }
 
     private void showWaitDialog() {
-        waitDialog = WaitDialog.newInstance(R.string.dialog_progress_reg_msg);
-        waitDialog.show(getSupportFragmentManager(), "wait");
+	waitDialog = WaitDialog.newInstance(R.string.dialog_progress_reg_msg);
+	waitDialog.show(getSupportFragmentManager(), "wait");
     }
 
-    private void submit(String username, String password, String name, String surname,
-            String email, String phone) {
-        try {
-            service.register(username, password, name, surname, email, phone, callback);
-        } catch (RemoteException e) {
-            Log.e(TAG, "Failed to call register: '" + e + "'");
-            finish();
-        }
+    private void submit(String username, String password, String email, String address,
+	    String zipCode, String country, String name, String surname, String phone) {
+	try {
+	    service.register(username, password, email, address, zipCode, country, name, surname,
+		    phone, callback);
+	} catch (RemoteException e) {
+	    Log.e(TAG, "Failed to call register: '" + e + "'");
+	    finish();
+	}
     }
 
     /**
@@ -222,13 +224,13 @@ public class RegisterActivity extends FragmentActivity implements IRegisterActiv
      */
     private void unbindFromSenseService() {
 
-        if ((true == isServiceBound) && (null != serviceConn)) {
-            // Log.v(TAG, "Unbind from Sense Platform service");
-            unbindService(serviceConn);
-        } else {
-            // already unbound
-        }
-        service = null;
-        isServiceBound = false;
+	if ((true == isServiceBound) && (null != serviceConn)) {
+	    // Log.v(TAG, "Unbind from Sense Platform service");
+	    unbindService(serviceConn);
+	} else {
+	    // already unbound
+	}
+	service = null;
+	isServiceBound = false;
     }
 }
