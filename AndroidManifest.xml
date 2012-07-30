@@ -148,6 +148,7 @@
         <service android:name="nl.sense_os.service.commonsense.DefaultSensorRegistrationService" />
         <service android:name="nl.sense_os.service.states.EpiStateMonitor" />
         <service android:name="nl.sense_os.service.push.GCMReceiver" />
+        <service android:name="nl.sense_os.service.configuration.ConfigurationService" />
 
         <activity
             android:name="nl.sense_os.service.deviceprox.NfcScan"
@@ -160,7 +161,7 @@
 
             <meta-data
                 android:name="android.nfc.action.TECH_DISCOVERED"
-                android:resource="@xml/nfc" />
+                android:resource="@xml/nfc"  />
         </activity>
 
         <receiver
@@ -203,6 +204,12 @@
                 <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
 
                 <category android:name="nl.sense_os.app" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name="nl.sense_os.service.configuration.RequirementReceiver" 
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="nl.sense_os.service.push.got_requirement" />
             </intent-filter>
         </receiver>
 

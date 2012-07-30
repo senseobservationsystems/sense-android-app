@@ -21,6 +21,7 @@ import nl.sense_os.service.constants.SensePrefs.Main.External.ZephyrBioHarness;
 import nl.sense_os.service.constants.SensePrefs.Main.External.ZephyrHxM;
 import nl.sense_os.service.constants.SensePrefs.Main.Location;
 import nl.sense_os.service.constants.SensePrefs.Main.Motion;
+import nl.sense_os.service.constants.SensePrefs.Main.PhoneState;
 import nl.sense_os.service.constants.SensePrefs.Main.Quiz;
 import nl.sense_os.service.constants.SensePrefs.Status;
 import android.annotation.TargetApi;
@@ -247,6 +248,17 @@ public class SenseSettings extends PreferenceActivity {
 			editor.putString(SensePrefs.Main.SYNC_RATE,
 					service.getPrefString(SensePrefs.Main.SYNC_RATE, "0"));
 			editor.putBoolean(Status.AUTOSTART, service.getPrefBool(Status.AUTOSTART, false));
+			
+			// phone state preferences
+			editor.putBoolean(PhoneState.BATTERY, service.getPrefBool(PhoneState.BATTERY, true));
+			editor.putBoolean(PhoneState.CALL_STATE, service.getPrefBool(PhoneState.CALL_STATE, true));
+			editor.putBoolean(PhoneState.SCREEN_ACTIVITY, service.getPrefBool(PhoneState.SCREEN_ACTIVITY, true));
+			editor.putBoolean(PhoneState.PROXIMITY, service.getPrefBool(PhoneState.PROXIMITY, true));
+			editor.putBoolean(PhoneState.DATA_CONNECTION, service.getPrefBool(PhoneState.DATA_CONNECTION, true));
+			editor.putBoolean(PhoneState.SERVICE_STATE, service.getPrefBool(PhoneState.SERVICE_STATE, true));
+			editor.putBoolean(PhoneState.SIGNAL_STRENGTH, service.getPrefBool(PhoneState.SIGNAL_STRENGTH, true));
+			editor.putBoolean(PhoneState.IP_ADDRESS, service.getPrefBool(PhoneState.IP_ADDRESS, true));
+			editor.putBoolean(PhoneState.UNREAD_MSG, service.getPrefBool(PhoneState.UNREAD_MSG, true));
 
 			// location preferences
 			editor.putBoolean(Location.GPS, service.getPrefBool(Location.GPS, true));
@@ -257,6 +269,8 @@ public class SenseSettings extends PreferenceActivity {
 			editor.putBoolean(Ambience.LIGHT, service.getPrefBool(Ambience.LIGHT, true));
 			editor.putBoolean(Ambience.MIC, service.getPrefBool(Ambience.MIC, true));
 			editor.putBoolean(Ambience.PRESSURE, service.getPrefBool(Ambience.PRESSURE, true));
+			editor.putBoolean(Ambience.CAMERA_LIGHT, service.getPrefBool(Ambience.CAMERA_LIGHT, true));
+			editor.putBoolean(Ambience.AUDIO_SPECTRUM, service.getPrefBool(Ambience.AUDIO_SPECTRUM, true));
 
 			// motion preferences
 			editor.putBoolean(Motion.FALL_DETECT, service.getPrefBool(Motion.FALL_DETECT, false));
