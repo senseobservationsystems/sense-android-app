@@ -207,8 +207,8 @@
                 <CheckBoxPreference
                     android:defaultValue="True"
                     android:key="proximity_nfc"
-                    android:summary="Use NFC to find neighboring devices"
-                    android:title="NFC" />
+                    android:summary="Scan NFC tags (cannot be disabled)"
+                    android:title="NFC" android:enabled="false"/>
             </PreferenceCategory>
         </PreferenceScreen>
         <PreferenceScreen
@@ -328,35 +328,6 @@
                 android:summary="Tanita BC-590BT settings"
                 android:title="Body Composition settings" />
         </PreferenceScreen>
-        <PreferenceScreen
-            android:enabled="false"
-            android:key="popquiz_screen"
-            android:summary="Periodic questionnare settings"
-            android:title="Questionnaire" >
-            <PreferenceCategory android:title="Main settings" >
-                <ListPreference
-                    android:defaultValue="0"
-                    android:dialogTitle="Popup rate"
-                    android:entries="@array/pref_popquiz_rate_keys"
-                    android:entryValues="@array/pref_popquiz_rate_vals"
-                    android:key="popquiz_rate"
-                    android:negativeButtonText="@android:string/cancel"
-                    android:positiveButtonText="@android:string/ok"
-                    android:summary="Amount of popup questions"
-                    android:title="Popup interval" />
-
-                <Preference
-                    android:key="popquiz_sync"
-                    android:summary="Gets new questions from CommonSense"
-                    android:title="Refresh content" />
-
-                <CheckBoxPreference
-                    android:defaultValue="false"
-                    android:key="popquiz_silent_mode"
-                    android:summary="Turns off the alerts"
-                    android:title="Silent mode" />
-            </PreferenceCategory>
-        </PreferenceScreen>
     </PreferenceCategory>
     <PreferenceCategory
         android:key="advanced_category"
@@ -394,6 +365,7 @@
                     android:key="epimode"
                     android:summary="FOR HEALTH!"
                     android:title="Epi mode" />
+                <CheckBoxPreference android:key="location_feedback" android:summary="FOR PIM!" android:title="Location feedback" android:defaultValue="false"/>
             </PreferenceCategory>
         </PreferenceScreen>
     </PreferenceCategory>
