@@ -153,7 +153,6 @@
         <activity
             android:name="nl.sense_os.service.deviceprox.NfcScan"
             android:configChanges="orientation"
-            android:exported="false"
             android:theme="@style/Sense.Dialog" >
             <intent-filter>
                 <action android:name="android.nfc.action.TECH_DISCOVERED" />
