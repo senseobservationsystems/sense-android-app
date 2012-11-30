@@ -151,6 +151,7 @@
                     android:key="ambience_pressure"
                     android:summary="Barometric pressure (if available)"
                     android:title="Pressure" />
+                <CheckBoxPreference android:title="Magnetic Field" android:key="magnetic_field" android:summary="Ambient magnetic field in micro-Tesla (uT) for 3-axis" android:defaultValue="true"/>
             </PreferenceCategory>
         </PreferenceScreen>
         <PreferenceScreen
