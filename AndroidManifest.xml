@@ -161,7 +161,7 @@
 
             <meta-data
                 android:name="android.nfc.action.TECH_DISCOVERED"
-                android:resource="@xml/nfc"  />
+                android:resource="@xml/nfc" />
         </activity>
 
         <receiver
