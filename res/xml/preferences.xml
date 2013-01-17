@@ -151,7 +151,11 @@
                     android:key="ambience_pressure"
                     android:summary="Barometric pressure (if available)"
                     android:title="Pressure" />
-                <CheckBoxPreference android:title="Magnetic Field" android:key="magnetic_field" android:summary="Ambient magnetic field in micro-Tesla (uT) for 3-axis" android:defaultValue="true"/>
+                <CheckBoxPreference
+                    android:defaultValue="true"
+                    android:key="ambience_magnetic_field"
+                    android:summary="Ambient magnetic field in micro-Tesla (uT) for 3-axis"
+                    android:title="Magnetic field" />
             </PreferenceCategory>
         </PreferenceScreen>
         <PreferenceScreen
@@ -207,9 +211,10 @@
                     android:title="Wi-Fi" />
                 <CheckBoxPreference
                     android:defaultValue="True"
+                    android:enabled="false"
                     android:key="proximity_nfc"
                     android:summary="Scan NFC tags (cannot be disabled)"
-                    android:title="NFC" android:enabled="false"/>
+                    android:title="NFC" />
             </PreferenceCategory>
         </PreferenceScreen>
         <PreferenceScreen
@@ -366,7 +371,11 @@
                     android:key="epimode"
                     android:summary="FOR HEALTH!"
                     android:title="Epi mode" />
-                <CheckBoxPreference android:key="location_feedback" android:summary="FOR PIM!" android:title="Location feedback" android:defaultValue="false"/>
+                <CheckBoxPreference
+                    android:defaultValue="false"
+                    android:key="location_feedback"
+                    android:summary="FOR PIM!"
+                    android:title="Location feedback" />
             </PreferenceCategory>
         </PreferenceScreen>
     </PreferenceCategory>
