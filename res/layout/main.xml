@@ -13,12 +13,12 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:background="#e0e0e0"
-        android:drawableLeft="@drawable/ic_logo_sense"
+        android:drawableLeft="@drawable/ic_launcher"
         android:drawablePadding="6dp"
         android:gravity="center_vertical"
         android:padding="6dp"
         android:paddingLeft="8dp"
-        android:text="@string/sense_service_station"
+        android:text="@string/sense_app_label"
         android:textAppearance="?android:attr/textAppearanceMedium"/>
 
     <!-- Header for "Main switch" section -->
