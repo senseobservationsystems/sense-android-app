@@ -31,7 +31,6 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.support.v4.app.FragmentActivity;
-import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -126,9 +125,6 @@ public class SenseApp extends FragmentActivity implements WelcomeActivity, Logou
                 if (lastLogin == -1) {
                     // sense has never been logged in
                     showWelcomeDialog();
-                } else {
-                    CharSequence loginDate = DateFormat.format("dd/MM/yyyy kk:mm", lastLogin);
-                    Log.v(TAG, "Last succesful login: " + loginDate);
                 }
             } catch (final RemoteException e) {
                 Log.e(TAG, "Error checking service status after binding. ", e);
