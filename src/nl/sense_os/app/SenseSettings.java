@@ -271,6 +271,7 @@ public class SenseSettings extends PreferenceActivity {
 			editor.putBoolean(Ambience.PRESSURE, service.getPrefBool(Ambience.PRESSURE, true));
 			editor.putBoolean(Ambience.CAMERA_LIGHT, service.getPrefBool(Ambience.CAMERA_LIGHT, true));
 			editor.putBoolean(Ambience.AUDIO_SPECTRUM, service.getPrefBool(Ambience.AUDIO_SPECTRUM, true));
+			editor.putBoolean(Ambience.MAGNETIC_FIELD, service.getPrefBool(Ambience.MAGNETIC_FIELD, true));
 
 			// motion preferences
 			editor.putBoolean(Motion.FALL_DETECT, service.getPrefBool(Motion.FALL_DETECT, false));

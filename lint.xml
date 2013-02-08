@@ -1,3 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <lint>
+    <issue id="ExportedContentProvider" severity="ignore" />
+    <issue id="MissingRegistered" severity="ignore" />
+    <issue id="UnusedResources" severity="ignore" />
 </lint>
