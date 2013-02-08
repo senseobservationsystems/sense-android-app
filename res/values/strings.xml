@@ -9,7 +9,6 @@
     <string name="button_login">Sign in</string>
     <string name="button_logout">Sign out</string>
     <string name="button_reg">Register</string>
-    <string name="sense_service_station">Sense Service Station</string>
 
     <!-- miscellaneous text resources for dialogs -->
     <string name="dialog_dev_mode_title">Development mode</string>
