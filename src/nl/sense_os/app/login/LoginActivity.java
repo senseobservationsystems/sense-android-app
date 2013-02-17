@@ -4,8 +4,9 @@ import nl.sense_os.app.R;
 import nl.sense_os.app.SenseSettings;
 import nl.sense_os.app.dialogs.WaitDialog;
 import nl.sense_os.app.login.LoginDialog.ILoginActivity;
-import nl.sense_os.service.ISenseService;
 import nl.sense_os.service.ISenseServiceCallback;
+import nl.sense_os.service.SenseService.SenseBinder;
+import nl.sense_os.service.SenseServiceStub;
 import nl.sense_os.service.commonsense.SenseApi;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -78,7 +79,7 @@ public class LoginActivity extends FragmentActivity implements ILoginActivity {
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder binder) {
-            service = ISenseService.Stub.asInterface(binder);
+            service = ((SenseBinder) binder).getService();
         }
 
         @Override
@@ -93,7 +94,7 @@ public class LoginActivity extends FragmentActivity implements ILoginActivity {
 
     private final ISenseServiceCallback callback = new SenseCallback();
     private boolean isServiceBound;
-    private ISenseService service;
+    private SenseServiceStub service;
     private final ServiceConnection serviceConn = new SenseServiceConn();
 
     private WaitDialog waitDialog;
@@ -129,21 +130,17 @@ public class LoginActivity extends FragmentActivity implements ILoginActivity {
     }
 
     private void onLoginSuccess() {
-        try {
-            service.toggleMain(true);
+        service.toggleMain(true);
 
-            // check if this is the very first login
-            final SharedPreferences appPrefs = PreferenceManager
-                    .getDefaultSharedPreferences(LoginActivity.this);
-            if (appPrefs.getBoolean(SenseSettings.PREF_FIRST_LOGIN, true)) {
-                final Editor editor = appPrefs.edit();
-                editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
-                editor.commit();
+        // check if this is the very first login
+        final SharedPreferences appPrefs = PreferenceManager
+                .getDefaultSharedPreferences(LoginActivity.this);
+        if (appPrefs.getBoolean(SenseSettings.PREF_FIRST_LOGIN, true)) {
+            final Editor editor = appPrefs.edit();
+            editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
+            editor.commit();
 
-                service.togglePhoneState(true);
-            }
-        } catch (RemoteException e) {
-            Log.e(TAG, "Failed to start service after login: '" + e + "'");
+            service.togglePhoneState(true);
         }
 
         setResult(RESULT_OK);

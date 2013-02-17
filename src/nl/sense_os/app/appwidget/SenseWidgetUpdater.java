@@ -1,8 +1,9 @@
 package nl.sense_os.app.appwidget;
 
 import nl.sense_os.app.R;
-import nl.sense_os.service.ISenseService;
 import nl.sense_os.service.ISenseServiceCallback;
+import nl.sense_os.service.SenseService.SenseBinder;
+import nl.sense_os.service.SenseServiceStub;
 import nl.sense_os.service.constants.SensePrefs.Main;
 import nl.sense_os.service.constants.SenseStatusCodes;
 import android.app.IntentService;
@@ -48,7 +49,7 @@ public class SenseWidgetUpdater extends IntentService {
         @Override
         public void onServiceConnected(ComponentName className, IBinder binder) {
             // Log.v(TAG, "Bound to Sense Platform service...");
-            service = ISenseService.Stub.asInterface(binder);
+            service = ((SenseBinder) binder).getService();
         }
 
         @Override
@@ -65,7 +66,7 @@ public class SenseWidgetUpdater extends IntentService {
     private final ISenseServiceCallback callback = new SenseCallback();
 
     private boolean isBoundOrBinding;
-    private ISenseService service;
+    private SenseServiceStub service;
     private final ServiceConnection serviceConn = new SenseServiceConn();
 
     public SenseWidgetUpdater() {
@@ -177,12 +178,8 @@ public class SenseWidgetUpdater extends IntentService {
 
         // Log.d(TAG, "Set ambience: " + active);
         if (null != service) {
-            try {
-                // request status report
-                service.toggleAmbience(active);
-            } catch (final RemoteException e) {
-                Log.e(TAG, "Error setting ambience sensor status. ", e);
-            }
+            // request status report
+            service.toggleAmbience(active);
         } else {
             Log.w(TAG, "Cannot set ambience sensor status! Failed to bind to Sense service!");
         }
@@ -203,12 +200,8 @@ public class SenseWidgetUpdater extends IntentService {
 
         // Log.d(TAG, "Set devices: " + active);
         if (null != service) {
-            try {
-                // request status report
-                service.toggleDeviceProx(active);
-            } catch (final RemoteException e) {
-                Log.e(TAG, "Error setting device proximity sensor status. ", e);
-            }
+            // request status report
+            service.toggleDeviceProx(active);
         } else {
             Log.w(TAG,
                     "Cannot set device proximity sensor status! Failed to bind to Sense service!");
@@ -230,12 +223,8 @@ public class SenseWidgetUpdater extends IntentService {
 
         // Log.d(TAG, "Set location: " + active);
         if (null != service) {
-            try {
-                // request status report
-                service.toggleLocation(active);
-            } catch (final RemoteException e) {
-                Log.e(TAG, "Error setting location sensor status. ", e);
-            }
+            // request status report
+            service.toggleLocation(active);
         } else {
             Log.w(TAG, "Cannot set location sensor status! Failed to bind to Sense service!");
         }
@@ -256,12 +245,8 @@ public class SenseWidgetUpdater extends IntentService {
 
         // Log.d(TAG, "Set motion: " + active);
         if (null != service) {
-            try {
-                // request status report
-                service.toggleMotion(active);
-            } catch (final RemoteException e) {
-                Log.e(TAG, "Error setting motion sensor status. ", e);
-            }
+            // request status report
+            service.toggleMotion(active);
         } else {
             Log.w(TAG, "Cannot set motion sensor status! Failed to bind to Sense service!");
         }
@@ -282,12 +267,8 @@ public class SenseWidgetUpdater extends IntentService {
 
         // Log.d(TAG, "Set phone state: " + active);
         if (null != service) {
-            try {
-                // request status report
-                service.togglePhoneState(active);
-            } catch (final RemoteException e) {
-                Log.e(TAG, "Error setting phone state sensor status. ", e);
-            }
+            // request status report
+            service.togglePhoneState(active);
         } else {
             Log.w(TAG, "Cannot set phone state sensor status! Failed to bind to Sense service!");
         }
