@@ -8,7 +8,8 @@ package nl.sense_os.app;
 
 import nl.sense_os.app.login.LoginActivity;
 import nl.sense_os.app.register.RegisterActivity;
-import nl.sense_os.service.ISenseService;
+import nl.sense_os.service.SenseService.SenseBinder;
+import nl.sense_os.service.SenseServiceStub;
 import nl.sense_os.service.constants.SensePrefs;
 import nl.sense_os.service.constants.SensePrefs.Auth;
 import nl.sense_os.service.constants.SensePrefs.Main.Advanced;
@@ -132,13 +133,13 @@ public class SenseSettings extends PreferenceActivity {
 
 	private PrefSyncListener changeListener = new PrefSyncListener();
 	private boolean isServiceBound;
-	private ISenseService service;
+    private SenseServiceStub service;
 	private final ServiceConnection serviceConn = new ServiceConnection() {
 
 		@Override
 		public void onServiceConnected(ComponentName className, IBinder binder) {
 			// Log.v(TAG, "Bound to Sense Platform service...");
-			service = ISenseService.Stub.asInterface(binder);
+            service = ((SenseBinder) binder).getService();
 			isServiceBound = true;
 			loadPreferences();
 			showSummaries();
@@ -341,16 +342,12 @@ public class SenseSettings extends PreferenceActivity {
 		prefs.registerOnSharedPreferenceChangeListener(changeListener);
 	}
 
-	private void logout() {
-		try {
-			service.logout();
-			service.toggleMain(false);
-		} catch (RemoteException e) {
-			Log.e(TAG, "failed to log out: " + e);
-		}
+    private void logout() {
+        service.logout();
+        service.toggleMain(false);
 
-		showSummaries();
-	}
+        showSummaries();
+    }
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
