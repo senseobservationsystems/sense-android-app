@@ -13,9 +13,10 @@ import nl.sense_os.app.dialogs.WelcomeDialog;
 import nl.sense_os.app.dialogs.WelcomeDialog.WelcomeActivity;
 import nl.sense_os.app.login.LoginActivity;
 import nl.sense_os.app.register.RegisterActivity;
-import nl.sense_os.service.ISenseService;
 import nl.sense_os.service.ISenseServiceCallback;
 import nl.sense_os.service.SenseService;
+import nl.sense_os.service.SenseService.SenseBinder;
+import nl.sense_os.service.SenseServiceStub;
 import nl.sense_os.service.constants.SensePrefs;
 import nl.sense_os.service.constants.SensePrefs.Auth;
 import nl.sense_os.service.constants.SensePrefs.Status;
@@ -53,14 +54,9 @@ public class SenseApp extends FragmentActivity implements WelcomeActivity, Logou
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            try {
-                service.logout();
-                service.toggleMain(false);
-                return true;
-            } catch (RemoteException e) {
-                Log.e(TAG, "Failed to log out!", e);
-                return false;
-            }
+            service.logout();
+            service.toggleMain(false);
+            return true;
         }
 
         @Override
@@ -118,7 +114,7 @@ public class SenseApp extends FragmentActivity implements WelcomeActivity, Logou
         public void onServiceConnected(ComponentName className, IBinder binder) {
             // Log.v(TAG, "Bound to Sense Platform service...");
 
-            service = ISenseService.Stub.asInterface(binder);
+            service = ((SenseBinder) binder).getService();
             try {
                 service.getStatus(callback);
                 long lastLogin = service.getPrefLong(SensePrefs.Main.LAST_LOGGED_IN, -1);
@@ -171,13 +167,8 @@ public class SenseApp extends FragmentActivity implements WelcomeActivity, Logou
         @Override
         protected Boolean doInBackground(Boolean... params) {
             boolean active = params[0];
-            try {
-                service.toggleMain(active);
-                return true;
-            } catch (RemoteException e) {
-                Log.e(TAG, "Failed to set main service state!", e);
-                return false;
-            }
+            service.toggleMain(active);
+            return true;
         }
 
         @Override
@@ -200,7 +191,7 @@ public class SenseApp extends FragmentActivity implements WelcomeActivity, Logou
 
     private final ISenseServiceCallback callback = new SenseCallback();
     private boolean isServiceBound;
-    private ISenseService service;
+    private SenseServiceStub service;
     private final ServiceConnection serviceConn = new SenseServiceConn();
     private final SenseServiceListener serviceListener = new SenseServiceListener();
 
@@ -740,17 +731,12 @@ public class SenseApp extends FragmentActivity implements WelcomeActivity, Logou
         // toggle state in service
         if (null != service) {
 
-            try {
-                service.togglePhoneState(active);
+            service.togglePhoneState(active);
 
-                // show informational toast
-                if (active) {
-                    final String msg = getString(R.string.toast_toggle_phonestate);
-                    showToast(msg, Toast.LENGTH_LONG);
-                }
-
-            } catch (RemoteException e) {
-                Log.e(TAG, "RemoteException toggling phone state service.");
+            // show informational toast
+            if (active) {
+                final String msg = getString(R.string.toast_toggle_phonestate);
+                showToast(msg, Toast.LENGTH_LONG);
             }
 
         } else {
