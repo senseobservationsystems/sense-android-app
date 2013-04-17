@@ -207,15 +207,10 @@ public class RegisterActivity extends FragmentActivity implements IRegisterActiv
     }
 
     private void submit(String username, String password, String email, String address,
-            String zipCode, String country, String name, String surname, String phone) {
-        try {
+            String zipCode, String country, String name, String surname, String phone) {        
             String hashedPass = SenseApi.hashPassword(password);
             service.register(username, hashedPass, email, address, zipCode, country, name, surname,
-                    phone, callback);
-        } catch (RemoteException e) {
-            Log.e(TAG, "Failed to call register: '" + e + "'");
-            finish();
-        }
+                    phone, callback);      
     }
 
     /**
