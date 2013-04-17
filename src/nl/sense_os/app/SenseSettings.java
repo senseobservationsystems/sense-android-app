@@ -72,52 +72,48 @@ public class SenseSettings extends PreferenceActivity {
 				return;
 			}
 
+			// send the new preference to the Sense Platform service
 			try {
-				// send the new preference to the Sense Platform service
-				try {
-					String value = sharedPreferences.getString(key, "");
-					service.setPrefString(key, value);
-					showSummaries();
-					return;
-				} catch (ClassCastException e) {
-					// do nothing, try another preference type
-				}
-				try {
-					boolean value = sharedPreferences.getBoolean(key, false);
-					service.setPrefBool(key, value);
-					showSummaries();
-					return;
-				} catch (ClassCastException e) {
-					// do nothing, try another preference type
-				}
-				try {
-					float value = sharedPreferences.getFloat(key, 0f);
-					service.setPrefFloat(key, value);
-					showSummaries();
-					return;
-				} catch (ClassCastException e) {
-					// do nothing, try another preference type
-				}
-				try {
-					int value = sharedPreferences.getInt(key, 0);
-					service.setPrefInt(key, value);
-					showSummaries();
-					return;
-				} catch (ClassCastException e) {
-					// do nothing, try another preference type
-				}
-				try {
-					long value = sharedPreferences.getLong(key, 0l);
-					service.setPrefLong(key, value);
-					showSummaries();
-					return;
-				} catch (ClassCastException e) {
-					Log.e(TAG, "Can't read new preference setting!");
-				}
-
-			} catch (RemoteException e) {
-				Log.e(TAG, "Failed to set preference " + key + " at Sense Platform service", e);
+				String value = sharedPreferences.getString(key, "");
+				service.setPrefString(key, value);
+				showSummaries();
+				return;
+			} catch (ClassCastException e) {
+				// do nothing, try another preference type
 			}
+			try {
+				boolean value = sharedPreferences.getBoolean(key, false);
+				service.setPrefBool(key, value);
+				showSummaries();
+				return;
+			} catch (ClassCastException e) {
+				// do nothing, try another preference type
+			}
+			try {
+				float value = sharedPreferences.getFloat(key, 0f);
+				service.setPrefFloat(key, value);
+				showSummaries();
+				return;
+			} catch (ClassCastException e) {
+				// do nothing, try another preference type
+			}
+			try {
+				int value = sharedPreferences.getInt(key, 0);
+				service.setPrefInt(key, value);
+				showSummaries();
+				return;
+			} catch (ClassCastException e) {
+				// do nothing, try another preference type
+			}
+			try {
+				long value = sharedPreferences.getLong(key, 0l);
+				service.setPrefLong(key, value);
+				showSummaries();
+				return;
+			} catch (ClassCastException e) {
+				Log.e(TAG, "Can't read new preference setting!");
+			}
+
 		}
 	};
 
@@ -133,13 +129,13 @@ public class SenseSettings extends PreferenceActivity {
 
 	private PrefSyncListener changeListener = new PrefSyncListener();
 	private boolean isServiceBound;
-    private SenseServiceStub service;
+	private SenseServiceStub service;
 	private final ServiceConnection serviceConn = new ServiceConnection() {
 
 		@Override
 		public void onServiceConnected(ComponentName className, IBinder binder) {
 			// Log.v(TAG, "Bound to Sense Platform service...");
-            service = ((SenseBinder) binder).getService();
+			service = ((SenseBinder) binder).getService();
 			isServiceBound = true;
 			loadPreferences();
 			showSummaries();
@@ -205,12 +201,8 @@ public class SenseSettings extends PreferenceActivity {
 
 		// get username
 		String username = null;
-		if (null != service) {
-			try {
-				username = service.getPrefString(Auth.LOGIN_USERNAME, null);
-			} catch (RemoteException e) {
-				// should never happen
-			}
+		if (null != service) {		
+			username = service.getPrefString(Auth.LOGIN_USERNAME, null);		
 		}
 
 		builder.setIcon(android.R.drawable.ic_dialog_alert);
@@ -242,112 +234,107 @@ public class SenseSettings extends PreferenceActivity {
 		prefs.unregisterOnSharedPreferenceChangeListener(changeListener);
 		Editor editor = prefs.edit();
 
-		try {
-			// general preferences
-			editor.putString(SensePrefs.Main.SAMPLE_RATE,
-					service.getPrefString(SensePrefs.Main.SAMPLE_RATE, "0"));
-			editor.putString(SensePrefs.Main.SYNC_RATE,
-					service.getPrefString(SensePrefs.Main.SYNC_RATE, "0"));
-			editor.putBoolean(Status.AUTOSTART, service.getPrefBool(Status.AUTOSTART, false));
-			
-			// phone state preferences
-			editor.putBoolean(PhoneState.BATTERY, service.getPrefBool(PhoneState.BATTERY, true));
-			editor.putBoolean(PhoneState.CALL_STATE, service.getPrefBool(PhoneState.CALL_STATE, true));
-			editor.putBoolean(PhoneState.SCREEN_ACTIVITY, service.getPrefBool(PhoneState.SCREEN_ACTIVITY, true));
-			editor.putBoolean(PhoneState.PROXIMITY, service.getPrefBool(PhoneState.PROXIMITY, true));
-			editor.putBoolean(PhoneState.DATA_CONNECTION, service.getPrefBool(PhoneState.DATA_CONNECTION, true));
-			editor.putBoolean(PhoneState.SERVICE_STATE, service.getPrefBool(PhoneState.SERVICE_STATE, true));
-			editor.putBoolean(PhoneState.SIGNAL_STRENGTH, service.getPrefBool(PhoneState.SIGNAL_STRENGTH, true));
-			editor.putBoolean(PhoneState.IP_ADDRESS, service.getPrefBool(PhoneState.IP_ADDRESS, true));
-			editor.putBoolean(PhoneState.UNREAD_MSG, service.getPrefBool(PhoneState.UNREAD_MSG, true));
+		// general preferences
+		editor.putString(SensePrefs.Main.SAMPLE_RATE,
+				service.getPrefString(SensePrefs.Main.SAMPLE_RATE, "0"));
+		editor.putString(SensePrefs.Main.SYNC_RATE,
+				service.getPrefString(SensePrefs.Main.SYNC_RATE, "0"));
+		editor.putBoolean(Status.AUTOSTART, service.getPrefBool(Status.AUTOSTART, false));
 
-			// location preferences
-			editor.putBoolean(Location.GPS, service.getPrefBool(Location.GPS, true));
-			editor.putBoolean(Location.NETWORK, service.getPrefBool(Location.NETWORK, true));
-			editor.putBoolean(Location.AUTO_GPS, service.getPrefBool(Location.AUTO_GPS, true));
+		// phone state preferences
+		editor.putBoolean(PhoneState.BATTERY, service.getPrefBool(PhoneState.BATTERY, true));
+		editor.putBoolean(PhoneState.CALL_STATE, service.getPrefBool(PhoneState.CALL_STATE, true));
+		editor.putBoolean(PhoneState.SCREEN_ACTIVITY, service.getPrefBool(PhoneState.SCREEN_ACTIVITY, true));
+		editor.putBoolean(PhoneState.PROXIMITY, service.getPrefBool(PhoneState.PROXIMITY, true));
+		editor.putBoolean(PhoneState.DATA_CONNECTION, service.getPrefBool(PhoneState.DATA_CONNECTION, true));
+		editor.putBoolean(PhoneState.SERVICE_STATE, service.getPrefBool(PhoneState.SERVICE_STATE, true));
+		editor.putBoolean(PhoneState.SIGNAL_STRENGTH, service.getPrefBool(PhoneState.SIGNAL_STRENGTH, true));
+		editor.putBoolean(PhoneState.IP_ADDRESS, service.getPrefBool(PhoneState.IP_ADDRESS, true));
+		editor.putBoolean(PhoneState.UNREAD_MSG, service.getPrefBool(PhoneState.UNREAD_MSG, true));
 
-			// ambience preferences
-			editor.putBoolean(Ambience.LIGHT, service.getPrefBool(Ambience.LIGHT, true));
-			editor.putBoolean(Ambience.MIC, service.getPrefBool(Ambience.MIC, true));
-			editor.putBoolean(Ambience.PRESSURE, service.getPrefBool(Ambience.PRESSURE, true));
-			editor.putBoolean(Ambience.CAMERA_LIGHT, service.getPrefBool(Ambience.CAMERA_LIGHT, true));
-			editor.putBoolean(Ambience.AUDIO_SPECTRUM, service.getPrefBool(Ambience.AUDIO_SPECTRUM, true));
-			editor.putBoolean(Ambience.MAGNETIC_FIELD, service.getPrefBool(Ambience.MAGNETIC_FIELD, true));
+		// location preferences
+		editor.putBoolean(Location.GPS, service.getPrefBool(Location.GPS, true));
+		editor.putBoolean(Location.NETWORK, service.getPrefBool(Location.NETWORK, true));
+		editor.putBoolean(Location.AUTO_GPS, service.getPrefBool(Location.AUTO_GPS, true));
 
-			// motion preferences
-			editor.putBoolean(Motion.FALL_DETECT, service.getPrefBool(Motion.FALL_DETECT, false));
-			editor.putBoolean(Motion.FALL_DETECT_DEMO,
-					service.getPrefBool(Motion.FALL_DETECT_DEMO, false));
-			editor.putBoolean(Motion.UNREG, service.getPrefBool(Motion.UNREG, true));
-			editor.putBoolean(Motion.SCREENOFF_FIX,
-					service.getPrefBool(Motion.SCREENOFF_FIX, false));
+		// ambience preferences
+		editor.putBoolean(Ambience.LIGHT, service.getPrefBool(Ambience.LIGHT, true));
+		editor.putBoolean(Ambience.MIC, service.getPrefBool(Ambience.MIC, true));
+		editor.putBoolean(Ambience.PRESSURE, service.getPrefBool(Ambience.PRESSURE, true));
+		editor.putBoolean(Ambience.CAMERA_LIGHT, service.getPrefBool(Ambience.CAMERA_LIGHT, true));
+		editor.putBoolean(Ambience.AUDIO_SPECTRUM, service.getPrefBool(Ambience.AUDIO_SPECTRUM, true));
+		editor.putBoolean(Ambience.MAGNETIC_FIELD, service.getPrefBool(Ambience.MAGNETIC_FIELD, true));
 
-			// neighboring devices
-			editor.putBoolean(DevProx.BLUETOOTH, service.getPrefBool(DevProx.BLUETOOTH, true));
-			editor.putBoolean(DevProx.WIFI, service.getPrefBool(DevProx.WIFI, true));
-			editor.putBoolean(DevProx.NFC, service.getPrefBool(DevProx.NFC, true));
+		// motion preferences
+		editor.putBoolean(Motion.FALL_DETECT, service.getPrefBool(Motion.FALL_DETECT, false));
+		editor.putBoolean(Motion.FALL_DETECT_DEMO,
+				service.getPrefBool(Motion.FALL_DETECT_DEMO, false));
+		editor.putBoolean(Motion.UNREG, service.getPrefBool(Motion.UNREG, true));
+		editor.putBoolean(Motion.SCREENOFF_FIX,
+				service.getPrefBool(Motion.SCREENOFF_FIX, false));
 
-			// pop quiz preferences
-			editor.putString(Quiz.RATE, service.getPrefString(Quiz.RATE, "0"));
-			editor.putBoolean(Quiz.SILENT_MODE, service.getPrefBool(Quiz.SILENT_MODE, false));
+		// neighboring devices
+		editor.putBoolean(DevProx.BLUETOOTH, service.getPrefBool(DevProx.BLUETOOTH, true));
+		editor.putBoolean(DevProx.WIFI, service.getPrefBool(DevProx.WIFI, true));
+		editor.putBoolean(DevProx.NFC, service.getPrefBool(DevProx.NFC, true));
 
-			// Zephir BioHarness preferences
-			editor.putBoolean(ZephyrBioHarness.MAIN,
-					service.getPrefBool(ZephyrBioHarness.MAIN, false));
-			editor.putBoolean(ZephyrBioHarness.ACC, service.getPrefBool(ZephyrBioHarness.ACC, true));
-			editor.putBoolean(ZephyrBioHarness.BATTERY,
-					service.getPrefBool(ZephyrBioHarness.BATTERY, true));
-			editor.putBoolean(ZephyrBioHarness.HEART_RATE,
-					service.getPrefBool(ZephyrBioHarness.HEART_RATE, true));
-			editor.putBoolean(ZephyrBioHarness.RESP,
-					service.getPrefBool(ZephyrBioHarness.RESP, true));
-			editor.putBoolean(ZephyrBioHarness.TEMP,
-					service.getPrefBool(ZephyrBioHarness.TEMP, true));
-			editor.putBoolean(ZephyrBioHarness.WORN_STATUS,
-					service.getPrefBool(ZephyrBioHarness.WORN_STATUS, true));
+		// pop quiz preferences
+		editor.putString(Quiz.RATE, service.getPrefString(Quiz.RATE, "0"));
+		editor.putBoolean(Quiz.SILENT_MODE, service.getPrefBool(Quiz.SILENT_MODE, false));
 
-			// Zephir HxM preferences
-			editor.putBoolean(ZephyrHxM.MAIN, service.getPrefBool(ZephyrHxM.MAIN, false));
-			editor.putBoolean(ZephyrHxM.BATTERY, service.getPrefBool(ZephyrHxM.BATTERY, true));
-			editor.putBoolean(ZephyrHxM.DISTANCE, service.getPrefBool(ZephyrHxM.DISTANCE, true));
-			editor.putBoolean(ZephyrHxM.HEART_RATE, service.getPrefBool(ZephyrHxM.HEART_RATE, true));
-			editor.putBoolean(ZephyrHxM.SPEED, service.getPrefBool(ZephyrHxM.SPEED, true));
-			editor.putBoolean(ZephyrHxM.STRIDES, service.getPrefBool(ZephyrHxM.STRIDES, true));
+		// Zephir BioHarness preferences
+		editor.putBoolean(ZephyrBioHarness.MAIN,
+				service.getPrefBool(ZephyrBioHarness.MAIN, false));
+		editor.putBoolean(ZephyrBioHarness.ACC, service.getPrefBool(ZephyrBioHarness.ACC, true));
+		editor.putBoolean(ZephyrBioHarness.BATTERY,
+				service.getPrefBool(ZephyrBioHarness.BATTERY, true));
+		editor.putBoolean(ZephyrBioHarness.HEART_RATE,
+				service.getPrefBool(ZephyrBioHarness.HEART_RATE, true));
+		editor.putBoolean(ZephyrBioHarness.RESP,
+				service.getPrefBool(ZephyrBioHarness.RESP, true));
+		editor.putBoolean(ZephyrBioHarness.TEMP,
+				service.getPrefBool(ZephyrBioHarness.TEMP, true));
+		editor.putBoolean(ZephyrBioHarness.WORN_STATUS,
+				service.getPrefBool(ZephyrBioHarness.WORN_STATUS, true));
 
-			// MyGlucohealth
-			editor.putBoolean(MyGlucoHealth.MAIN, service.getPrefBool(MyGlucoHealth.MAIN, false));
+		// Zephir HxM preferences
+		editor.putBoolean(ZephyrHxM.MAIN, service.getPrefBool(ZephyrHxM.MAIN, false));
+		editor.putBoolean(ZephyrHxM.BATTERY, service.getPrefBool(ZephyrHxM.BATTERY, true));
+		editor.putBoolean(ZephyrHxM.DISTANCE, service.getPrefBool(ZephyrHxM.DISTANCE, true));
+		editor.putBoolean(ZephyrHxM.HEART_RATE, service.getPrefBool(ZephyrHxM.HEART_RATE, true));
+		editor.putBoolean(ZephyrHxM.SPEED, service.getPrefBool(ZephyrHxM.SPEED, true));
+		editor.putBoolean(ZephyrHxM.STRIDES, service.getPrefBool(ZephyrHxM.STRIDES, true));
 
-			// Tanita scale
-			editor.putBoolean(TanitaScale.MAIN, service.getPrefBool(TanitaScale.MAIN, false));
+		// MyGlucohealth
+		editor.putBoolean(MyGlucoHealth.MAIN, service.getPrefBool(MyGlucoHealth.MAIN, false));
 
-			// ODB-II dongle
-			editor.putBoolean(OBD2Sensor.MAIN, service.getPrefBool(OBD2Sensor.MAIN, false));
+		// Tanita scale
+		editor.putBoolean(TanitaScale.MAIN, service.getPrefBool(TanitaScale.MAIN, false));
 
-			// advanced settings
-			editor.putBoolean(Advanced.DEV_MODE, service.getPrefBool(Advanced.DEV_MODE, false));
-			editor.putBoolean(Advanced.COMPRESS, service.getPrefBool(Advanced.COMPRESS, true));
-			editor.putBoolean(Advanced.USE_COMMONSENSE,
-					service.getPrefBool(Advanced.USE_COMMONSENSE, true));
-			editor.putBoolean(Advanced.AGOSTINO, service.getPrefBool(Advanced.AGOSTINO, false));
-			editor.putBoolean(Motion.EPIMODE, service.getPrefBool(Motion.EPIMODE, false));
-			editor.putBoolean(Advanced.LOCATION_FEEDBACK,
-					service.getPrefBool(Advanced.LOCATION_FEEDBACK, false));
+		// ODB-II dongle
+		editor.putBoolean(OBD2Sensor.MAIN, service.getPrefBool(OBD2Sensor.MAIN, false));
 
-			editor.commit();
+		// advanced settings
+		editor.putBoolean(Advanced.DEV_MODE, service.getPrefBool(Advanced.DEV_MODE, false));
+		editor.putBoolean(Advanced.COMPRESS, service.getPrefBool(Advanced.COMPRESS, true));
+		editor.putBoolean(Advanced.USE_COMMONSENSE,
+				service.getPrefBool(Advanced.USE_COMMONSENSE, true));
+		editor.putBoolean(Advanced.AGOSTINO, service.getPrefBool(Advanced.AGOSTINO, false));
+		editor.putBoolean(Motion.EPIMODE, service.getPrefBool(Motion.EPIMODE, false));
+		editor.putBoolean(Advanced.LOCATION_FEEDBACK,
+				service.getPrefBool(Advanced.LOCATION_FEEDBACK, false));
 
-		} catch (RemoteException e) {
-			Log.e(TAG, "Exception getting preferences from Sense Platform service!", e);
-		}
+		editor.commit();
 
 		prefs.registerOnSharedPreferenceChangeListener(changeListener);
 	}
 
-    private void logout() {
-        service.logout();
-        service.toggleMain(false);
+	private void logout() {
+		service.logout();
+		service.toggleMain(false);
 
-        showSummaries();
-    }
+		showSummaries();
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -395,12 +382,8 @@ public class SenseSettings extends PreferenceActivity {
 
 	private void onLoginClick() {
 		boolean loggedIn = false;
-		if (service != null) {
-			try {
-				loggedIn = service.getPrefString(Auth.LOGIN_USERNAME, null) != null;
-			} catch (RemoteException e) {
-				Log.w(TAG, "Failed to get USERNAME preference: " + e);
-			}
+		if (service != null) {		
+			loggedIn = service.getPrefString(Auth.LOGIN_USERNAME, null) != null;
 		}
 
 		if (loggedIn) {
@@ -428,12 +411,8 @@ public class SenseSettings extends PreferenceActivity {
 	protected void onPrepareDialog(int id, Dialog dialog) {
 		if (id == DIALOG_LOGOUT) {
 			String username = null;
-			if (null != service) {
-				try {
-					username = service.getPrefString(Auth.LOGIN_USERNAME, null);
-				} catch (RemoteException e) {
-					Log.w(TAG, "Failed to get USERNAME pref: " + e);
-				}
+			if (null != service) {			
+				username = service.getPrefString(Auth.LOGIN_USERNAME, null);				
 				dialog.setTitle(getString(R.string.dialog_logout_title, username));
 			}
 		}
@@ -507,11 +486,8 @@ public class SenseSettings extends PreferenceActivity {
 		Preference loginPref = findPreference("login_placeholder");
 		Preference regPref = findPreference("register_placeholder");
 		String username = null;
-		try {
-			username = service.getPrefString(Auth.LOGIN_USERNAME, null);
-		} catch (RemoteException e) {
-			Log.w(TAG, "Failed to get username from Sense Platform service", e);
-		}
+		username = service.getPrefString(Auth.LOGIN_USERNAME, null);
+
 		if (null != username) {
 			loginPref.setTitle(R.string.pref_logout_title);
 			loginPref.setSummary(getString(R.string.pref_logout_summary, username));
@@ -525,11 +501,7 @@ public class SenseSettings extends PreferenceActivity {
 		// get sample rate preference setting
 		final Preference samplePref = findPreference(SensePrefs.Main.SAMPLE_RATE);
 		String sampleRate = "0";
-		try {
-			sampleRate = service.getPrefString(SensePrefs.Main.SAMPLE_RATE, "0");
-		} catch (RemoteException e) {
-			Log.w(TAG, "Failed to get SAMPLE_RATE from Sense Platform service", e);
-		}
+		sampleRate = service.getPrefString(SensePrefs.Main.SAMPLE_RATE, "0");
 		switch (Integer.parseInt(sampleRate)) {
 		case -2: // real time
 			samplePref.setSummary("Real-time: sample as quickly a possible");
@@ -550,11 +522,8 @@ public class SenseSettings extends PreferenceActivity {
 		// get sync rate preference setting
 		final Preference syncPref = findPreference(SensePrefs.Main.SYNC_RATE);
 		String syncRate = "0";
-		try {
-			syncRate = service.getPrefString(SensePrefs.Main.SYNC_RATE, "0");
-		} catch (RemoteException e) {
-			Log.e(TAG, "Failed to get username from Sense Platform service", e);
-		}
+		syncRate = service.getPrefString(SensePrefs.Main.SYNC_RATE, "0");
+
 		switch (Integer.parseInt(syncRate)) {
 		case -2: // real time
 			syncPref.setSummary("Real-time connection with CommonSense");
