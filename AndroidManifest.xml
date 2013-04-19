@@ -62,11 +62,11 @@
         android:targetSdkVersion="17" />
 
     <application
+        android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/sense_app_name"
         android:logo="@drawable/ic_launcher"
-        android:theme="@style/Sense.Rings"
-        android:allowBackup="true" >
+        android:theme="@style/Sense.Rings" >
 
         <!-- COMPONENTS OF SENSE PLATFORM FRONT-END -->
         <activity
@@ -206,7 +206,8 @@
                 <category android:name="nl.sense_os.app" />
             </intent-filter>
         </receiver>
-        <receiver android:name="nl.sense_os.service.configuration.RequirementReceiver" 
+        <receiver
+            android:name="nl.sense_os.service.configuration.RequirementReceiver"
             android:exported="false" >
             <intent-filter>
                 <action android:name="nl.sense_os.service.push.got_requirement" />
@@ -217,6 +218,9 @@
             android:name="nl.sense_os.service.provider.SensorDataProvider"
             android:authorities="nl.sense_os.platform.provider.LocalStorage"
             android:exported="true" />
+
+        <receiver android:name="nl.sense_os.service.scheduler.ExecutionAlarmReceiver" >
+        </receiver>
     </application>
 
 </manifest>
