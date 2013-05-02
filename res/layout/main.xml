@@ -1,116 +1,164 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:background="@drawable/bg_rings"
-    android:cacheColorHint="#00000000" >
-
-    <!-- Top application banner -->
-
-    <TextView
-        android:id="@+id/sense_banner"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:background="#e0e0e0"
-        android:drawableLeft="@drawable/ic_launcher"
-        android:drawablePadding="6dp"
-        android:gravity="center_vertical"
-        android:padding="6dp"
-        android:paddingLeft="8dp"
-        android:text="@string/sense_app_label"
-        android:textAppearance="?android:attr/textAppearanceMedium"/>
-
-    <!-- Header for "Main switch" section -->
-
-    <TextView
-        android:id="@+id/header_main"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/sense_banner"
-        android:background="@android:color/darker_gray"
-        android:paddingLeft="2dp"
-        android:text="@string/main_scr_header_main"
-        android:textColor="@android:color/background_light"
-        android:textStyle="bold" />
-
-    <!-- Main Service toggle field -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
 
     <LinearLayout
-        android:id="@+id/main_field"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/header_main"
-        android:background="@drawable/selector"
-        android:focusable="true"
-        android:gravity="center_vertical"
-        android:onClick="onClick"
-        android:paddingBottom="6dp"
-        android:paddingLeft="12dp"
-        android:paddingRight="12dp"
-        android:paddingTop="6dp" >
+        android:background="@drawable/bg_rings"
+        android:cacheColorHint="#00000000"
+        android:orientation="vertical" >
+
+        <!-- Top application banner -->
+
+        <TextView
+            android:id="@+id/sense_banner"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:background="#e0e0e0"
+            android:drawableLeft="@drawable/ic_launcher"
+            android:drawablePadding="6dp"
+            android:gravity="center_vertical"
+            android:padding="6dp"
+            android:paddingLeft="8dp"
+            android:text="@string/sense_app_label"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <!-- Header for "Main switch" section -->
+
+        <TextView
+            android:id="@+id/header_main"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/darker_gray"
+            android:paddingLeft="2dp"
+            android:text="@string/main_scr_header_main"
+            android:textColor="@android:color/background_light"
+            android:textStyle="bold" />
+
+        <!-- Main Service toggle field -->
 
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical" >
+            android:id="@+id/main_field"
+            android:layout_width="fill_parent"
+            android:layout_height="?android:attr/listPreferredItemHeight"
+            android:background="@drawable/selector"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:onClick="onMainClick"
+            android:orientation="horizontal"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp" >
 
             <TextView
                 android:id="@+id/main_firstline"
-                android:layout_width="fill_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:singleLine="true"
                 android:text="@string/main_scr_msw_title"
                 android:textAppearance="?android:attr/textAppearanceMedium" />
 
-            <TextView
-                android:id="@+id/main_secondLine"
-                android:layout_width="fill_parent"
+            <CheckBox
+                android:id="@+id/main_cb"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:singleLine="true"
-                android:text="@string/main_scr_msw_details" />
+                android:clickable="false" />
+
+            <ProgressBar
+                android:id="@+id/main_spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxHeight="36dp"
+                android:maxWidth="36dp"
+                android:minHeight="36dip"
+                android:minWidth="36dip"
+                android:visibility="gone" />
         </LinearLayout>
 
-        <CheckBox
-            android:id="@+id/main_cb"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:clickable="false" />
-
-        <ProgressBar
-            android:id="@+id/main_spinner"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:maxHeight="36dp"
-            android:maxWidth="36dp"
-            android:minHeight="36dip"
-            android:minWidth="36dip"
-            android:visibility="gone" />
-
-    </LinearLayout>
-
-    <!-- Header for "Individual sensors" section -->
-
-    <TextView
-        android:id="@+id/header_sensors"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/main_field"
-        android:background="@android:color/darker_gray"
-        android:paddingLeft="2dp"
-        android:text="@string/main_scr_header_sensors"
-        android:textColor="@android:color/background_light"
-        android:textStyle="bold" />
-
-    <ScrollView
-        android:id="@+id/sensors_field"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/header_sensors"
-        android:layout_gravity="center_horizontal" >
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:contentDescription="@string/content_descr_spacer" />
 
         <LinearLayout
+            android:id="@+id/sample_field"
+            android:layout_width="match_parent"
+            android:layout_height="?android:attr/listPreferredItemHeight"
+            android:background="@drawable/selector"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:onClick="onSampleClick"
+            android:orientation="vertical"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp" >
+
+            <TextView
+                android:id="@+id/sample_firstline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:text="@string/main_scr_smp_title"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/sample_details"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:textIsSelectable="true" />
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:contentDescription="@string/content_descr_spacer" />
+
+        <LinearLayout
+            android:id="@+id/sync_field"
+            android:layout_width="match_parent"
+            android:layout_height="?android:attr/listPreferredItemHeight"
+            android:background="@drawable/selector"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:onClick="onSyncClick"
+            android:orientation="vertical"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp" >
+
+            <TextView
+                android:id="@+id/sync_firstline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:text="@string/main_scr_syn_title"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/sync_details"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:textIsSelectable="true" />
+        </LinearLayout>
+
+        <!-- Header for "Individual sensors" section -->
+
+        <TextView
+            android:id="@+id/header_sensors"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/darker_gray"
+            android:paddingLeft="2dp"
+            android:text="@string/main_scr_header_sensors"
+            android:textColor="@android:color/background_light"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/sensors_field"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:gravity="center_horizontal"
@@ -439,6 +487,6 @@
                     android:textAppearance="?android:attr/textAppearanceMedium" />
             </RelativeLayout>
         </LinearLayout>
-    </ScrollView>
+    </LinearLayout>
 
-</RelativeLayout>
+</ScrollView>

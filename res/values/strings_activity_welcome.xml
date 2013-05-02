@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="button_login">Sign in</string>
+    <string name="button_reg">Register</string>
+    <string name="welcome_msg1">The Sense platform gathers data about your activities and shares it with the CommonSense data storage.</string>
+    <string name="welcome_msg2">Over time, it will learn to recognize your behaviour and current status. This makes it possible for your phone to help you avoid repetitive or stupid tasks, and alert you about interesting events.</string>
+    <string name="welcome_msg3">Please login, or register a free CommonSense account.</string>
+    <string name="title_activity_welcome">Welcome to Sense</string>
+
+</resources>

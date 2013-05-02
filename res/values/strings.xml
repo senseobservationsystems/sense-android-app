@@ -6,9 +6,7 @@
 
     <!-- button labels -->
     <string name="button_faq">FAQ</string>
-    <string name="button_login">Sign in</string>
     <string name="button_logout">Sign out</string>
-    <string name="button_reg">Register</string>
 
     <!-- miscellaneous text resources for dialogs -->
     <string name="dialog_dev_mode_title">Development mode</string>
@@ -18,97 +16,17 @@
     <string name="dialog_login_title">Enter login details:</string>
     <string name="dialog_login_hint_username">Username</string>
     <string name="dialog_login_hint_pass">Password</string>
-    <string name="dialog_reg_title">Enter new account details:</string>
-    <string name="dialog_reg_optional_header">Optional information:</string>
-    <string name="dialog_reg_hint_username">Username</string>
-    <string name="dialog_reg_hint_pass">Password</string>
-    <string name="dialog_reg_hint_pass2">Retype password</string>
-    <string name="dialog_reg_hint_email">Email</string>
-    <string name="dialog_reg_hint_address">Address (optional)</string>
-    <string name="dialog_reg_hint_zipcode">ZIP code (optional)</string>
-    <string name="dialog_reg_hint_name">First name (optional)</string>
-    <string name="dialog_reg_hint_surname">Last name (optional)</string>
-    <string name="dialog_reg_hint_phone">Phone (optional)</string>
     <string name="dialog_progress_title">One moment please</string>
     <string name="dialog_progress_login_msg">Checking login credentials…</string>
-    <string name="dialog_progress_reg_msg">Registering CommonSense account…</string>
     <string name="dialog_update_msg">After weeks of waiting, the CommonSense web interface is finally in a presentable state. Although it is still far from finished, you can have a peek at the collected data by logging in at http://common.sense-os.nl.\n\nWe recommend using a regular computer instead of your Android, because the interface is not really suited for smaller screens.\n\nHappy experimenting!</string>
     <string name="dialog_update_title">Announcement</string>
     <string name="dialog_logout_msg">Are you sure you want to sign out this user from CommonSense?</string>
     <string name="dialog_logout_title">Sign out: \'%s\'</string>
-    <string name="dialog_welcome_title">Welcome to Sense</string>
-    <string name="dialog_welcome_msg">The Sense platform gathers data about your activities and shares it with the CommonSense data storage.\n\nOver time, it will learn to recognize your behaviour and current status. This makes it possible for your phone to help you avoid repetitive or stupid tasks, and alert you about interesting events.\n\nPlease login, or register a free CommonSense account.</string>
-
-    <!-- options menu labels -->
-    <string name="menu_preferences">Preferences</string>
-    <string name="menu_faq">FAQ</string>
-    <string name="menu_login">Sign in</string>
-    <string name="menu_logout">Sign out</string>
-    <string name="menu_register">Register</string>
-
-    <!-- preference labels -->
-    <string name="pref_login_title">Sign in</string>
-    <string name="pref_login_summary">Enter account details</string>    
-    <string name="pref_logout_title">Sign out</string>
-    <string name="pref_logout_summary">Logged in as \'%s\'</string>
 
     <!-- miscellaneous text resources for toast messages -->
     <string name="toast_missing_fields">Not all required fields were filled in, please try again.</string>
     <string name="toast_login_fail">Login failed! Possible connection problems.</string>
     <string name="toast_login_forbidden">Login failed! Invalid username or password.</string>
     <string name="toast_login_ok">Login successful.</string>
-    <string name="toast_reg_fail">Registration failed! Possible connection problems.</string>
-    <string name="toast_reg_conflict">Registration failed! The user already exists.</string>
-    <string name="toast_reg_ok">Registration successful.</string>
-    <string name="toast_reg_pass">Passwords do not match, please try again.</string>
-    <string name="toast_toggle_dev_prox">Device proximity will update every ?.</string>
-    <string name="toast_toggle_location">Location will update every ?.</string>
-    <string name="toast_toggle_motion">Motion sensor will update every ?.</string>
-    <string name="toast_toggle_external_sensors">External sensors will update every ?.</string>
-    <string name="toast_toggle_ambience">Ambience measurements will update ?.</string>
-    <string name="toast_toggle_phonestate">Changes in phone state will be shared with CommonSense.</string>
-
-    <!-- action for the app widget -->
-    <string name="action_widget_update">nl.sense_os.platform.AppWidgetUpdate</string>
-    <string name="action_widget_start_phone_state">nl.sense_os.platform.StartPhoneState</string>
-    <string name="action_widget_start_location">nl.sense_os.platform.StartLocation</string>
-    <string name="action_widget_start_motion">nl.sense_os.platform.StartMotion</string>
-    <string name="action_widget_start_ambience">nl.sense_os.platform.StartAmbience</string>
-    <string name="action_widget_start_devices">nl.sense_os.platform.StartDevices</string>
-    <string name="action_widget_start_external">nl.sense_os.platform.StartExternal</string>
-    <string name="action_widget_stop_phone_state">nl.sense_os.platform.StopPhoneState</string>
-    <string name="action_widget_stop_location">nl.sense_os.platform.StopLocation</string>
-    <string name="action_widget_stop_motion">nl.sense_os.platform.StopMotion</string>
-    <string name="action_widget_stop_ambience">nl.sense_os.platform.StopAmbience</string>
-    <string name="action_widget_stop_devices">nl.sense_os.platform.StopDevices</string>
-    <string name="action_widget_stop_external">nl.sense_os.platform.StopExternal</string>
-
-    <!-- LocalStorage authority, overwrite when bundling Sense into another app -->
-    <string name="local_storage_authority">nl.sense_os.platform.provider.LocalStorage</string>
-    <string name="main_scr_header_main">Main switch</string>
-    <string name="main_scr_header_sensors">Individual sensors</string>
-    <string name="main_scr_msw_title">Sense service</string>
-    <string name="main_scr_msw_details">Press to start Sense service</string>
-    <string name="main_scr_pst_title">Phone state sensing</string>
-    <string name="main_scr_pst_detail">Phone connectivity and state</string>
-    <string name="main_scr_loc_title">Location sensing</string>
-    <string name="main_scr_loc_details">GPS or network position</string>
-    <string name="main_scr_amb_title">Ambience sensing</string>
-    <string name="main_scr_amb_details">Intensity of sound and light</string>
-    <string name="main_src_mot_title">Motion sensing</string>
-    <string name="main_scr_mot_details">Acceleration and orientation</string>
-    <string name="main_scr_dev_title">Neighboring devices</string>
-    <string name="main_scr_dev_details">Wireless devices near you</string>
-    <string name="main_scr_ext_title">External sensors</string>
-    <string name="main_scr_ext_details">External bluetooth sensors</string>
-    <string name="preferences">Preferences</string>
-    <string name="content_descr_spacer">spacer</string>
-    <string name="content_descr_wi_pst">widget phone state button</string>
-    <string name="content_descr_wi_loc">widget location button</string>
-    <string name="content_descr_wi_mot">widget motion button</string>
-    <string name="content_descr_wi_amb">widget ambience button</string>
-    <string name="content_descr_wi_dev">widget neighboring devices button</string>
-    <string name="content_descr_wi_smp">widget sample rate button</string>
-    <string name="content_descr_wi_syn">widget sync rate button</string>
 
 </resources>

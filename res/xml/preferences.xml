@@ -9,35 +9,14 @@
             android:title="@string/menu_login" />
         <Preference
             android:key="register_placeholder"
-            android:summary="Register a new user"
-            android:title="New user" />
-
-        <ListPreference
-            android:defaultValue="0"
-            android:dialogTitle="Sample rate"
-            android:entries="@array/pref_sample_rate_keys"
-            android:entryValues="@array/pref_sample_rate_vals"
-            android:key="commonsense_rate"
-            android:negativeButtonText="@android:string/cancel"
-            android:positiveButtonText="@android:string/ok"
-            android:summary="Sampling frequency of the sensing modules"
-            android:title="Sensor sample rate" />
-        <ListPreference
-            android:defaultValue="0"
-            android:dialogTitle="Sync rate"
-            android:entries="@array/pref_sync_rate_keys"
-            android:entryValues="@array/pref_sync_rate_vals"
-            android:key="sync_rate"
-            android:negativeButtonText="@android:string/cancel"
-            android:positiveButtonText="@android:string/ok"
-            android:summary="Amount of communication with server"
-            android:title="CommonSense sync rate" />
+            android:summary="@string/pref_register_summary"
+            android:title="@string/pref_register_title" />
 
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="autostart"
-            android:summary="Start Sense service at phone startup"
-            android:title="Autostart" />
+            android:summary="@string/pref_autostart_summary"
+            android:title="@string/pref_autostart_title" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="spec_service_category"

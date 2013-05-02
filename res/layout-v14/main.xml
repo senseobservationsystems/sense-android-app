@@ -43,7 +43,7 @@
                 android:text="@string/main_scr_msw_title"
                 android:textSize="20sp" />
 
-            <CheckBox
+            <Switch
                 android:id="@+id/main_cb"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
