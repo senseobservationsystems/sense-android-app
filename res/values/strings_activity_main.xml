@@ -2,11 +2,11 @@
 <resources>
 
     <string name="main_scr_header_main">Main switch</string>
-    <string name="main_scr_header_sensors">Individual sensors</string>
+    <string name="main_scr_header_sensors">Individual sensing modules</string>
     <string name="main_scr_msw_title">Sense service</string>
     <string name="main_scr_msw_details">Press to start Sense service</string>
     <string name="main_scr_smp_title">Sensor sample rate</string>
-    <string name="main_scr_smp_details">Normal: sample every 1-5 minutes</string>
+    <string name="main_scr_smp_details">Normal: sample every 1 to 5 minutes</string>
     <string name="main_scr_syn_title">CommonSense sync rate</string>
     <string name="main_scr_syn_details">Rarely: send data every 30 minutes</string>
     <string name="main_scr_pst_title">Phone state sensing</string>

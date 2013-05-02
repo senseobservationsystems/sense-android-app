@@ -9,18 +9,6 @@
         android:background="@drawable/bg_rings"
         android:orientation="vertical" >
 
-        <!-- Header for "Main switch" section -->
-
-        <TextView
-            android:id="@+id/header_main"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@android:color/darker_gray"
-            android:paddingLeft="2dp"
-            android:text="@string/main_scr_header_main"
-            android:textColor="@android:color/background_light"
-            android:textStyle="bold" />
-
         <!-- Main Service toggle field -->
 
         <LinearLayout
@@ -135,7 +123,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@android:color/darker_gray"
-            android:paddingLeft="2dp"
+            android:padding="3dp"
             android:text="@string/main_scr_header_sensors"
             android:textColor="@android:color/background_light"
             android:textStyle="bold" />

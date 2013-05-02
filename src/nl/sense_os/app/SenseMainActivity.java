@@ -9,6 +9,8 @@ package nl.sense_os.app;
 import nl.sense_os.app.dialogs.FaqDialog;
 import nl.sense_os.app.dialogs.LogoutConfirmDialog;
 import nl.sense_os.app.dialogs.LogoutConfirmDialog.LogoutActivity;
+import nl.sense_os.app.dialogs.SampleRateDialog;
+import nl.sense_os.app.dialogs.SyncRateDialog;
 import nl.sense_os.app.login.LoginActivity;
 import nl.sense_os.app.register.RegisterActivity;
 import nl.sense_os.platform.SensePlatform;
@@ -41,7 +43,8 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class SenseMainActivity extends FragmentActivity implements LogoutActivity {
+public class SenseMainActivity extends FragmentActivity implements LogoutActivity,
+        SampleRateDialog.Listener, SyncRateDialog.Listener {
 
     /**
      * Task to log out the Sense service. This can take some time (due to persisting of data
@@ -351,7 +354,14 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
     }
 
     public void onSampleClick(View v) {
-        // TODO
+        SampleRateDialog dialog = new SampleRateDialog();
+        dialog.show(getSupportFragmentManager(), "sample_rate");
+    }
+
+    @Override
+    public void onSampleRateChanged(String rate) {
+        Log.v(TAG, "Sample rate changed: " + rate);
+        mSensePlatform.getService().setPrefString(SensePrefs.Main.SAMPLE_RATE, rate);
     }
 
     @Override
@@ -384,7 +394,14 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
     }
 
     public void onSyncClick(View v) {
-        // TODO
+        SyncRateDialog dialog = new SyncRateDialog();
+        dialog.show(getSupportFragmentManager(), "sync_rate");
+    }
+
+    @Override
+    public void onSyncRateChanged(String rate) {
+        Log.v(TAG, "Sync rate changed: " + rate);
+        mSensePlatform.getService().setPrefString(SensePrefs.Main.SYNC_RATE, rate);
     }
 
     private void setMainStatusSpinner(boolean enable) {
