@@ -12,6 +12,7 @@ import nl.sense_os.app.dialogs.LogoutConfirmDialog.LogoutActivity;
 import nl.sense_os.app.dialogs.SampleRateDialog;
 import nl.sense_os.app.dialogs.SyncRateDialog;
 import nl.sense_os.platform.SensePlatform;
+import nl.sense_os.service.DataTransmitter;
 import nl.sense_os.service.ISenseServiceCallback;
 import nl.sense_os.service.SenseService;
 import nl.sense_os.service.SenseServiceStub;
@@ -20,6 +21,8 @@ import nl.sense_os.service.constants.SensePrefs.Auth;
 import nl.sense_os.service.constants.SensePrefs.Status;
 import nl.sense_os.service.constants.SenseStatusCodes;
 import android.annotation.TargetApi;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -29,6 +32,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -173,6 +177,8 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
     }
 
     private static final int REQ_CODE_WELCOME = 1;
+    private static final int REQ_CODE_LOGIN = 2;
+    private static final int REQ_CODE_REGISTER = 3;
     private static final String TAG = "SenseActivity";
 
     private final ISenseServiceCallback mCallback = new SenseCallback();
@@ -206,15 +212,37 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        boolean scheduleFlush = false;
         switch (requestCode) {
         case REQ_CODE_WELCOME:
-            if (resultCode != RESULT_OK) {
+            if (resultCode == RESULT_OK) {
+                scheduleFlush = true;
+            } else {
                 finish();
+            }
+            break;
+        case REQ_CODE_LOGIN:
+            if (resultCode == RESULT_OK) {
+                scheduleFlush = true;
+            }
+            break;
+        case REQ_CODE_REGISTER:
+            if (resultCode == RESULT_OK) {
+                scheduleFlush = true;
             }
             break;
         default:
             Log.w(TAG, "Unexpected request code: " + requestCode);
             super.onActivityResult(requestCode, resultCode, data);
+        }
+
+        // flush data after 30 seconds
+        if (scheduleFlush) {
+            Intent flush = new Intent(this, DataTransmitter.class);
+            PendingIntent pendingFlush = PendingIntent.getBroadcast(this, 1, flush, PendingIntent.FLAG_UPDATE_CURRENT); 
+            AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+            alarmManager.set(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 30000,
+                    pendingFlush);
         }
     }
 
@@ -289,11 +317,6 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
         return true;
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-    }
-
     /**
      * Handles clicks on the main status field
      * 
@@ -322,13 +345,13 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
             startActivity(new Intent(this, SenseSettings.class));
             break;
         case R.id.menu_login:
-            startLogin();
+            startLoginActivity();
             break;
         case R.id.menu_logout:
             showLogoutConfirm();
             break;
         case R.id.menu_register:
-            startActivity(new Intent(this, RegisterActivity.class));
+            startActivityForResult(new Intent(this, RegisterActivity.class), REQ_CODE_REGISTER);
             break;
         default:
             Log.w(TAG, "Unexpected option item selected: " + item);
@@ -362,7 +385,7 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
                 SensePrefs.Main.LAST_LOGGED_IN, -1);
         if (lastLogin == -1) {
             // sense has never been logged in
-            showWelcomeDialog();
+            startWelcomeActivity();
         }
     }
 
@@ -454,17 +477,17 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
         });
     }
 
+    private void startLoginActivity() {
+        startActivityForResult(new Intent(this, LoginActivity.class), REQ_CODE_LOGIN);
+    }
+
     /**
      * Shows a help dialog, which explains the goal of Sense and clicks through to Registration or
      * Login.
      */
-    private void showWelcomeDialog() {
+    private void startWelcomeActivity() {
         Intent welcome = new Intent(this, WelcomeActivity.class);
         startActivityForResult(welcome, REQ_CODE_WELCOME);
-    }
-
-    private void startLogin() {
-        startActivity(new Intent(this, LoginActivity.class));
     }
 
     private void toggleAmbience(boolean active) {
@@ -650,7 +673,7 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
             if (active && null == service.getPrefString(Auth.LOGIN_USERNAME, null)) {
                 // cannot activate the service: Sense does not know the username yet
                 Log.w(TAG, "Cannot start Sense Platform without username");
-                startLogin();
+                startLoginActivity();
             } else {
                 // normal situation
                 new ToggleMainTask().execute(active);
@@ -721,6 +744,10 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
         checkServiceStatus();
     }
 
+    /**
+     * Updates the summaries of the sample and sync rate fields, based on the value of the
+     * preferences.
+     */
     private void updateSummaries() {
 
         SharedPreferences prefs = getSharedPreferences(SensePrefs.MAIN_PREFS, MODE_PRIVATE);

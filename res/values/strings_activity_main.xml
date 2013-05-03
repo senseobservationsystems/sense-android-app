@@ -38,8 +38,8 @@
     <string name="toast_toggle_phonestate">Changes in phone state will be shared with CommonSense.</string>
     <string name="menu_preferences">Preferences</string>
     <string name="menu_faq">FAQ</string>
-    <string name="menu_login">Sign in</string>
-    <string name="menu_logout">Sign out</string>
+    <string name="menu_login">Log in</string>
+    <string name="menu_logout">Log out</string>
     <string name="menu_register">Register</string>
     <string name="preferences">Preferences</string>
 
