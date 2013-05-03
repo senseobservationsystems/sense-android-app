@@ -3,4 +3,10 @@
     <style name="Sense.Rings" parent="@android:style/Theme.Light.NoTitleBar"></style>
     <style name="Sense.Prefs" parent="@android:style/Theme.Black"></style>
     <style name="Sense.Dialog" parent="@android:style/Theme.Translucent.NoTitleBar"></style>
+
+    <style name="LoginFormContainer">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:padding">16dp</item>
+    </style>
 </resources>

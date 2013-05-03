@@ -13,9 +13,6 @@
     <string name="dialog_dev_mode_msg">Warning: enabling development mode is designed for Sense testers only. It is not recommended for normal use: your data will not be accessible anymore on CommonSense!</string>
     <string name="dialog_faq_title">Sense FAQ</string>
     <string name="dialog_faq_msg"><b>What is Sense?</b>\nSense is a company that gathers context information to improve your communication and coordination activities. We want to create a system that can classify and predict your activities based on sensor information from your phone. Only a system that knows what you are doing can help you to do it.\n\n<b>What is the Sense Platform app?</b>\nThis app gathers your sensor data and sends it to our online CommonSense system. Sense is still in full development, so for now the app does nothing for you but gather data.\n\n<b>What is CommonSense?</b>\nCommonSense is Sense\'s intelligent data storage where advanced pattern recognition and sensor fusion can be performed, so the system can learn to recognize what you are doing and how to help you. Like the Sense app, it is still under heavy development so its powers are still limited.\n\n<b>How do I get to see the gathered data?</b>\nYou can see what information we have gathered on CommonSense\'s web interface:http://common.sense-os.nl.\n\n<b>Are you spying on me?</b>\nNo. Sense is not gathering data for its own use, you are gathering data for your own use. Your data is only accessible to you and to anybody you <i>explicitly</i> shared information with.</string>
-    <string name="dialog_login_title">Enter login details:</string>
-    <string name="dialog_login_hint_username">Username</string>
-    <string name="dialog_login_hint_pass">Password</string>
     <string name="dialog_progress_title">One moment please</string>
     <string name="dialog_progress_login_msg">Checking login credentials…</string>
     <string name="dialog_update_msg">After weeks of waiting, the CommonSense web interface is finally in a presentable state. Although it is still far from finished, you can have a peek at the collected data by logging in at http://common.sense-os.nl.\n\nWe recommend using a regular computer instead of your Android, because the interface is not really suited for smaller screens.\n\nHappy experimenting!</string>
@@ -25,8 +22,5 @@
 
     <!-- miscellaneous text resources for toast messages -->
     <string name="toast_missing_fields">Not all required fields were filled in, please try again.</string>
-    <string name="toast_login_fail">Login failed! Possible connection problems.</string>
-    <string name="toast_login_forbidden">Login failed! Invalid username or password.</string>
-    <string name="toast_login_ok">Login successful.</string>
 
 </resources>

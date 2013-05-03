@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="title_activity_login">Log in at CommonSense</string>
+    <string name="hint_login_username">Email</string>
+    <string name="hint_login_pass">Password</string>
+    <string name="progress_login">Logging in&#8230;</string>
+    <string name="action_login_short">Log in</string>
+    <string name="toast_login_fail">Login failed! Possible connection problems.</string>
+    <string name="toast_login_forbidden">Login failed! Invalid username or password.</string>
+    <string name="toast_login_ok">Login successful.</string>
+
+</resources>

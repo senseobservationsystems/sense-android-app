@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="dialog_reg_title">Enter new account details:</string>
-    <string name="dialog_reg_optional_header">Optional information:</string>
-    <string name="dialog_reg_hint_username">Username</string>
-    <string name="dialog_reg_hint_pass">Password</string>
-    <string name="dialog_reg_hint_pass2">Retype password</string>
-    <string name="dialog_reg_hint_email">Email</string>
-    <string name="dialog_reg_hint_address">Address (optional)</string>
-    <string name="dialog_reg_hint_zipcode">ZIP code (optional)</string>
-    <string name="dialog_reg_hint_name">First name (optional)</string>
-    <string name="dialog_reg_hint_surname">Last name (optional)</string>
-    <string name="dialog_reg_hint_phone">Phone (optional)</string>
+    <string name="title_activity_register">Register CommonSense Account</string>
+    <string name="action_register_short">Register</string>
+    <string name="progress_reg">Registering&#8230;</string>
+    <string name="hint_reg_username">Username</string>
+    <string name="hint_reg_pass">Password</string>
+    <string name="hint_reg_pass2">Retype password</string>
+    <string name="hint_reg_email">Email</string>
+    <string name="hint_reg_address">Address (optional)</string>
+    <string name="hint_reg_zipcode">ZIP code (optional)</string>
+    <string name="hint_reg_name">First name (optional)</string>
+    <string name="hint_reg_surname">Last name (optional)</string>
+    <string name="hint_reg_phone">Phone (optional)</string>
     <string name="dialog_progress_reg_msg">Registering CommonSense account…</string>
     <string name="toast_reg_fail">Registration failed! Possible connection problems.</string>
     <string name="toast_reg_conflict">Registration failed! The user already exists.</string>

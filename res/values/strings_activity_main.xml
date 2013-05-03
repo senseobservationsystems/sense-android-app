@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <string name="title_activity_main">Sense</string>
     <string name="main_scr_header_main">Main switch</string>
     <string name="main_scr_header_sensors">Individual sensing modules</string>
     <string name="main_scr_msw_title">Sense service</string>

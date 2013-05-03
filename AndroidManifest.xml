@@ -71,9 +71,8 @@
 
         <!-- COMPONENTS OF SENSE PLATFORM FRONT-END -->
         <activity
-            android:name="nl.sense_os.app.SenseMainActivity"
-            android:configChanges="orientation"
-            android:label="@string/sense_app_label" >
+            android:name="SenseMainActivity"
+            android:label="@string/title_activity_main" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -86,23 +85,22 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="nl.sense_os.app.login.LoginActivity"
-            android:configChanges="orientation"
-            android:label="@string/sense_app_label"
-            android:theme="@style/Sense.Dialog" />
+            android:name="WelcomeActivity"
+            android:label="@string/title_activity_welcome" >
+        </activity>
         <activity
-            android:name="nl.sense_os.app.register.RegisterActivity"
-            android:configChanges="orientation"
-            android:label="@string/sense_app_label"
-            android:theme="@style/Sense.Dialog" />
+            android:name="LoginActivity"
+            android:label="@string/title_activity_login" />
         <activity
-            android:name="nl.sense_os.app.SenseSettings"
-            android:configChanges="orientation"
+            android:name="RegisterActivity"
+            android:label="@string/title_activity_register" />
+        <activity
+            android:name="SenseSettings"
             android:label="@string/sense_app_label"
             android:theme="@style/Sense.Prefs" />
 
         <service
-            android:name="nl.sense_os.app.appwidget.SenseWidgetUpdater"
+            android:name=".appwidget.SenseWidgetUpdater"
             android:exported="false" >
             <intent-filter>
                 <action android:name="nl.sense_os.platform.AppWidgetUpdate" />
@@ -120,7 +118,7 @@
         </service>
 
         <receiver
-            android:name="nl.sense_os.app.appwidget.SenseWidgetProvider"
+            android:name=".appwidget.SenseWidgetProvider"
             android:exported="false" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -214,19 +212,12 @@
                 <action android:name="nl.sense_os.service.push.got_requirement" />
             </intent-filter>
         </receiver>
+        <receiver android:name="nl.sense_os.service.scheduler.ExecutionAlarmReceiver" />
 
         <provider
             android:name="nl.sense_os.service.provider.SensorDataProvider"
             android:authorities="nl.sense_os.platform.provider.LocalStorage"
             android:exported="true" />
-
-        <receiver android:name="nl.sense_os.service.scheduler.ExecutionAlarmReceiver" >
-        </receiver>
-
-        <activity
-            android:name="nl.sense_os.app.WelcomeActivity"
-            android:label="@string/title_activity_welcome" >
-        </activity>
     </application>
 
 </manifest>

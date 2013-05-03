@@ -6,8 +6,6 @@
  */
 package nl.sense_os.app;
 
-import nl.sense_os.app.login.LoginActivity;
-import nl.sense_os.app.register.RegisterActivity;
 import nl.sense_os.platform.SensePlatform;
 import nl.sense_os.service.SenseServiceStub;
 import nl.sense_os.service.constants.SensePrefs;

@@ -11,8 +11,6 @@ import nl.sense_os.app.dialogs.LogoutConfirmDialog;
 import nl.sense_os.app.dialogs.LogoutConfirmDialog.LogoutActivity;
 import nl.sense_os.app.dialogs.SampleRateDialog;
 import nl.sense_os.app.dialogs.SyncRateDialog;
-import nl.sense_os.app.login.LoginActivity;
-import nl.sense_os.app.register.RegisterActivity;
 import nl.sense_os.platform.SensePlatform;
 import nl.sense_os.service.ISenseServiceCallback;
 import nl.sense_os.service.SenseService;
@@ -266,7 +264,7 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
+        setContentView(R.layout.activity_main);
     }
 
     @Override

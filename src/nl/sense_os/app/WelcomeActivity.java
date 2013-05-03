@@ -1,7 +1,5 @@
 package nl.sense_os.app;
 
-import nl.sense_os.app.login.LoginActivity;
-import nl.sense_os.app.register.RegisterActivity;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
