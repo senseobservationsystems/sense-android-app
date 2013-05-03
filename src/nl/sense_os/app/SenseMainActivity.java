@@ -59,6 +59,14 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
             service = mSensePlatform.getService();
             service.logout();
             service.toggleMain(false);
+
+            try {
+                service.getStatus(mCallback);
+            } catch (RemoteException e) {
+                Log.e(TAG, "Failed to check status after logout!", e);
+                //
+            }
+
             return true;
         }
 
@@ -138,8 +146,13 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
         @Override
         protected Boolean doInBackground(Boolean... params) {
             boolean active = params[0];
+
+            busyTurningOn = active;
+            busyTurningOff = !active;
+
             service = mSensePlatform.getService();
             service.toggleMain(active);
+
             return true;
         }
 
@@ -165,6 +178,8 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
     private final ISenseServiceCallback mCallback = new SenseCallback();
     private SensePlatform mSensePlatform;
     private final SenseServiceListener mServiceListener = new SenseServiceListener();
+    private boolean busyTurningOn;
+    private boolean busyTurningOff;
 
     /**
      * Calls {@link ISenseService#getStatus(ISenseServiceCallback)} on the service. This will
@@ -760,9 +775,19 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
      */
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     private void updateUi(int status) {
-        setMainStatusSpinner(false);
 
         final boolean running = (status & SenseStatusCodes.RUNNING) > 0;
+
+        if ((running && busyTurningOff) || (!running && busyTurningOn)) {
+            // still busy
+            return;
+        } else {
+            busyTurningOn = false;
+            busyTurningOff = false;
+        }
+
+        setMainStatusSpinner(false);
+
         // Log.v(TAG, "'running' status: " + running);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
             ((Switch) findViewById(R.id.main_cb)).setChecked(running);
