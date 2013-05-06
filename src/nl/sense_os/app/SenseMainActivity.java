@@ -398,6 +398,7 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
     public void onSampleRateChanged(String rate) {
         Log.v(TAG, "Sample rate changed: " + rate);
         mSensePlatform.getService().setPrefString(SensePrefs.Main.SAMPLE_RATE, rate);
+        updateSummaries();
     }
 
     @Override
@@ -438,6 +439,7 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
     public void onSyncRateChanged(String rate) {
         Log.v(TAG, "Sync rate changed: " + rate);
         mSensePlatform.getService().setPrefString(SensePrefs.Main.SYNC_RATE, rate);
+        updateSummaries();
     }
 
     private void setMainStatusSpinner(boolean enable) {
