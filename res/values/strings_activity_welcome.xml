@@ -3,9 +3,9 @@
 
     <string name="button_login">Log in</string>
     <string name="button_reg">Register</string>
-    <string name="welcome_msg1">The Sense platform gathers data about your activities and shares it with the CommonSense data storage.</string>
-    <string name="welcome_msg2">Over time, it will learn to recognize your behaviour and current status. This makes it possible for your phone to help you avoid repetitive or stupid tasks, and alert you about interesting events.</string>
-    <string name="welcome_msg3">Please log in, or register a free CommonSense account.</string>
+    <string name="welcome_msg1">The Sense app gathers data from your phone sensors and uploads it to your CommonSense account. You can see your data by pointing your browser to <a href="http://common.sense-os.nl">common.sense-os.nl</a>.</string>
+    <string name="welcome_msg2">CommonSense is a platform that allows developers to easily build context aware applications, incorporating real-time pattern recognition and other data processing, both in the cloud and on your phone.</string>
+    <string name="welcome_msg3">Log in using your CommonSense account or register one for free!</string>
     <string name="title_activity_welcome">Welcome to Sense</string>
 
 </resources>
