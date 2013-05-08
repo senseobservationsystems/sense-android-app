@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="nl.sense_os.app"
-    android:versionCode="20130208"
-    android:versionName="2.6.1" >
+    android:versionCode="20130501"
+    android:versionName="2.7.0" >
 
     <uses-feature
         android:name="android.hardware.location.gps"
@@ -62,17 +62,17 @@
         android:targetSdkVersion="17" />
 
     <application
+        android:name="nl.sense_os.app.SenseApplication"
+        android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/sense_app_name"
         android:logo="@drawable/ic_launcher"
-        android:theme="@style/Sense.Rings"
-        android:allowBackup="true" >
+        android:theme="@style/Sense.Rings" >
 
         <!-- COMPONENTS OF SENSE PLATFORM FRONT-END -->
         <activity
-            android:name="SenseApp"
-            android:configChanges="orientation"
-            android:label="@string/sense_app_label" >
+            android:name="SenseMainActivity"
+            android:label="@string/title_activity_main" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -85,18 +85,17 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".login.LoginActivity"
-            android:configChanges="orientation"
-            android:label="@string/sense_app_label"
-            android:theme="@style/Sense.Dialog" />
+            android:name="WelcomeActivity"
+            android:label="@string/title_activity_welcome" >
+        </activity>
         <activity
-            android:name=".register.RegisterActivity"
-            android:configChanges="orientation"
-            android:label="@string/sense_app_label"
-            android:theme="@style/Sense.Dialog" />
+            android:name="LoginActivity"
+            android:label="@string/title_activity_login" />
+        <activity
+            android:name="RegisterActivity"
+            android:label="@string/title_activity_register" />
         <activity
             android:name="SenseSettings"
-            android:configChanges="orientation"
             android:label="@string/sense_app_label"
             android:theme="@style/Sense.Prefs" />
 
@@ -206,12 +205,14 @@
                 <category android:name="nl.sense_os.app" />
             </intent-filter>
         </receiver>
-        <receiver android:name="nl.sense_os.service.configuration.RequirementReceiver" 
+        <receiver
+            android:name="nl.sense_os.service.configuration.RequirementReceiver"
             android:exported="false" >
             <intent-filter>
                 <action android:name="nl.sense_os.service.push.got_requirement" />
             </intent-filter>
         </receiver>
+        <receiver android:name="nl.sense_os.service.scheduler.ExecutionAlarmReceiver" />
 
         <provider
             android:name="nl.sense_os.service.provider.SensorDataProvider"

@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_rings"
+        android:orientation="vertical" >
+
+        <!-- Main Service toggle field -->
+
+        <LinearLayout
+            android:id="@+id/main_field"
+            android:layout_width="match_parent"
+            android:layout_height="?android:attr/listPreferredItemHeight"
+            android:background="@drawable/selector"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:onClick="onMainClick"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp" >
+
+            <TextView
+                android:id="@+id/main_firstline"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:singleLine="true"
+                android:text="@string/main_scr_msw_title"
+                android:textSize="20sp" />
+
+            <Switch
+                android:id="@+id/main_cb"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false" />
+
+            <ProgressBar
+                android:id="@+id/main_spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxHeight="36dp"
+                android:maxWidth="36dp"
+                android:minHeight="36dip"
+                android:minWidth="36dip"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:contentDescription="@string/content_descr_spacer" />
+
+        <LinearLayout
+            android:id="@+id/sample_field"
+            android:layout_width="match_parent"
+            android:layout_height="?android:attr/listPreferredItemHeight"
+            android:background="@drawable/selector"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:onClick="onSampleClick"
+            android:orientation="vertical"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp" >
+
+            <TextView
+                android:id="@+id/sample_firstline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:text="@string/main_scr_smp_title"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/sample_details"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:textIsSelectable="false" />
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:contentDescription="@string/content_descr_spacer" />
+
+        <LinearLayout
+            android:id="@+id/sync_field"
+            android:layout_width="match_parent"
+            android:layout_height="?android:attr/listPreferredItemHeight"
+            android:background="@drawable/selector"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:onClick="onSyncClick"
+            android:orientation="vertical"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp" >
+
+            <TextView
+                android:id="@+id/sync_firstline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:text="@string/main_scr_syn_title"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/sync_details"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:textIsSelectable="false" />
+        </LinearLayout>
+
+        <!-- Header for "Individual sensors" section -->
+
+        <TextView
+            android:id="@+id/header_sensors"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/darker_gray"
+            android:padding="3dp"
+            android:text="@string/main_scr_header_sensors"
+            android:textColor="@android:color/background_light"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/phonestate_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:onClick="onClick"
+            android:paddingBottom="6dp"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:paddingTop="6dp" >
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical" >
+
+                <TextView
+                    android:id="@+id/phonestate_firstline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:text="@string/main_scr_pst_title"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/phonestate_secondLine"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:text="@string/main_scr_pst_detail" />
+            </LinearLayout>
+
+            <CheckBox
+                android:id="@+id/phonestate_cb"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false" />
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:contentDescription="@string/content_descr_spacer" />
+
+        <LinearLayout
+            android:id="@+id/location_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:onClick="onClick"
+            android:paddingBottom="6dp"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:paddingTop="6dp" >
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical" >
+
+                <TextView
+                    android:id="@+id/location_firstline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:text="@string/main_scr_loc_title"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/location_secondLine"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:text="@string/main_scr_loc_details" />
+            </LinearLayout>
+
+            <CheckBox
+                android:id="@+id/location_cb"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false" />
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:contentDescription="@string/content_descr_spacer" />
+
+        <LinearLayout
+            android:id="@+id/ambience_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:onClick="onClick"
+            android:paddingBottom="6dp"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:paddingTop="6dp" >
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical" >
+
+                <TextView
+                    android:id="@+id/ambience_firstline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:text="@string/main_scr_amb_title"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/ambience_secondLine"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:text="@string/main_scr_amb_details" />
+            </LinearLayout>
+
+            <CheckBox
+                android:id="@+id/ambience_cb"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false" />
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:contentDescription="@string/content_descr_spacer" />
+
+        <LinearLayout
+            android:id="@+id/motion_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:onClick="onClick"
+            android:paddingBottom="6dp"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:paddingTop="6dp" >
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical" >
+
+                <TextView
+                    android:id="@+id/motion_firstline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:text="@string/main_src_mot_title"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/motion_secondLine"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:text="@string/main_scr_mot_details" />
+            </LinearLayout>
+
+            <CheckBox
+                android:id="@+id/motion_cb"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false" />
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:contentDescription="@string/content_descr_spacer" />
+
+        <LinearLayout
+            android:id="@+id/device_prox_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:onClick="onClick"
+            android:paddingBottom="6dp"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:paddingTop="6dp" >
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical" >
+
+                <TextView
+                    android:id="@+id/device_prox_firstline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:text="@string/main_scr_dev_title"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/device_prox_secondLine"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:text="@string/main_scr_dev_details" />
+            </LinearLayout>
+
+            <CheckBox
+                android:id="@+id/device_prox_cb"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false" />
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:contentDescription="@string/content_descr_spacer" />
+
+        <LinearLayout
+            android:id="@+id/external_sensor_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:onClick="onClick"
+            android:paddingBottom="6dp"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:paddingTop="6dp" >
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical" >
+
+                <TextView
+                    android:id="@+id/external_sensor_firstline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:text="@string/main_scr_ext_title"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/external_sensor_secondLine"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:text="@string/main_scr_ext_details" />
+            </LinearLayout>
+
+            <CheckBox
+                android:id="@+id/external_sensor_cb"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false" />
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:contentDescription="@string/content_descr_spacer" />
+
+        <!-- Header for "Preferences" section -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/darker_gray"
+            android:paddingLeft="2dp"
+            android:text="@string/preferences"
+            android:textColor="@android:color/background_light"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <RelativeLayout
+            android:id="@+id/prefs_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector"
+            android:focusable="true"
+            android:onClick="onClick"
+            android:paddingBottom="6dp"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:paddingTop="6dp"
+            android:visibility="gone" >
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:contentDescription="@string/content_descr_spacer"
+                android:src="@android:drawable/ic_menu_preferences" />
+
+            <TextView
+                android:id="@+id/prefs_firstline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                android:text="@string/preferences"
+                android:textSize="20sp" />
+        </RelativeLayout>
+    </LinearLayout>
+
+</ScrollView>

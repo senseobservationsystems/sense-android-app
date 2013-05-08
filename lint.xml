@@ -2,5 +2,8 @@
 <lint>
     <issue id="ExportedContentProvider" severity="ignore" />
     <issue id="MissingRegistered" severity="ignore" />
+    <issue id="TypographyDashes">
+        <ignore path="res/values/strings_settings.xml" />
+    </issue>
     <issue id="UnusedResources" severity="ignore" />
 </lint>
