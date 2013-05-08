@@ -143,6 +143,26 @@
             android:summary="Settings for accelerometer and gyroscope"
             android:title="Motion" >
             <PreferenceCategory android:title="Main settings" >
+                 <CheckBoxPreference
+                    android:defaultValue="True"
+                    android:key="accelerometer"
+                    android:summary="Accelerometer, 3-axial in m/s^2"
+                    android:title="Accelerometer" />
+                  <CheckBoxPreference
+                    android:defaultValue="True"
+                    android:key="gyroscope"
+                    android:summary="Gyroscope, 3-axial in radians/second"
+                    android:title="Gyroscope" />
+                    <CheckBoxPreference
+                    android:defaultValue="True"
+                    android:key="orientation"
+                    android:summary="Orientation, 3-axial angles in degrees"
+                    android:title="Orientation" />
+                    <CheckBoxPreference
+                    android:defaultValue="True"
+                    android:key="linear_acceleration"
+                    android:summary="Linear Acceleration without gravity, 3-axial in  m/s^2 "
+                    android:title="Linear Acceleration" />
                 <CheckBoxPreference
                     android:defaultValue="False"
                     android:key="motion_fall_detector"
@@ -170,6 +190,11 @@
                     android:key="screenoff_fix"
                     android:summary="Fixes some issues on phones with Android 2.1 or older"
                     android:title="Screen-off workaround" />
+                <CheckBoxPreference
+                    android:defaultValue="false"
+                    android:key="burstmode"
+                    android:summary="Sample motion data in burst of 3 seconds"
+                    android:title="Burst Mode" />
             </PreferenceCategory>
         </PreferenceScreen>
         <PreferenceScreen
