@@ -1,12 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="pref_login_title">Sign in</string>
-    <string name="pref_login_summary">Enter account details</string>
-    <string name="pref_logout_title">Sign out</string>
-    <string name="pref_logout_summary">Logged in as \'%s\'</string>
     <string name="dialog_sample_title">Select sample rate</string>
     <string name="dialog_sync_title">Select sync rate</string>
+    <string name="pref_accelerometer_summary">Acceleration in m/s² (3-axial)</string>
+    <string name="pref_accelerometer_title">Accelerometer</string>
+    <string name="pref_audio_spectrum_summary">Frequency spectrum of sounds</string>
+    <string name="pref_audio_spectrum_title">Audio spectrum analyzer</string>
+    <string name="pref_auto_gps_summary">Switch off GPS when not moving</string>
+    <string name="pref_auto_gps_title">Smart GPS</string>
+    <string name="pref_autostart_summary">Start Sense service at phone startup</string>
+    <string name="pref_autostart_title">Autostart</string>
+    <string name="pref_battery_summary">Measures battery level and charge status</string>
+    <string name="pref_battery_title">Battery sensor</string>
+    <string name="pref_bluetooth_summary">Scan Bluetooth to find neighboring devices</string>
+    <string name="pref_bluetooth_title">Bluetooth</string>
+    <string name="pref_burst_summary">Sample data in bursts of 3 seconds</string>
+    <string name="pref_burst_title">Burst mode</string>
+    <string name="pref_call_state_summary">Detects the call state and phone numbers</string>
+    <string name="pref_call_state_title">Call state</string>
+    <string name="pref_camera_summary">Light intensity (fancy, uses camera)</string>
+    <string name="pref_camera_title">Light sensor (camera)</string>
+    <string name="pref_data_conn_summary">Detects connection state and type (Wi-Fi or mobile)</string>
+    <string name="pref_data_conn_title">Data connection</string>
+    <string name="pref_devmode_summary">Use unstable version of CommonSense</string>
+    <string name="pref_devmode_title">Use development server</string>
+    <string name="pref_fall_demo_summary">Detects a simple free fall</string>
+    <string name="pref_fall_demo_title">Fall detector for demo\'s</string>
+    <string name="pref_fall_summary">Detects a human fall</string>
+    <string name="pref_fall_title">Fall detector</string>
+    <string name="pref_gps_provider_summary">Most accurate location provider</string>
+    <string name="pref_gps_provider_title">GPS</string>
+    <string name="pref_gyroscope_summary">Rotation rate in rad/s (3-axial)</string>
+    <string name="pref_gyroscope_title">Gyroscope</string>
+    <string name="pref_ip_address_summary">Detects current IP address (if available)</string>
+    <string name="pref_ip_address_title">IP address</string>
+    <string name="pref_light_summary">Light intensity (crude)</string>
+    <string name="pref_light_title">Light sensor</string>
+    <string name="pref_lin_acc_summary">Acceleration without gravity component</string>
+    <string name="pref_lin_acc_title">Linear accelerometer</string>
+    <string name="pref_login_summary">Enter account details</string>
+    <string name="pref_login_title">Log in</string>
+    <string name="pref_logout_summary">Logged in as \'%s\'</string>
+    <string name="pref_logout_title">Log out</string>
+    <string name="pref_magnetic_summary">Magnetic field in micro-Tesla (3-axis)</string>
+    <string name="pref_magnetic_title">Magnetic field sensor</string>
+    <string name="pref_mic_summary">Ambient sound level</string>
+    <string name="pref_mic_title">Microphone</string>
+    <string name="pref_motion_energy_summary">Average motion during 2 sec burst</string>
+    <string name="pref_motion_energy_title">Motion energy sensor</string>
+    <string name="pref_motion_unreg_summary">Saves battery, might break screen rotation</string>
+    <string name="pref_motion_unreg_title">Unregister between samples</string>
+    <string name="pref_network_provider_summary">Less accurate, more battery friendly</string>
+    <string name="pref_network_provider_title">Network provider</string>
+    <string name="pref_nfc_summary">Scan NFC tags (cannot be disabled)</string>
+    <string name="pref_nfc_title">NFC</string>
+    <string name="pref_obd2_summary">Connect to OBD-II devices</string>
+    <string name="pref_obd2_summary">Connect to OBD-II devices</string>
+    <string name="pref_obd2_title">OBD-II sensor</string>
+    <string name="pref_orientation_summary">Orientation in degrees (3-axial)</string>
+    <string name="pref_orientation_title">Orientation sensor</string>
+    <string name="pref_pressure_summary">Barometric pressure (if available)</string>
+    <string name="pref_pressure_title">Pressure sensor</string>
+    <string name="pref_proximity_summary">Measures distance of objects from screen</string>
+    <string name="pref_proximity_title">Proximity</string>
+    <string name="pref_register_summary">Register a new user</string>
+    <string name="pref_register_title">New user</string>
+    <string name="pref_screen_activity_summary">Detects screen on/off events</string>
+    <string name="pref_screen_activity_title">Screen activity</string>
+    <string name="pref_screenoff_summary">Fixes some issues on phones with Android 2.1 or older</string>
+    <string name="pref_screenoff_title">Screen-off workaround</string>
+    <string name="pref_service_state_summary">Detects connection state and type (Wi-Fi or mobile)</string>
+    <string name="pref_service_state_title">Service state</string>
+    <string name="pref_signal_strength_summary">Measures mobile signal strength</string>
+    <string name="pref_signal_strength_title">Signal strength</string>
+    <string name="pref_unread_msg_summary">Detects number of unread messages</string>
+    <string name="pref_unread_msg_title">Unread messages</string>
+    <string name="pref_wifi_summary">Scan Wi-Fi to find neighboring devices</string>
+    <string name="pref_wifi_title">Wi-Fi</string>
+    <string name="pref_zephyr_bioharness_summary">Connect to Zephyr BioHarness</string>
+    <string name="pref_zephyr_bioharness_title">Zephyr Bioharness</string>
+    <string name="pref_zephyr_hxm_summary">Connect to Zephyr HxM</string>
+    <string name="pref_zephyr_hxm_title">Zephyr HxM</string>
+    <string name="prefcat_additional">Additional settings</string>
+    <string name="prefcat_advanced">Even more settings</string>
+    <string name="prefcat_general">General settings</string>
+    <string name="prefcat_main">Main settings</string>
+    <string name="prefcat_specific">Specific module settings</string>
+    <string name="prefscr_advanced_summary">For true sensei</string>
+    <string name="prefscr_advanced_title">Advanced settings</string>
+    <string name="prefscr_ambience_summary">Sound, light and other ambience sensors</string>
+    <string name="prefscr_ambience_title">Ambience</string>
+    <string name="prefscr_external_summary">Sensors that are connected to your phone</string>
+    <string name="prefscr_external_title">External sensors</string>
+    <string name="prefscr_location_summary">GPS and network location sensors</string>
+    <string name="prefscr_location_title">Location</string>
+    <string name="prefscr_motion_summary">Accelerometer and gyroscope</string>
+    <string name="prefscr_motion_title">Motion</string>
+    <string name="prefscr_neigh_dev_summary">Wi-Fi and Bluetooth network sensors</string>
+    <string name="prefscr_neigh_dev_title">Neighboring devices</string>
+    <string name="prefscr_phone_summary">Battery level, call state, screen state, &#8230;</string>
+    <string name="prefscr_phone_title">Phone status</string>
+    <string name="prefscr_zephyr_bioharness_summary">Monitor heart rate, acceleration, respiration, &#8230;</string>
+    <string name="prefscr_zephyr_bioharness_title">Zephyr BioHarness settings</string>
+    <string name="prefscr_zephyr_hxm_summary">Monitor heart rate, acceleration, &#8230;</string>
+    <string name="prefscr_zephyr_hxm_title">Zephyr HxM settings</string>
 
     <string-array name="sample_rate_items">
         <item>Often</item>
@@ -31,10 +129,13 @@
         <item>Normal: buffer size is 5 minutes</item>
         <item>Eco-mode: buffer size is 30 minutes</item>
     </string-array>
+        <string name="pref_heart_rate_title">Heart rate sensor</string>
+        <string name="pref_skin_temp_title">Skin temperature sensor</string>
+        <string name="pref_respiration_title">Respiration rate sensor</string>
+        <string name="pref_worn_status_title">Worn status sensor</string>
+        <string name="pref_speed_title">Speed sensor</string>
+        <string name="pref_distance_title">Distance sensor</string>
+        <string name="pref_strides_title">Strides sensor</string>
 
-    <string name="pref_register_title">New user</string>
-    <string name="pref_register_summary">Register a new user</string>
-    <string name="pref_autostart_title">Autostart</string>
-    <string name="pref_autostart_summary">Start Sense service at phone startup</string>
 
 </resources>

@@ -34,7 +34,9 @@ import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.CheckBoxPreference;
 import android.preference.Preference;
+import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
@@ -309,6 +311,7 @@ public class SenseSettings extends PreferenceActivity {
         // setup some preferences with custom dialogs
         setupLoginPref();
         setupRegisterPref();
+        setupExternalSensorPrefs();
 
         final Preference devMode = findPreference(Advanced.DEV_MODE);
         devMode.setOnPreferenceClickListener(new OnPreferenceClickListener() {
@@ -428,6 +431,40 @@ public class SenseSettings extends PreferenceActivity {
             @Override
             public boolean onPreferenceClick(Preference preference) {
                 startActivity(new Intent(SenseSettings.this, RegisterActivity.class));
+                return true;
+            }
+        });
+    }
+
+    /**
+     * Sets up the Register preference to display a registration dialog.
+     */
+    private void setupExternalSensorPrefs() {
+
+        // set up BioHarness preference
+        CheckBoxPreference bioharnessPref = (CheckBoxPreference) findPreference(ZephyrBioHarness.MAIN);
+        final Preference bioharnessScreen = findPreference("prefscr_zephyr_bioharness");
+        bioharnessScreen.setEnabled(bioharnessPref.isChecked());
+        bioharnessPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                boolean enabled = (Boolean) newValue;
+                bioharnessScreen.setEnabled(enabled);
+                return true;
+            }
+        });
+
+        // set up HxM preference
+        CheckBoxPreference hxmPref = (CheckBoxPreference) findPreference(ZephyrHxM.MAIN);
+        final Preference hxmScreen = findPreference("prefscr_zephyr_hxm");
+        hxmScreen.setEnabled(hxmPref.isChecked());
+        hxmPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                boolean enabled = (Boolean) newValue;
+                hxmScreen.setEnabled(enabled);
                 return true;
             }
         });
