@@ -12,6 +12,15 @@
 
 # Add any project specific keep options here:
 
+# strip log messages
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+}
+
+# Special settings for PhoneGap
+-libraryjars /home/steven/Code/libs/cordova-2.7.0/cordova-android/framework/libs/commons-codec-1.8.jar
+
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface
 # class:
