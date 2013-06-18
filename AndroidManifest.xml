@@ -187,13 +187,6 @@
             </intent-filter>
         </receiver>
         <receiver
-            android:name="nl.sense_os.service.DataTransmitter"
-            android:exported="false" >
-            <intent-filter>
-                <action android:name="nl.sense_os.platform.DataTransmit" />
-            </intent-filter>
-        </receiver>
-        <receiver
             android:name="nl.sense_os.service.push.GCMBroadcastReceiver"
             android:permission="com.google.android.c2dm.permission.SEND" >
 
