@@ -33,6 +33,8 @@
     <string name="pref_gps_provider_title">GPS</string>
     <string name="pref_gyroscope_summary">Rotation rate in rad/s (3-axial)</string>
     <string name="pref_gyroscope_title">Gyroscope</string>
+    <string name="pref_humidity_summary">Relative humidity in % (if available)</string>
+    <string name="pref_humidity_title">Humidity sensor</string>
     <string name="pref_ip_address_summary">Detects current IP address (if available)</string>
     <string name="pref_ip_address_title">IP address</string>
     <string name="pref_light_summary">Light intensity (crude)</string>
@@ -60,7 +62,7 @@
     <string name="pref_obd2_title">OBD-II sensor</string>
     <string name="pref_orientation_summary">Orientation in degrees (3-axial)</string>
     <string name="pref_orientation_title">Orientation sensor</string>
-    <string name="pref_pressure_summary">Barometric pressure (if available)</string>
+    <string name="pref_pressure_summary">Barometric pressure in Pascal (if available)</string>
     <string name="pref_pressure_title">Pressure sensor</string>
     <string name="pref_proximity_summary">Measures distance of objects from screen</string>
     <string name="pref_proximity_title">Proximity</string>
@@ -74,6 +76,8 @@
     <string name="pref_service_state_title">Service state</string>
     <string name="pref_signal_strength_summary">Measures mobile signal strength</string>
     <string name="pref_signal_strength_title">Signal strength</string>
+    <string name="pref_temperature_summary">Ambient temperature in &#176;C (if available)</string>
+    <string name="pref_temperature_title">Temperature sensor</string>
     <string name="pref_unread_msg_summary">Detects number of unread messages</string>
     <string name="pref_unread_msg_title">Unread messages</string>
     <string name="pref_wifi_summary">Scan Wi-Fi to find neighboring devices</string>

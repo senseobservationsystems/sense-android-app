@@ -125,14 +125,24 @@
                 android:title="@string/pref_camera_title" />
             <CheckBoxPreference
                 android:defaultValue="true"
+                android:key="ambience_magnetic_field"
+                android:summary="@string/pref_magnetic_summary"
+                android:title="@string/pref_magnetic_title" />
+            <CheckBoxPreference
+                android:defaultValue="true"
                 android:key="ambience_pressure"
                 android:summary="@string/pref_pressure_summary"
                 android:title="@string/pref_pressure_title" />
             <CheckBoxPreference
                 android:defaultValue="true"
-                android:key="ambience_magnetic_field"
-                android:summary="@string/pref_magnetic_summary"
-                android:title="@string/pref_magnetic_title" />
+                android:key="ambience_humidity"
+                android:summary="@string/pref_humidity_summary"
+                android:title="@string/pref_humidity_title" />
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="ambience_temperature"
+                android:summary="@string/pref_temperature_summary"
+                android:title="@string/pref_temperature_title" />
         </PreferenceScreen>
         <PreferenceScreen
             android:enabled="true"
