@@ -5,6 +5,10 @@
     <string name="dialog_sync_title">Select sync rate</string>
     <string name="pref_accelerometer_summary">Acceleration in m/s² (3-axial)</string>
     <string name="pref_accelerometer_title">Accelerometer</string>
+	<string name="pref_audio_title">Raw Audio</string>
+    <string name="pref_audio_summary">Record raw audio samples</string>
+    <string name="pref_audio_upload_title">Upload Raw Audio</string>
+    <string name="pref_audio_upload_summary">Upload raw audio samples to CommonSense</string>
     <string name="pref_audio_spectrum_summary">Frequency spectrum of sounds</string>
     <string name="pref_audio_spectrum_title">Audio spectrum analyzer</string>
     <string name="pref_auto_gps_summary">Switch off GPS when not moving</string>

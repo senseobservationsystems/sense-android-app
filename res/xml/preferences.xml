@@ -104,10 +104,20 @@
             android:summary="@string/prefscr_ambience_summary"
             android:title="@string/prefscr_ambience_title" >
             <CheckBoxPreference
+                android:defaultValue="False"
+                android:key="ambience_audio"
+                android:summary="@string/pref_audio_summary"
+                android:title="@string/pref_audio_title" />
+           <CheckBoxPreference
+                android:defaultValue="False"
+                android:key="ambience_audio_upload"
+                android:summary="@string/pref_audio_upload_summary"
+                android:title="@string/pref_audio_upload_title" />  
+            <CheckBoxPreference
                 android:defaultValue="True"
                 android:key="ambience_mic"
                 android:summary="@string/pref_mic_summary"
-                android:title="@string/pref_mic_title" />
+                android:title="@string/pref_mic_title" />                   
             <CheckBoxPreference
                 android:defaultValue="True"
                 android:key="ambience_audio_spectrum"
