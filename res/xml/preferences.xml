@@ -72,6 +72,8 @@
                 android:key="phonestate_unread_msg"
                 android:summary="@string/pref_unread_msg_summary"
                 android:title="@string/pref_unread_msg_title" />
+            <CheckBoxPreference android:key="installed_apps" android:title="@string/pref_installed_apps_title" android:summary="@string/pref_installed_apps_summary" android:defaultValue="true"/>
+            <CheckBoxPreference android:key="foreground_app" android:summary="@string/pref_foreground_app_summary" android:title="@string/pref_foreground_app_title" android:defaultValue="true"/>
         </PreferenceScreen>
         <PreferenceScreen
             android:enabled="true"

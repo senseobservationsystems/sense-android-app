@@ -13,6 +13,10 @@
     <string name="pref_autostart_title">Autostart</string>
     <string name="pref_battery_summary">Measures battery level and charge status</string>
     <string name="pref_battery_title">Battery sensor</string>
+    <string name="pref_installed_apps_summary">Lists the current installed Apps</string>
+    <string name="pref_installed_apps_title">Installed Apps</string>
+    <string name="pref_foreground_app_summary">Detects the current foreground App</string>
+    <string name="pref_foreground_app_title">Foreground App</string>
     <string name="pref_bluetooth_summary">Scan Bluetooth to find neighboring devices</string>
     <string name="pref_bluetooth_title">Bluetooth</string>
     <string name="pref_burst_summary">Sample data in bursts of 3 seconds</string>
@@ -57,7 +61,6 @@
     <string name="pref_network_provider_title">Network provider</string>
     <string name="pref_nfc_summary">Scan NFC tags (cannot be disabled)</string>
     <string name="pref_nfc_title">NFC</string>
-    <string name="pref_obd2_summary">Connect to OBD-II devices</string>
     <string name="pref_obd2_summary">Connect to OBD-II devices</string>
     <string name="pref_obd2_title">OBD-II sensor</string>
     <string name="pref_orientation_summary">Orientation in degrees (3-axial)</string>
