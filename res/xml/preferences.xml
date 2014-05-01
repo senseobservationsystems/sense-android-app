@@ -305,7 +305,12 @@
                 android:key="devmode"
                 android:summary="@string/pref_devmode_summary"
                 android:title="@string/pref_devmode_title" />
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="mobile_internet_energy_saving_mode"
+                android:summary="@string/pref_mobile_internet_energy_saving_summary"
+                android:title="@string/pref_mobile_internet_energy_saving_title" />
         </PreferenceScreen>
-    </PreferenceCategory>
+	</PreferenceCategory>
 
 </PreferenceScreen>
