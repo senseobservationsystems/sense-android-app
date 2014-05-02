@@ -3,6 +3,8 @@
 
     <string name="dialog_sample_title">Select sample rate</string>
     <string name="dialog_sync_title">Select sync rate</string>
+    <string name="pref_ambience_burst_summary">Sample audio data in bursts of 5 seconds</string>
+    <string name="pref_ambience_burst_title">Burst mode</string>
     <string name="pref_accelerometer_summary">Acceleration in m/s² (3-axial)</string>
     <string name="pref_accelerometer_title">Accelerometer</string>
     <string name="pref_audio_spectrum_summary">Frequency spectrum of sounds</string>
@@ -29,6 +31,8 @@
     <string name="pref_data_conn_title">Data connection</string>
     <string name="pref_devmode_summary">Use unstable version of CommonSense</string>
     <string name="pref_devmode_title">Use development server</string>
+    <string name="pref_upload_burst_summary">Keep generated burst data locally</string>
+    <string name="pref_upload_burst_title">Don\'t upload burst data</string>
     <string name="pref_fall_demo_summary">Detects a simple free fall</string>
     <string name="pref_fall_demo_title">Fall detector for demo\'s</string>
     <string name="pref_fall_summary">Detects a human fall</string>
@@ -116,6 +120,7 @@
     <string name="prefscr_zephyr_hxm_title">Zephyr HxM settings</string>
 
     <string-array name="sample_rate_items">
+        <item>Real-time</item>
         <item>Often</item>
         <item>Normal</item>
         <item>Rarely</item>
