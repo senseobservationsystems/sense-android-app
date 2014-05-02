@@ -43,8 +43,8 @@ public class SampleRateDialog extends DialogFragment {
         SharedPreferences prefs = getActivity().getSharedPreferences(SensePrefs.MAIN_PREFS,
                 Context.MODE_PRIVATE);
         mRate = prefs.getString(SensePrefs.Main.SAMPLE_RATE, "0");
-        // sample rate value ranges from -1 to 1
-        int rateIndex = Integer.parseInt(mRate) + 1;
+        // sample rate value ranges from -2 to 1
+        int rateIndex = Integer.parseInt(mRate) + 2;
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle(R.string.dialog_sample_title);
@@ -53,7 +53,7 @@ public class SampleRateDialog extends DialogFragment {
 
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        mRate = Integer.toString(which - 1);
+                        mRate = Integer.toString(which - 2);
                     }
                 });
         builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {

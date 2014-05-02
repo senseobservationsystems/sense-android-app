@@ -72,6 +72,8 @@
                 android:key="phonestate_unread_msg"
                 android:summary="@string/pref_unread_msg_summary"
                 android:title="@string/pref_unread_msg_title" />
+            <CheckBoxPreference android:key="installed_apps" android:title="@string/pref_installed_apps_title" android:summary="@string/pref_installed_apps_summary" android:defaultValue="true"/>
+            <CheckBoxPreference android:key="foreground_app" android:summary="@string/pref_foreground_app_summary" android:title="@string/pref_foreground_app_title" android:defaultValue="true"/>
         </PreferenceScreen>
         <PreferenceScreen
             android:enabled="true"
@@ -143,6 +145,8 @@
                 android:key="ambience_temperature"
                 android:summary="@string/pref_temperature_summary"
                 android:title="@string/pref_temperature_title" />
+            
+            <PreferenceCategory android:title="@string/prefcat_additional"><CheckBoxPreference android:defaultValue="true" android:summary="@string/pref_ambience_burst_summary" android:key="ambience_burstmode" android:title="@string/pref_ambience_burst_title" /></PreferenceCategory>
         </PreferenceScreen>
         <PreferenceScreen
             android:enabled="true"
@@ -303,7 +307,13 @@
                 android:key="devmode"
                 android:summary="@string/pref_devmode_summary"
                 android:title="@string/pref_devmode_title" />
+            <CheckBoxPreference android:key="dont upload bursts" android:defaultValue="true" android:summary="@string/pref_upload_burst_summary" android:title="@string/pref_upload_burst_title"/>
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="mobile_internet_energy_saving_mode"
+                android:summary="@string/pref_mobile_internet_energy_saving_summary"
+                android:title="@string/pref_mobile_internet_energy_saving_title" />
         </PreferenceScreen>
-    </PreferenceCategory>
+	</PreferenceCategory>
 
 </PreferenceScreen>

@@ -14,7 +14,6 @@ import nl.sense_os.app.dialogs.SyncRateDialog;
 import nl.sense_os.platform.SensePlatform;
 import nl.sense_os.service.DataTransmitter;
 import nl.sense_os.service.ISenseServiceCallback;
-import nl.sense_os.service.SenseService;
 import nl.sense_os.service.SenseServiceStub;
 import nl.sense_os.service.constants.SensePrefs;
 import nl.sense_os.service.constants.SensePrefs.Auth;
@@ -410,7 +409,7 @@ public class SenseMainActivity extends FragmentActivity implements LogoutActivit
         mSensePlatform = ((SenseApplication) getApplication()).getSensePlatform();
 
         // register receiver for updates
-        IntentFilter filter = new IntentFilter(SenseService.ACTION_SERVICE_BROADCAST);
+        IntentFilter filter = new IntentFilter(getString(R.string.action_sense_service_broadcast));
         registerReceiver(mServiceListener, filter);
 
         checkServiceStatus();
