@@ -145,6 +145,8 @@
                 android:key="ambience_temperature"
                 android:summary="@string/pref_temperature_summary"
                 android:title="@string/pref_temperature_title" />
+            
+            <PreferenceCategory android:title="@string/prefcat_additional"><CheckBoxPreference android:defaultValue="true" android:summary="@string/pref_ambience_burst_summary" android:key="ambience_burstmode" android:title="@string/pref_ambience_burst_title" /></PreferenceCategory>
         </PreferenceScreen>
         <PreferenceScreen
             android:enabled="true"
@@ -305,6 +307,7 @@
                 android:key="devmode"
                 android:summary="@string/pref_devmode_summary"
                 android:title="@string/pref_devmode_title" />
+            <CheckBoxPreference android:key="dont upload bursts" android:defaultValue="true" android:summary="@string/pref_upload_burst_summary" android:title="@string/pref_upload_burst_title"/>
         </PreferenceScreen>
     </PreferenceCategory>
 
