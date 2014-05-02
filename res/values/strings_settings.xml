@@ -57,6 +57,8 @@
     <string name="pref_magnetic_title">Magnetic field sensor</string>
     <string name="pref_mic_summary">Ambient sound level</string>
     <string name="pref_mic_title">Microphone</string>
+    <string name="pref_mobile_internet_energy_saving_summary">Upload every half hour when using mobile internet</string>
+    <string name="pref_mobile_internet_energy_saving_title">Mobile internet energy saving</string>
     <string name="pref_motion_energy_summary">Average motion during 2 sec burst</string>
     <string name="pref_motion_energy_title">Motion energy sensor</string>
     <string name="pref_motion_unreg_summary">Saves battery, might break screen rotation</string>
