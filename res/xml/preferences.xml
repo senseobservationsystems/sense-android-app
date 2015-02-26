@@ -91,6 +91,7 @@
                     android:key="location_network"
                     android:summary="@string/pref_network_provider_summary"
                     android:title="@string/pref_network_provider_title" />
+                <CheckBoxPreference android:summary="pref_location_fused_summary" android:title="pref_location_fused_title" android:key="location_fused" android:defaultValue="true"/>
             </PreferenceCategory>
             <PreferenceCategory android:title="Advanced settings" >
                 <CheckBoxPreference
