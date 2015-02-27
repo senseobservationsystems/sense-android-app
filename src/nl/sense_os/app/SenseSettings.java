@@ -220,9 +220,14 @@ public class SenseSettings extends PreferenceActivity {
         editor.putBoolean(PhoneState.UNREAD_MSG, service.getPrefBool(PhoneState.UNREAD_MSG, true));
 
         // location preferences
-        editor.putBoolean(Location.GPS, service.getPrefBool(Location.GPS, true));
-        editor.putBoolean(Location.NETWORK, service.getPrefBool(Location.NETWORK, true));
-        editor.putBoolean(Location.AUTO_GPS, service.getPrefBool(Location.AUTO_GPS, true));
+        editor.putBoolean(Location.GPS, service.getPrefBool(Location.GPS, false));
+        editor.putBoolean(Location.NETWORK, service.getPrefBool(Location.NETWORK, false));
+        editor.putBoolean(Location.AUTO_GPS, service.getPrefBool(Location.AUTO_GPS, false));
+
+        // new location preferences
+        editor.putBoolean(Location.FUSED_PROVIDER, service.getPrefBool(Location.FUSED_PROVIDER, true));
+        editor.putString(Location.FUSED_PROVIDER_PRIORITY, service.getPrefString(Location.FUSED_PROVIDER_PRIORITY,Location.FusedProviderPriority.BALANCED));
+
 
         // ambience preferences
         editor.putBoolean(Ambience.LIGHT, service.getPrefBool(Ambience.LIGHT, true));

@@ -3,6 +3,7 @@ package nl.sense_os.app;
 import nl.sense_os.platform.SensePlatform;
 import nl.sense_os.service.ISenseServiceCallback;
 import nl.sense_os.service.commonsense.SenseApi;
+import nl.sense_os.service.constants.SensePrefs;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
@@ -110,6 +111,9 @@ public class LoginActivity extends FragmentActivity {
             editor.putBoolean(SenseSettings.PREF_FIRST_LOGIN, false);
             editor.commit();
         }
+
+        mSensePlatform.getService().setPrefBool(SensePrefs.Main.Location.FUSED_PROVIDER, true);
+        mSensePlatform.getService().setPrefString(SensePrefs.Main.Location.FUSED_PROVIDER_PRIORITY, SensePrefs.Main.Location.FusedProviderPriority.BALANCED);
 
         // set default sensors
         mSensePlatform.getService().togglePhoneState(true);
