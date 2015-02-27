@@ -82,20 +82,20 @@
             android:title="@string/prefscr_location_title" >
             <PreferenceCategory android:title="@string/prefcat_main" >
                 <CheckBoxPreference
-                    android:defaultValue="true"
+                    android:defaultValue="false"
                     android:key="location_gps"
                     android:summary="@string/pref_gps_provider_summary"
                     android:title="@string/pref_gps_provider_title" />
                 <CheckBoxPreference
-                    android:defaultValue="true"
+                    android:defaultValue="false"
                     android:key="location_network"
                     android:summary="@string/pref_network_provider_summary"
                     android:title="@string/pref_network_provider_title" />
-                <CheckBoxPreference android:summary="pref_location_fused_summary" android:title="pref_location_fused_title" android:key="location_fused" android:defaultValue="true"/>
+                <CheckBoxPreference android:summary="@string/pref_location_fused_summary" android:title="@string/pref_location_fused_title" android:key="location_fused" android:defaultValue="true"/>
             </PreferenceCategory>
             <PreferenceCategory android:title="Advanced settings" >
                 <CheckBoxPreference
-                    android:defaultValue="true"
+                    android:defaultValue="false"
                     android:key="automatic_gps"
                     android:summary="@string/pref_auto_gps_summary"
                     android:title="@string/pref_auto_gps_title" />
