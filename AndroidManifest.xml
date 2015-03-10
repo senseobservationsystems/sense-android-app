@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="nl.sense_os.app"
     android:versionCode="1376993855"
-    android:versionName="2.8.1" >
+    android:versionName="2.8.1">
 
     <uses-feature
         android:name="android.hardware.location.gps"
@@ -68,7 +68,8 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/sense_app_name"
         android:logo="@drawable/ic_launcher"
-        android:theme="@style/Sense.Rings" >
+        android:theme="@style/Sense.Rings" 
+        android:debuggable="true">
 
         <!-- COMPONENTS OF SENSE PLATFORM FRONT-END -->
         <activity
