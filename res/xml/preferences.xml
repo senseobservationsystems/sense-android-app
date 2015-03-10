@@ -14,7 +14,7 @@
             android:title="@string/pref_register_title" />
 
         <CheckBoxPreference
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="autostart"
             android:summary="@string/pref_autostart_summary"
             android:title="@string/pref_autostart_title" />

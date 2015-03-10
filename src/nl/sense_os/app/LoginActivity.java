@@ -112,6 +112,8 @@ public class LoginActivity extends FragmentActivity {
             editor.commit();
         }
 
+        mSensePlatform.getService().setPrefBool(SensePrefs.Status.AUTOSTART, true);
+
         mSensePlatform.getService().setPrefBool(SensePrefs.Main.Location.FUSED_PROVIDER, true);
         mSensePlatform.getService().setPrefString(SensePrefs.Main.Location.FUSED_PROVIDER_PRIORITY, SensePrefs.Main.Location.FusedProviderPriority.BALANCED);
 
@@ -120,7 +122,7 @@ public class LoginActivity extends FragmentActivity {
         mSensePlatform.getService().toggleLocation(true);
         mSensePlatform.getService().toggleAmbience(true);
         mSensePlatform.getService().toggleMotion(true);
-        mSensePlatform.getService().toggleDeviceProx(false);
+        mSensePlatform.getService().toggleDeviceProx(true);
         mSensePlatform.getService().toggleExternalSensors(false);
 
         setResult(RESULT_OK);
